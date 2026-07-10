@@ -38,3 +38,9 @@ Agents should save reusable engineering discoveries to Basic Memory and retrieve
 Basic Memory entries are informative rather than authoritative requirements. Important findings should be promoted to OpenSpec, ADRs, runbooks, code documentation, or other authoritative documentation when appropriate.
 
 The Markdown notes are portable; the SQLite index/knowledge graph (backlinks, relations, search) is a derived cache rebuilt from the notes and does not migrate. Moving to another tool would carry over the note content but would require re-deriving or discarding the graph structure.
+
+## Setup
+
+Basic Memory is installed (via `pipx install basic-memory`) and registered as an MCP server for Claude Code (`claude mcp add basic-memory -- basic-memory mcp`).
+
+Notes are stored under `docs/basic-memory/` in this repo, rather than `docs/journal/`, so the storage location makes explicit which tool owns it.
