@@ -36,3 +36,5 @@ Basic Memory was selected because:
 Agents should save reusable engineering discoveries to Basic Memory and retrieve relevant notes during later exploration or implementation.
 
 Basic Memory entries are informative rather than authoritative requirements. Important findings should be promoted to OpenSpec, ADRs, runbooks, code documentation, or other authoritative documentation when appropriate.
+
+The Markdown notes are portable; the SQLite index/knowledge graph (backlinks, relations, search) is a derived cache rebuilt from the notes and does not migrate. Moving to another tool would carry over the note content but would require re-deriving or discarding the graph structure.
