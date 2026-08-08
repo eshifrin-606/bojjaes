@@ -6,7 +6,14 @@ Per [docs/adr/0001-dev-journal-tool.md](docs/adr/0001-dev-journal-tool.md), this
 
 Conventions:
 
-- Write notes flat into the root of the `bojjaes-memory` project (`docs/basic-memory/`) — no subfolders, and don't pass a `directory` of `basic-memory` (the project root already lives there, so that nests `basic-memory/basic-memory`). Use `directory: "/"` or omit it.
+The `bojjaes-memory` project root is **`docs/`**, not `docs/basic-memory/`. Basic Memory therefore indexes the whole `docs/` tree — ADRs, `scoring.md`, probe write-ups — so they are searchable and linkable alongside journal notes.
+
+Conventions:
+
+- Write journal notes flat into `docs/basic-memory/` — pass `directory: "basic-memory"`, no nested subfolders.
 - Title each note `yyyy-mm-dd-descriptive-title` (lowercase, hyphenated).
 - Before writing a new note, search existing notes (`search_notes` / `recent_activity`) for related entries and link them with `[[wiki-links]]`. Retrieval relies on tags and links, not folder structure, so this step matters more than where the file lives.
-- Basic Memory entries are informative, not authoritative. Promote important findings to OpenSpec, ADRs, runbooks, or code docs when appropriate.
+- `[[wiki-links]]` resolve by note title, which for non-journal docs is the **filename without extension**. Link an ADR as `[[0002-live-scoreboard-backend]]`, not `[[adr-0002-...]]` and not by path. Wiki-links inside backticks are still parsed as relations — avoid writing `[[example]]` in code spans.
+- Basic Memory entries are informative, not authoritative. Promote important findings to OpenSpec, ADRs, runbooks, or code docs when appropriate. A `[[link]]` to an ADR records a relationship; it does not update the ADR.
+
+Config invariant: `ensure_frontmatter_on_sync` must stay `false` in `~/.basic-memory/config.json`. With it `true`, sync writes `title`/`type`/`permalink` frontmatter into every indexed file, including ADRs. Because these files carry no frontmatter, they have no permalink and cannot be fetched by `memory://` URI — reach them via search or by following a wiki-link to their `file_path`.
