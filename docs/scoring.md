@@ -57,3 +57,19 @@ Confirmed 2026-08-08. These resolve ambiguities in the tables above.
   was 40+ yards (13).
 - **The 40+ yard TD bonus pays every player credited on the play.** A 45-yard TD pass is +1 to
   the QB *and* +1 to the receiver.
+- **"40+ yards" is inclusive.** Confirmed 2026-08-09. A TD play of exactly 40 yards earns the
+  bonus.
+
+## Implementation deviations
+
+The rules above are the league's. These are places where the MVP scoreboard knowingly does not
+implement them, per [ADR 0003](adr/0003-sleeper-as-initial-stat-provider.md). None is a rules
+change.
+
+- **Safety is not scored at all.** Our source cannot confirm the "solo credit only" qualifier, so
+  we omit the 2 points rather than risk awarding them on shared credit.
+- **The 40+ bonus is not applied to defensive or return TDs.** It is applied to passing, rushing,
+  and receiving TDs only.
+- **Forced fumbles are not turnover-qualified.** The 4 points are awarded on any forced fumble and
+  flagged as provisional in the output; the true rule pays only when the fumble results in a
+  turnover.

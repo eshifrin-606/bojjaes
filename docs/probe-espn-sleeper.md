@@ -1,6 +1,13 @@
 # Probe: ESPN unofficial vs. Sleeper
 
-**Status:** Tiers 1, 2, 4 complete (2026-08-08). Tier 3 (freshness) blocked until live games.
+**Status:** Tiers 1, 2, 4 complete (2026-08-08). Tier 3 (freshness) **partial** — cache headers
+measured 2026-08-09 (§3.0); live time-to-appear still blocked until games start.
+Open question 1 (FF/FR turnover qualification) resolved 2026-08-09 — see "Resolved: FF/FR
+turnover qualification" below.
+
+**Outcome: Sleeper chosen** on 2026-08-09, recorded in
+[ADR 0003](adr/0003-sleeper-as-initial-stat-provider.md). This document is now the evidence
+behind that ADR; the ADR is authoritative for what we build.
 
 Settles the open data-source decision in
 [ADR 0002](adr/0002-live-scoreboard-backend.md) for the two free candidates. Scoring rules
@@ -21,8 +28,8 @@ rules that are not computable from box-score aggregates:
 | --- | --- |
 | Bonus: TD play of 40+ yds | Per-player "long" doesn't say whether the long *was* a TD, and can't count a second 40+ TD. Compounded by the clarification that the bonus pays *both* QB and receiver. |
 | Bonus: FG 50+ | Needs per-kick distances. "FG 2/2, long 53" can't distinguish one 50+ make from two. |
-| Forced fumble **that results in turnover** (4) | FF is credited even when the offense recovers it. Raw FF counts overcount. |
-| Fumble recovery **that results in turnover** (2) | Needs confirmation the feed's FR excludes own-team recoveries. |
+| Forced fumble **that results in turnover** (4) | FF is credited even when the offense recovers it. Raw FF counts overcount. **Confirmed 2026-08-09: Sleeper's `idp_ff` is a raw count.** |
+| Fumble recovery **that results in turnover** (2) | Needs confirmation the feed's FR excludes own-team recoveries. **Resolved 2026-08-09: it does.** |
 | Safety, **solo credit only** | Needs to know whether credit was shared. |
 
 **Headline result:** the premise was half wrong. Sleeper pre-computes distance-bucketed bonus
@@ -119,8 +126,51 @@ the semantics the 2026-08-08 clarification confirmed — a 45-yard TD pass pays 
 `idp_ff` and `idp_fum_rec` appear to be **raw counts, not turnover-qualified.** Week 1 shows 20
 players with `idp_ff` and 12 with `idp_fum_rec`, which reads like unqualified FF credit. Our
 rules pay 4 only for an FF *that results in a turnover* and 2 for a recovery *that results in a
-turnover*. **Unverified — flagged as the top open question.** This is the one place ESPN's PBP
-does something Sleeper's aggregates cannot.
+turnover*. This is the one place ESPN's PBP does something Sleeper's aggregates cannot.
+
+### Resolved: FF/FR turnover qualification (2026-08-09)
+
+Validated against nflverse play-by-play for the **full 2025 regular season**, restricted to
+players whose name maps to exactly one Sleeper entry so roster collisions cannot contaminate the
+comparison. Turnover qualification is taken from nflverse `fumble_lost` (for FF) and
+`fumble_recovery_N_team != fumbled_1_team` (for FR).
+
+**`idp_ff` is a raw count — NOT turnover-qualified. Confirmed.** Across 203 unambiguous
+player-weeks carrying an FF event:
+
+| Hypothesis | Agreement |
+| --- | --- |
+| `idp_ff` == all FF events | **201/203 (99%)** |
+| `idp_ff` == turnover-qualified FF only | 104/203 (51%) |
+
+Season totals: **366 forced fumbles, 204 of which produced a turnover.** Paying the 4-point rule
+straight off `idp_ff` overpays **162 forced fumbles a season — 44% of them.** Not an edge case.
+
+**`idp_fum_rec` IS effectively turnover-qualified — the suspicion above was wrong.** It counts
+only recoveries by the non-fumbling team. Across 269 unambiguous player-weeks:
+
+| Hypothesis | Agreement |
+| --- | --- |
+| `idp_fum_rec` == all recoveries | 112/269 (42%) |
+| `idp_fum_rec` == turnover-qualified | 250/269 (93%) |
+| **`idp_fum_rec` + `st_fum_rec` + `def_st_fum_rec` == turnover-qualified** | **268/269 (99.6%)** |
+
+All 19 apparent misses were *undercounts*, not overcounts: special-teams recoveries that Sleeper
+books to `st_fum_rec` / `def_st_fum_rec` rather than the IDP key. Summing the three keys
+reproduces the turnover-qualified set almost exactly. The single residual (K. Kelly, wk 3) looks
+like a player-ID edge case rather than a semantic one.
+
+Own-team recoveries land in the non-IDP `fum_rec` key, which is why the IDP key is clean.
+
+**Consequence: the gap is half the size this probe assumed.** The 2-point recovery rule is
+implementable from Sleeper aggregates today via the three-key sum. Only the 4-point FF rule is
+not — Sleeper cannot express it at any accuracy, because turnover qualification is a property of
+the play, not of the player's stat line.
+
+**Rules question surfaced, not a data question:** wk 14, Troy Dye (LAC) recovered his own team's
+fumble *after an interception return* and Sleeper credited `idp_fum_rec=1`. nflverse's
+`fumble_lost` says that play was not a fumble-turnover — the turnover was the INT. Whether HMFFL
+pays the 2 there needs a ruling; low frequency. Settle alongside open question 2 (`idp_safe`).
 
 ### Documentation quality
 
@@ -131,16 +181,67 @@ should carry little weight in the decision.
 
 ---
 
-## Tier 3 — Freshness — BLOCKED until live games
+## Tier 3 — Freshness — PARTIAL (cache headers measured 2026-08-09; live lag still blocked)
 
-Cannot run on 2026-08-08 (offseason). Protocol for the first live Sunday:
+Time-to-appear cannot be measured in the offseason. But **HTTP cache headers can**, and they
+turned out to carry most of the signal.
 
+### 3.0 Cache-header evidence — measured 2026-08-09 (offseason)
+
+| Endpoint | `cache-control` | Observed |
+| --- | --- | --- |
+| Sleeper `/v1/stats/nfl/regular/2025/{wk}` | `public, s-maxage=3600, stale-while-revalidate=300, stale-if-error=600` | `cf-cache-status: HIT`, `age: 1739` |
+| Sleeper `/projections/nfl/2025/1` | `s-maxage=3600, swr=600` | HIT, `age: 3369` |
+| Sleeper `/v1/state/nfl` | `s-maxage=60, swr=180` | HIT, `age: 51` |
+| ESPN `site.api…/nfl/scoreboard` | **`max-age=8`** | — |
+| ESPN `site.api…/nfl/summary?event=` | **`max-age=1`** | — |
+| ESPN `sports.core.api…/plays?limit=400` | `max-age=900, swr=7200` (Varnish) | — |
+
+**This puts the structural "Sleeper is fresher" inference below in doubt.** Sleeper's stats
+endpoint sits behind Cloudflare with a **one-hour edge TTL**. If that policy holds during live
+games, the aggregate feed can be up to 60 minutes stale — 12× the ~5-minute budget in
+[ADR 0002](adr/0002-live-scoreboard-backend.md) — regardless of how often we poll. ESPN's
+`max-age=1` / `max-age=8` are the values of a genuinely live surface.
+
+Not yet proven, for two reasons: the 3600 was observed on *historical* weeks in the offseason,
+and Sleeper demonstrably tunes TTL per endpoint (`state/nfl` gets 60s), so the origin may emit a
+much shorter `s-maxage` for the in-progress week. Likewise ESPN's `max-age=900` on core plays is
+probably a *completed-game* policy and should be re-measured live.
+
+**This is now the cheapest, highest-value Tier 3 test:** a single `curl -I` against the current
+week during a live game answers it. No polling loop required.
+
+### 3.1 Correction to the protocol below
+
+The protocol originally claimed Sleeper offers no timestamp, so lag could only be measured by
+diffing successive polls. Not quite — the `age` header plus a weak `ETag` gives cache-level
+staleness for free. It does not reveal upstream stat lag, but it **decomposes** the measurement:
+`age` = edge staleness, poll-diffing = the remainder (Sleeper's own aggregation lag).
+
+### 3.2 Upstream context
+
+Sleeper sources NFL data from **Sportradar** (stated in the community catalogue of Sleeper's
+undocumented endpoints, and corroborated by the 99.5% `sportradar_id` coverage found in Tier 4).
+Sportradar's own NFL API documents a **2-second TTL once a game goes `inprogress`**. So the data
+upstream of Sleeper is fast; any observed lag is Sleeper's aggregation layer plus its CDN, not
+the underlying source. That is mildly encouraging for the origin emitting a short TTL in-season.
+
+Third-party "guides" to both APIs (sportsfirst.net, zuplo, sportsapis.dev) assert "real-time
+updates" and "poll every 5–10 minutes" with no evidence and read as generated content — **give
+them zero weight.** The one human anecdote located is a complaint on Sleeper's own forum that
+"scoring and stats updates take much longer than other platforms"; single unverified data point,
+but directionally consistent with the 3600 TTL.
+
+### Protocol for the first live Sunday
+
+- **First, and cheapest:** `curl -I` the current-week Sleeper stats endpoint mid-game and read
+  `s-maxage` / `age` / `cf-cache-status`. Re-measure ESPN core `plays` on an in-progress game.
 - Poll both sources every 60s during a live window; log `fetch_time`, payload, and any upstream
   timestamp / ETag / cache header.
 - Measure **time-to-appear** for scoring plays against a known wall-clock reference. ESPN plays
   carry a `wallclock` field (e.g. `2025-09-05T00:30:57Z`) and a `modified` timestamp — these
-  give a free, precise lag measurement without an external reference. **Sleeper has no
-  equivalent timestamp**, so its lag must be measured by diffing successive polls.
+  give a free, precise lag measurement without an external reference. For Sleeper, subtract the
+  `age` header to separate edge staleness from aggregation lag (see 3.1).
 - Measure **PBP lag separately from box-score lag**.
 - Watch for **stat corrections** (sack reassigned, fumble ruling reversed). Confirm sources
   actually correct rather than freeze.
@@ -155,13 +256,15 @@ Known baseline costs from this probe (offseason, cached):
 | ESPN summary (one game) | 424 KB | — |
 | ESPN core plays (one game, unpaginated) | — | — |
 
-Note the asymmetry: **Sleeper serves the entire league's weekly stats in one request.** ESPN
-requires ~13 game calls (plus ~13 more for PBP) to cover a Sunday slate. That is a real
-freshness and complexity advantage for Sleeper that Tier 3 should quantify.
+Note the call-count asymmetry: **Sleeper serves the entire league's weekly stats in one
+request.** ESPN requires ~13 game calls (plus ~13 more for PBP) to cover a Sunday slate. This is
+a real *complexity* advantage for Sleeper — but per 3.0 it can no longer be assumed to be a
+*freshness* advantage. Fewer round trips does not beat a one-hour edge cache.
 
 ### Findings — Tier 3
 
-_(blocked — rerun when the season starts)_
+Cache-header findings recorded in 3.0. Live time-to-appear measurement still blocked — rerun
+when the season starts.
 
 ---
 
@@ -227,27 +330,56 @@ documentation quality should be **dropped to near-zero weight** (both sources ar
 
 | Option | Verdict |
 | --- | --- |
-| **Sleeper alone** | **Leading candidate.** Covers 19/19 raw stats and 4 of the 5 hard rules from aggregates, one call per week for the whole league, half-sacks correct, full IDP coverage. Single open gap: FF/FR turnover qualification. |
+| **Sleeper alone** | **Leading candidate.** Covers 19/19 raw stats and — after the 2026-08-09 resolution — **4.5 of the 5 hard rules** from aggregates (the FR rule works via the three-key sum), one call per week for the whole league, half-sacks correct, full IDP coverage. Single remaining gap: **the 4-point FF turnover rule**, which it cannot express at all. |
 | ESPN alone | **Viable but more work.** Requires the core PBP endpoint for 5 rules; ~26 calls per slate; typed participants are genuinely good and it is the *only* source that can settle FF-turnover. |
 | Hybrid (Sleeper mapping + ESPN stats) | **Rejected as originally conceived.** `espn_id` at 37% makes the ID bridge unworkable; joining would fall back to fuzzy name+team+position matching, which is exactly the fragility the hybrid was meant to avoid. |
 | Neither — escalate | Not indicated. |
 
-**Chosen:** _(pending — see open questions below and Tier 3)_
+**Chosen: Sleeper, sole provider for the MVP.** Settled 2026-08-09 in
+[ADR 0003](adr/0003-sleeper-as-initial-stat-provider.md), which records the accepted
+inaccuracies (FF overpay shown as provisional; safeties excluded; no 40+ bonus on defensive /
+return TDs) and the deferred freshness gate.
 
-**Leaning:** Sleeper as the primary provider, with the FF/FR turnover question resolved either
-by (a) validating `idp_ff` semantics against nflverse, or (b) accepting a known-wrong edge case
-on two low-frequency rules, or (c) a narrow ESPN PBP supplement used *only* for fumble plays,
-where the join volume is small enough that name matching is tractable.
+Note that ADR 0003 does **not** treat the Tier 3 freshness gate as passed — it accepts the risk
+in order to ship, and keeps "find a fresher Sleeper surface" as the top follow-up. The
+gate-vs-tiebreaker framing below still stands; we have chosen to build against it rather than
+wait for it.
+
+**Freshness caveat added 2026-08-09:** the leaning below assumes Sleeper clears the ~5-minute
+budget. §3.0 shows that assumption is untested and now doubtful — Sleeper's stats endpoint
+carries a one-hour edge TTL in the offseason, while ESPN's live surfaces carry 1–8 seconds. This
+does not change the leaning yet, but it is a **gate**, not a tiebreaker: if the in-season TTL is
+also long, Sleeper-alone is disqualified regardless of its rule coverage.
+
+**Leaning:** Sleeper as the primary provider. Path (a) — validating semantics against nflverse —
+was executed on 2026-08-09 and settled the FR half in Sleeper's favour. What remains for the FF
+half is a choice between (b) accepting a known-wrong result on one rule, which the season numbers
+now price at **162 overpaid forced fumbles a year**, and (c) a narrow ESPN PBP supplement used
+*only* for fumble plays. Option (b) is materially worse than it looked when the gap was still
+unmeasured; (c) stays tractable because the join volume is small — roughly 20 fumble plays a
+week, matched by name+team+position.
 
 ### Open questions
 
-1. **Are Sleeper's `idp_ff` / `idp_fum_rec` turnover-qualified?** Top blocker. Validate against
-   nflverse PBP for a known week.
-2. **Does Sleeper's `idp_safe` reflect solo credit only?** Low frequency, low stakes.
-3. **Sleeper live-update behavior** — the whole Tier 3 question. Does the weekly stats endpoint
-   update mid-game, and at what lag?
-4. Do Sleeper's `*_td_40p` buckets use **40+ inclusive**? Our rule is "40+ yards". Verify a
-   known 40-yard TD lands in the bucket.
+1. ~~**Are Sleeper's `idp_ff` / `idp_fum_rec` turnover-qualified?**~~ **Resolved 2026-08-09** —
+   `idp_ff` is raw (44% overpay); `idp_fum_rec` + `st_fum_rec` + `def_st_fum_rec` is
+   turnover-qualified at 99.6%. See the resolution section above. Successor question: **how do we
+   source the 4-point FF rule** — ESPN PBP supplement, or accept the error?
+2. **Does Sleeper's `idp_safe` reflect solo credit only?** Still open, but **no longer blocking** —
+   ADR 0003 excludes safeties from scoring entirely rather than guess. Answering it would let us
+   re-enable them. Bundle with the Troy Dye recovery-after-INT ruling noted above.
+3. **Sleeper live-update behavior** — the whole Tier 3 question, now sharpened by §3.0 into a
+   single cheap test: **what `s-maxage` does Sleeper serve for the *in-progress* week?** In the
+   offseason it is 3600 (one hour) on historical weeks, which would blow the ~5-minute budget by
+   12×. If the in-season value is equally long, freshness stops being a tiebreaker and becomes a
+   **gate that eliminates Sleeper-alone** — colliding head-on with the leaning below, since
+   Sleeper wins on every other axis. One `curl -I` mid-game settles it.
+4. Do Sleeper's `*_td_40p` buckets use **40+ inclusive**? Our rule is "40+ yards" and was
+   confirmed inclusive on 2026-08-09 (see [scoring.md](scoring.md)). Sleeper's bucket boundary is
+   still unverified — verify a known 40-yard TD lands in the bucket.
+5. **Does Sleeper carry a 40+ distance bucket for defensive / return TDs?** The `*_td_40p` family
+   was only confirmed for pass/rush/rec. ADR 0003 accepts the 1-point underpay for now; if a
+   bucket exists, the gap closes for free.
 
 Promote the outcome into ADR 0002 (or a successor) and journal working notes in Basic Memory
 per CLAUDE.md.

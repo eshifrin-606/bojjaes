@@ -1,6 +1,8 @@
 # ADR: Live Scoreboard Backend (Bojjaes vs. Opponent)
 
-**Status:** Accepted
+**Status:** Accepted. Decision #2 ("Data source: deferred") is superseded by
+[ADR 0003](0003-sleeper-as-initial-stat-provider.md), which selects Sleeper. All other decisions
+here remain in force.
 
 ## Context
 

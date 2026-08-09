@@ -73,8 +73,11 @@ bonus. Both halves of that turned out backwards.
 - [discovery] ESPN's box score **cannot** support the FG 50+ bonus, confirmed empirically:
   Aubrey's 41- and 53-yard makes collapse to `FG 2/2, LONG 53`. Distances only exist in PBP.
 - [cost] Sleeper serves the entire league's weekly stats in **one** ~570 KB / 1.8 s call. ESPN
-  needs ~13 summary calls plus ~13 PBP calls per Sunday slate. Real advantage to Sleeper on both
-  freshness and complexity, to be quantified in Tier 3.
+  needs ~13 summary calls plus ~13 PBP calls per Sunday slate. Real advantage to Sleeper on
+  complexity. **Corrected 2026-08-09: the *freshness* half of this claim does not hold up** —
+  Sleeper's stats endpoint carries a one-hour Cloudflare edge TTL while ESPN's live surfaces
+  carry 1–8 seconds. See
+  [[2026-08-09-sleeper-stats-endpoint-has-1h-edge-ttl-espn-is-seconds]].
 - [open-question] Sleeper's `idp_ff` / `idp_fum_rec` appear to be **raw counts, not
   turnover-qualified**. HMFFL pays 4 only for an FF *that results in a turnover* and 2 for a
   recovery *that results in a turnover*. This is the single gap where ESPN's PBP (via
@@ -95,7 +98,8 @@ cost, or whether we accept a known-wrong edge case on two low-frequency rules.
 
 - relates_to [[2026-07-10-mcp-vs-skills-agents-commands-portability]]
 - supersedes_assumption_in [[0002-live-scoreboard-backend]]
-- blocked_by [[sleeper-idp-ff-turnover-qualification]]
+- narrowed_by [[2026-08-09-sleeper-idp-ff-is-raw-idp-fum-rec-is-turnover-qualified]]
+- narrowed_by [[2026-08-09-sleeper-stats-endpoint-has-1h-edge-ttl-espn-is-seconds]]
 
 ---
 
