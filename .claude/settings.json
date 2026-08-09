@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__basic-memory__search_notes",
+      "mcp__basic-memory__search",
+      "mcp__basic-memory__read_note",
+      "mcp__basic-memory__read_content",
+      "mcp__basic-memory__view_note",
+      "mcp__basic-memory__build_context",
+      "mcp__basic-memory__recent_activity",
+      "mcp__basic-memory__list_directory",
+      "mcp__basic-memory__list_memory_projects",
+      "mcp__basic-memory__fetch"
+    ]
+  }
+}
