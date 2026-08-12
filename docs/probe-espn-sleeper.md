@@ -5,6 +5,11 @@ measured 2026-08-09 (§3.0); live time-to-appear still blocked until games start
 Open question 1 (FF/FR turnover qualification) resolved 2026-08-09 — see "Resolved: FF/FR
 turnover qualification" below.
 
+**Tier 5 (Sleeper GraphQL) added 2026-08-12 — this is the most consequential section in the
+document and it invalidates finding 2.12 and open questions 2, 3 and 5.** Sleeper has an
+undocumented GraphQL API that is uncached and carries full play-by-play. See
+[Tier 5](#tier-5--sleeper-graphql--the-fresh-surface-exists--complete-2026-08-12).
+
 **Outcome: Sleeper chosen** on 2026-08-09, recorded in
 [ADR 0003](adr/0003-sleeper-as-initial-stat-provider.md). This document is now the evidence
 behind that ADR; the ADR is authoritative for what we build.
@@ -114,7 +119,7 @@ One quirk: some `$ref` values come back pointing at the internal host
 | 2.9 | IDP for all defenders or only rostered? | ✅ **All.** Week 1 has `idp_tkl` for 501 players, `idp_sack` for 64, `idp_pass_def` for 111 — full league coverage, not a rostered subset. |
 | 2.10 | Pre-bucketed bonus fields? | ✅ Extensive. 228 distinct stat keys. |
 | 2.11 | **Do the buckets match our thresholds?** | ✅ **Yes — better than expected.** `pass_td_40p`, `rec_td_40p`, `rush_td_40p` exist at exactly our 40+ threshold (50p variants exist too). `fgm_50p`, `fgm_50_59`, `fgm_60p` cover the FG bonus. |
-| 2.12 | Any play-level endpoint? | ❌ None found. Confirms the expectation. |
+| 2.12 | Any play-level endpoint? | ❌ None found on the REST surface. **Superseded 2026-08-12 — see [Tier 5](#tier-5--sleeper-graphql--the-fresh-surface-exists--complete-2026-08-12). Sleeper's GraphQL API has a `plays` query with full PBP.** This row was scoped to `api.sleeper.app/v1/*` and drew a conclusion about Sleeper as a whole; that inference was wrong. |
 
 **2.11 is the finding that reframes the decision.** The prediction was that Sleeper's buckets
 would be 50+ and therefore useless for our 40+ TD bonus. Wrong: Sleeper carries 40+ buckets
@@ -268,6 +273,158 @@ when the season starts.
 
 ---
 
+## Tier 5 — Sleeper GraphQL — the fresh surface exists — COMPLETE (2026-08-12)
+
+Run against ADR 0003's top follow-up: *"investigate whether a fresher Sleeper surface exists."*
+It does, and it is better than the follow-up anticipated — the win is not just freshness, it is
+**play-level data with native Sleeper player IDs.**
+
+Endpoint: `POST https://api.sleeper.app/graphql`, JSON body `{"query": "..."}`. **No
+authentication required** for any query used here. Introspection is enabled, but the schema uses
+snake_case meta-fields (`query_type`, `of_type`, not `queryType`/`ofType`). 240 root query fields;
+most are social/betting/league features irrelevant to us.
+
+### 5.1 The freshness answer — two independent findings
+
+**(a) The REST stats TTL is a function of week recency, not a fixed policy.** ADR 0003's accepted
+risk was built on a 3600 s TTL measured against *historical* weeks. Re-measured 2026-08-12, with
+`/v1/state/nfl` reporting the current week as `pre` / 2026 / week 1:
+
+| Endpoint | `s-maxage` |
+| --- | --- |
+| `/v1/stats/nfl/pre/2026/1` — **current week** | **30** |
+| `/v1/stats/nfl/pre/2026/2`, `/pre/2026/3`, `/regular/2026/{1,9}` — future weeks | 600 |
+| `/v1/stats/nfl/regular/{2024,2025}/*`, `/pre/2025/*`, `/post/2025/1` — completed weeks | 3600 |
+
+The one-hour TTL is a **completed-week** policy. The in-progress week is served at 30 seconds —
+**inside ADR 0002's ~5-minute budget by 10×, not 12× over it.** Caveat: measured while the current
+week still had no data (2026 preseason week 1 games kick off 2026-08-14), so this is a
+current-week reading, not a live-game reading. But emptiness is not the driver — future weeks are
+equally empty and get 600.
+
+**(b) Cache-busting works, and GraphQL is not cached at all.** A random query param on the REST
+stats endpoint returns `cf-cache-status: MISS`, i.e. it reaches origin — so even a long edge TTL
+was always bypassable. And every GraphQL response carries
+`cache-control: max-age=0, private, must-revalidate` with `cf-cache-status: DYNAMIC`. **There is
+no edge cache in front of GraphQL.** The freshness gate is answered three separate ways.
+
+`Stat` and `Play` both expose an `updated_at` field (epoch ms), so served output can carry a real
+data timestamp rather than a fetch timestamp.
+
+### 5.2 The `plays` query — Sleeper has play-by-play
+
+```
+plays(sport, season, season_type, week, game_id, date) -> Play
+Play { play_id sequence time date week season season_type sport game_id provider
+       updated_at metadata:Json play_stats:PlayStat }
+PlayStat { player_id player:Map stats:Map stats_agg:Map }
+```
+
+- **`game_id` is silently ignored.** Passing it still returns the whole week — 2,966 plays across
+  all 16 games for 2025 wk 1. Filter client-side on the returned `game_id`.
+- `metadata` carries `description` (full NFL gamebook text), `play_type`, `possession`, `team`,
+  `opponent`, `yards_gained`, `is_scoring_play`, `quarter_name`, clock, down/distance, penalties.
+- `play_stats[].stats` is the **per-play stat delta**, keyed by the same stat vocabulary as the
+  weekly aggregate, attributed to individual players.
+- `play_stats[].player` embeds the **full player object** — `player_id`, first/last name, team,
+  position. No join against the 14.6 MB player dump, and **no cross-source name matching at all.**
+
+Cost (2025 wk 1, whole week, uncached):
+
+| Query shape | Size | Latency |
+| --- | --- | --- |
+| `plays` with `metadata` + embedded `player` | 4.5 MB | 6.1 s |
+| `plays` with `player_id` + `stats` only | **574 KB** | **1.2 s** |
+| `stats_for_players_in_week` (3 explicit player_ids) | **1.9 KB** | **206 ms** |
+| `weekly_stats` | — | requires non-null `order_by` |
+
+The trimmed `plays` call is the same size as the REST weekly dump (570 KB) while being
+play-level *and* uncached. `stats_for_players_in_week(player_ids: [...])` is the natural primary
+poll for a ~20-starter lineup: 1.9 KB, 200 ms, uncached, with `updated_at`.
+
+### 5.3 ⚠️ `idp_ff` means opposite things in the two feeds
+
+**The single most dangerous finding in this probe.** In `play_stats`, `idp_ff` is attached to the
+**player who fumbled**, not the defender who forced it. Verified on 2025 wk 1, BAL@BUF:
+
+| Feed | Derrick Henry (fumbler, RB BAL) | Ed Oliver (forcer, DT BUF) |
+| --- | --- | --- |
+| REST weekly aggregate | `idp_ff` absent | **`idp_ff` = 1.0** |
+| GraphQL `play_stats` | **`idp_ff` = 1.0** | `idp_ff` absent (only tackle keys) |
+
+Same key, inverted subject. Anything that reuses aggregate-derived parsing logic against the PBP
+feed will credit forced fumbles to the offense. In PBP, read `idp_ff` as *"fumble forced against
+this player."*
+
+### 5.4 The 4-point FF turnover rule is solvable from Sleeper alone
+
+This was ADR 0003's one unfixable gap and the sole reason to keep an ESPN supplement. It closes.
+
+**Turnover qualification:** on an FF play, the fumbler's row carries `fum_lost: 1.0` exactly when
+the fumble was lost to the defense. Across all 20 FF plays in 2025 wk 1, **13 were
+turnover-qualified and all 20 classifications match the gamebook description text** — own-team
+recoveries (J. Hill, K. Gainwell, R. Wilson, D. Maye) and out-of-bounds fumbles (D. Kincaid,
+T. Conklin) correctly read as non-turnovers. 13/20 is consistent with the season-wide 204/366.
+
+**Attributing the FF to the forcer** is the only wrinkle, since PBP does not credit them a stat.
+The forcer's name appears in `metadata.description` as `"forced by E.Oliver"`, and — critically —
+the forcer is almost always already present among that same play's `play_stats` rows under some
+other key (a tackle, a sack). Matching the parsed `F.Lastname` against only *that play's* rows
+resolved **20/20** to a native Sleeper `player_id` (19/20 on first pass; the miss was the parser
+retaining the "II" suffix in "K.Moore II", not an ambiguity). This is a bounded match against
+2–6 candidate rows, not a fuzzy roster-wide join — a categorically easier problem than the
+ESPN↔Sleeper name matching Tier 4 warned about.
+
+Volume is ~20 FF plays per week league-wide.
+
+### 5.5 Open questions 2 and 5 also close
+
+**Safeties (open question 2) — solo credit is decidable per play.** `idp_safe` appears on exactly
+one player's row, alongside `idp_tkl_solo` rather than `idp_tkl_ast`:
+
+- wk 5: `D.Barnes` — `idp_safe: 1, idp_sack: 1, idp_tkl_solo: 1`
+- wk 14: `J.Hines-Allen` — `idp_safe: 1, idp_sack: 1, idp_tkl_solo: 1`
+
+Whatever the *aggregate* `idp_safe` means, PBP shows solo/assisted per play, so the rule is
+implementable. Only 2 instances observed (safeties are rare); confirm on a shared-credit safety
+before fully trusting it.
+
+**40+ yard bonus on defensive / return TDs (open question 5) — return distance is available.**
+Not via `metadata.yards_gained`, which reflects the offensive play (0, −2 on these plays), but via
+per-player return-yardage keys on the scorer's row: `idp_int_ret_yd` (99, 63 observed) and
+`idp_fum_ret_yd` (86). Sleeper's own bonus buckets for these are 50+ only
+(`bonus_def_int_td_50p`, `bonus_def_fum_td_50p`) — the wrong threshold, exactly as originally
+predicted — but the raw return yardage lets us compute our 40+ threshold ourselves.
+
+### 5.6 Other useful GraphQL surfaces
+
+- `scores(sport, season, season_type, week)` — live game state: `status`
+  (`pre_game`/`complete`), and `metadata` with `is_in_progress`, `quarter`, per-quarter scores,
+  `is_over`. Useful for knowing which games to poll.
+- `/schedule/nfl/{season_type}/{season}` (REST) — 48 preseason games with `date`, `game_id`,
+  `status`.
+- `stats_for_players_in_week`, `game_stats`, `season_stats`, `get_player_stats` all return `Stat`.
+
+### 5.7 Caveats
+
+- GraphQL is **more** undocumented than the REST stats endpoint — it is the mobile app's private
+  API. It can change without notice, and its shape (240 root fields, betting/social features)
+  suggests active churn. The ADR 0002 provider interface remains the mitigation.
+- No auth was required for these queries, but many sibling fields are user-scoped. If Sleeper
+  tightens access, the REST weekly dump remains a working fallback at 30 s current-week TTL.
+- Rate limiting was not probed. Do not poll `plays` (574 KB uncached, no edge cache absorbing
+  load) aggressively without testing tolerance first.
+- **All PBP validation used completed 2025 games.** Live behavior of `plays` — whether plays
+  appear promptly mid-game and how `updated_at` moves — is still unmeasured.
+
+### 5.8 Live test window opens 2026-08-14
+
+`/v1/state/nfl` reports the 2026 **preseason** as current. The 2026 preseason week 1 slate is
+2026-08-14/15/16. This is a live measurement window **three weeks before the regular season**, and
+Tier 3's remaining protocol can run against it rather than waiting for September.
+
+---
+
 ## Tier 4 — Player-ID mapping — COMPLETE
 
 The Sleeper player dump is 12,217 entries / 8,616 Active.
@@ -345,7 +502,15 @@ in order to ship, and keeps "find a fresher Sleeper surface" as the top follow-u
 gate-vs-tiebreaker framing below still stands; we have chosen to build against it rather than
 wait for it.
 
-**Freshness caveat added 2026-08-09:** the leaning below assumes Sleeper clears the ~5-minute
+**Amendment 2026-08-12 — Sleeper-alone is now unambiguously the right call.** Tier 5 removes every
+reservation recorded below. Freshness: gate passed (uncached GraphQL; 30 s current-week REST TTL).
+FF turnover rule: solvable from Sleeper PBP, so the ESPN supplement in option (c) is unnecessary.
+ID mapping: PBP embeds native Sleeper player objects, so the Tier 4 name-matching hazards do not
+apply to the PBP path at all. Both remaining ADR 0003 accepted inaccuracies (safeties, 40+
+defensive/return TDs) also close. ESPN is no longer needed even as a verification tool for FF —
+though it remains available as an independent oracle if we want one.
+
+**Freshness caveat added 2026-08-09 (superseded by the amendment above):** the leaning below assumes Sleeper clears the ~5-minute
 budget. §3.0 shows that assumption is untested and now doubtful — Sleeper's stats endpoint
 carries a one-hour edge TTL in the offseason, while ESPN's live surfaces carry 1–8 seconds. This
 does not change the leaning yet, but it is a **gate**, not a tiebreaker: if the in-season TTL is
@@ -365,21 +530,25 @@ week, matched by name+team+position.
    `idp_ff` is raw (44% overpay); `idp_fum_rec` + `st_fum_rec` + `def_st_fum_rec` is
    turnover-qualified at 99.6%. See the resolution section above. Successor question: **how do we
    source the 4-point FF rule** — ESPN PBP supplement, or accept the error?
-2. **Does Sleeper's `idp_safe` reflect solo credit only?** Still open, but **no longer blocking** —
-   ADR 0003 excludes safeties from scoring entirely rather than guess. Answering it would let us
-   re-enable them. Bundle with the Troy Dye recovery-after-INT ruling noted above.
-3. **Sleeper live-update behavior** — the whole Tier 3 question, now sharpened by §3.0 into a
-   single cheap test: **what `s-maxage` does Sleeper serve for the *in-progress* week?** In the
-   offseason it is 3600 (one hour) on historical weeks, which would blow the ~5-minute budget by
-   12×. If the in-season value is equally long, freshness stops being a tiebreaker and becomes a
-   **gate that eliminates Sleeper-alone** — colliding head-on with the leaning below, since
-   Sleeper wins on every other axis. One `curl -I` mid-game settles it.
+2. ~~**Does Sleeper's `idp_safe` reflect solo credit only?**~~ **Effectively resolved 2026-08-12
+   (Tier 5.5)** — GraphQL PBP shows `idp_safe` alongside `idp_tkl_solo` vs `idp_tkl_ast` on the
+   play, so solo credit is decidable regardless of aggregate semantics. Safeties can be
+   re-enabled. Only 2 instances observed; confirm against a shared-credit safety. The Troy Dye
+   recovery-after-INT ruling is still open and is a **league rules** question, not a data one.
+3. ~~**Sleeper live-update behavior / in-progress-week `s-maxage`**~~ **Resolved 2026-08-12
+   (Tier 5.1)** — the 3600 s TTL is a *completed-week* policy. The current week is served at
+   `s-maxage=30`; cache-busting reaches origin; and GraphQL is uncached entirely
+   (`max-age=0`, `DYNAMIC`). The gate is passed. Residual: live-game behavior of `plays` and
+   `updated_at` is unmeasured — test on the 2026-08-14 preseason slate (Tier 5.8).
 4. Do Sleeper's `*_td_40p` buckets use **40+ inclusive**? Our rule is "40+ yards" and was
    confirmed inclusive on 2026-08-09 (see [scoring.md](scoring.md)). Sleeper's bucket boundary is
-   still unverified — verify a known 40-yard TD lands in the bucket.
-5. **Does Sleeper carry a 40+ distance bucket for defensive / return TDs?** The `*_td_40p` family
-   was only confirmed for pass/rush/rec. ADR 0003 accepts the 1-point underpay for now; if a
-   bucket exists, the gap closes for free.
+   still unverified — verify a known 40-yard TD lands in the bucket. **Now lower-stakes:** PBP
+   gives raw per-play yardage, so we can compute the threshold ourselves and skip the buckets.
+5. ~~**Does Sleeper carry a 40+ distance bucket for defensive / return TDs?**~~ **Resolved
+   2026-08-12 (Tier 5.5)** — no 40+ bucket (only `bonus_def_int_td_50p` / `bonus_def_fum_td_50p`,
+   the wrong threshold), but `idp_int_ret_yd` / `idp_fum_ret_yd` on the scorer's PBP row give raw
+   return distance, so the 40+ bonus is computable.
+6. **New:** does the GraphQL API rate-limit or require auth under sustained polling? Unprobed.
 
 Promote the outcome into ADR 0002 (or a successor) and journal working notes in Basic Memory
 per CLAUDE.md.
