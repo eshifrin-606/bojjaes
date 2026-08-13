@@ -1,5 +1,18 @@
 # CLAUDE.md
 
+## Coding guidelines for CLAUDE
+
+#### TDD
+
+Use TDD red-green loop when writing code
+
+#### Comments
+Where possible, code should speek for itself. Comments should fill in the gaps. 
+Don't over comment because it makes code harder to read and comments easier to miss if comments are "empty" or meaningless
+
+Delete comments that restate what the code says. Keep comments that explain why — a non-obvious constraint, a domain
+rule, a deliberate tradeoff. Prefer renaming a function over documenting a bad name.
+
 ## Basic Memory (dev journal)
 
 Per [docs/adr/0001-dev-journal-tool.md](docs/adr/0001-dev-journal-tool.md), this project uses Basic Memory (MCP) to journal cross-feature engineering discoveries, failed approaches, and open questions that don't belong to a specific OpenSpec change.
