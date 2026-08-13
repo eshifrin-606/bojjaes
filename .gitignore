@@ -1,0 +1,19 @@
+# Compiled binaries
+# `go build ./cmd/server` drops ./server in the repo root
+/server
+/bin/
+
+# Test and coverage artifacts
+*.test
+coverage.out
+coverage.html
+
+# Local secrets / environment overrides
+.env
+.env.local
+
+# Claude Code per-machine settings (.claude/settings.json stays tracked)
+.claude/settings.local.json
+
+# macOS
+.DS_Store

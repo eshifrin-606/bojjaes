@@ -80,7 +80,7 @@ Passing, kicking, defensive, and two-point-conversion scoring are out of scope f
 #### Scenario: Fumble lost
 
 - **WHEN** a player has 85 receiving yards and 1 fumble lost
-- **THEN** the score is 0.5 — a 3-point yardage award, no increment, minus 3
+- **THEN** the score is 0 — a 3-point yardage award, no increment, minus 3
 
 ### Requirement: Score endpoint
 
