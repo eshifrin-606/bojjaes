@@ -1,33 +1,35 @@
 package score
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
-// ScoreResponse is the served shape: the stats we read and the points they
-// earned, together. Points are computed here rather than stored on StatLine,
-// so the two can never disagree.
+// ScoreResponse echoes the stats alongside the total, so a wrong player or a
+// bad week shows in the output instead of hiding behind a plausible number.
 type ScoreResponse struct {
 	Stats  StatLine `json:"stats"`
 	Points float64  `json:"points"`
 }
 
-// FetchFunc produces the stat line to score. It takes no arguments because
-// player, season, and week are hardcoded for this walking skeleton; widening
-// it is the next change's job.
-type FetchFunc func() (StatLine, error)
+// FetchFunc produces the stat line to score. It takes only a context because
+// player, season, and week are still constants.
+type FetchFunc func(ctx context.Context) (StatLine, error)
 
-// Handler scores whatever fetch returns and serves it as JSON, echoing the
-// stats alongside the total so a wrong player or a bad week is visible in the
-// output rather than hidden behind a plausible-looking number.
+// Handler scores whatever fetch returns and serves it as JSON.
 func Handler(fetch FetchFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		stats, err := fetch()
+		stats, err := fetch(r.Context())
 		if err != nil {
-			// Never fall through to scoring a zero value here: 0.0 served
-			// with a 200 is indistinguishable from a real scoreless week.
+			// The response body reaches whoever made the request; the log
+			// reaches whoever is running the server.
+			log.Printf("fetching stats: %v", err)
+
+			// Never fall through to scoring the zero value: 0.0 served with a
+			// 200 is indistinguishable from a real scoreless week.
 			http.Error(w, fmt.Sprintf("scoring failed: %v", err), http.StatusBadGateway)
 			return
 		}
@@ -39,8 +41,8 @@ func Handler(fetch FetchFunc) http.Handler {
 
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			// Headers are already out; nothing to do but say so on stdout.
-			fmt.Printf("encoding response: %v\n", err)
+			// Headers are already out; nothing to do but say so in the log.
+			log.Printf("encoding response: %v", err)
 		}
 	})
 }

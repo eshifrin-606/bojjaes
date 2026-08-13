@@ -1,11 +1,10 @@
 package score
 
 // StatLine is one player's NFL production for one week, in provider-neutral
-// terms. Only the rushing/receiving stats the calculator consumes are
-// represented; Sleeper's stat keys stay behind FetchStatLine.
+// terms. Sleeper's stat keys stay behind FetchStatLine.
 //
-// Fantasy points are deliberately not a field here — see Points. A stat line
-// cannot hold a stale total if it never holds a total.
+// Fantasy points are deliberately absent: a stat line cannot carry a stale
+// total if it never carries a total. See Points.
 type StatLine struct {
 	PlayerID string `json:"player_id"`
 	Season   int    `json:"season"`
