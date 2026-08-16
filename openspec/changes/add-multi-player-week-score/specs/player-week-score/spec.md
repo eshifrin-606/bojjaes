@@ -42,6 +42,33 @@ Transport, status, and decode failures against the Sleeper request remain errors
 - **WHEN** the Sleeper request fails, returns a non-200 status, or returns an undecodable body
 - **THEN** the transform returns an error naming the season and week
 
+### Requirement: Score endpoint
+
+The system SHALL expose an HTTP endpoint that, when hit, fetches and scores the hardcoded target player and
+week (Puka Nacua, 2025 regular season, week 14), prints the resulting score to standard output, and returns the
+stat line and score as JSON.
+
+This endpoint SHALL treat an absent player as a failure, even though the transform now reports absence as an
+ordinary result. The endpoint performs that conversion itself. Its target is a settled historical week in which
+the player is known to be present, so absence there indicates the fetch or the transform is broken rather than
+that the player has no stats.
+
+#### Scenario: Successful scoring request
+
+- **WHEN** the endpoint is requested and Sleeper returns the weekly payload
+- **THEN** the server responds 200 with JSON containing the player's stats and fantasy points, and writes the
+  score to standard output
+
+#### Scenario: Upstream failure
+
+- **WHEN** the Sleeper request fails or returns a non-200 status
+- **THEN** the server responds with a 5xx status and an error message rather than a zero score
+
+#### Scenario: Target player absent from a settled week
+
+- **WHEN** the target player is absent from the weekly payload
+- **THEN** the endpoint responds 502 rather than reporting the player as unscored
+
 ## ADDED Requirements
 
 ### Requirement: Multi-player score endpoint
@@ -49,6 +76,11 @@ Transport, status, and decode failures against the Sleeper request remain errors
 The system SHALL expose an HTTP endpoint that accepts a season, a week, and a list of player IDs in the request
 body, and returns the stats and fantasy points for each of those players from a single fetch of the weekly
 stats aggregate.
+
+The season and week SHALL be interpreted as the regular season. The request carries no season type, and the
+endpoint SHALL NOT fetch preseason or postseason stats. Preseason is useful only for exercising the server
+against a live in-progress week during local manual testing; the league itself scores regular-season play, so
+selecting a season type is deferred rather than specified here.
 
 The response SHALL separate scored players from absent ones. Fantasy points SHALL appear only alongside the
 stat line they were computed from, so that no absent player can carry a point total. Absent players SHALL be
@@ -102,6 +134,11 @@ or week is missing or outside the range of a plausible NFL season and week, when
 or when the player ID list holds more than 26 entries.
 
 The cap of 26 is the league's maximum roster size, which comfortably exceeds two full starting lineups.
+
+#### Scenario: Body is not valid JSON
+
+- **WHEN** the request body cannot be decoded as JSON
+- **THEN** the server responds 4xx and does not contact the stat provider
 
 #### Scenario: Season or week missing or out of range
 

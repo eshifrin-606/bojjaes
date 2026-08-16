@@ -52,7 +52,9 @@ The full probe, its reproduction script, and the findings that outlive this chan
 - Deduplicating repeated player IDs. Repeats are echoed once per occurrence; the caller is trusted.
 - Scoring positions beyond rushing and receiving. Passing, kicking, defense, and two-point conversions remain
   out of scope, so a quarterback's ID still yields a confidently incomplete number.
-- Preseason and postseason. Only the `regular` season type is fetched.
+- Preseason and postseason. Only the `regular` season type is fetched, and the request carries no season type.
+  A preseason option is worth adding later purely to exercise the server against a live in-progress week during
+  local manual testing — the league scores regular-season play, so the real application never needs it.
 
 ## Decisions
 
@@ -124,7 +126,9 @@ regardless of how many IDs are requested.
 ### `GET /score` becomes a smoke test over the batch path
 
 It keeps its current `ScoreResponse` shape and its 502-on-absence behavior, now implemented as a one-element
-batch call for Nacua in 2025 week 14. That week is settled history where he is known present, so absence there
+batch call for Nacua in 2025 week 14. The 502 moves into the endpoint: the transform no longer errors on
+absence, so this handler checks whether its one player landed in the absent bucket and fails the request
+itself. That week is settled history where he is known present, so absence there
 signals a real breakage and the 502 keeps its diagnostic value. Retaining it costs a handful of lines and keeps
 the documented `curl` in `README.md` working.
 

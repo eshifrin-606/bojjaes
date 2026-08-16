@@ -45,7 +45,8 @@ Follow the red-green TDD loop from `CLAUDE.md`: write the failing test first, th
 ## 5. Documentation
 
 - [ ] 5.1 Add a `POST /scores` curl example to `README.md` alongside the existing one, showing a response with a
-      populated `no_stats` bucket and noting that absence does not identify its own cause
+      populated `no_stats` bucket, noting that absence does not identify its own cause, and noting that season
+      and week are read as regular season
 - [ ] 5.2 Amend `openspec/specs/player-week-score/spec.md` in place with the delta, and note in its Purpose that
       scores are only meaningful for rushing/receiving production
 - [ ] 5.3 Run `go vet ./...` and the full test suite

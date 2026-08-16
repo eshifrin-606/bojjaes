@@ -35,8 +35,9 @@ player index can, and buying that disambiguation is not worth its cost yet.
   IDs (the league maximum roster size).
 
 Out of scope, deliberately: player-ID validation against the Sleeper player index, subdividing `no_stats` into
-root causes, deduplicating repeated IDs, and scoring positions beyond rushing/receiving. Each is a clean
-follow-on that does not change this contract's shape.
+root causes, deduplicating repeated IDs, scoring positions beyond rushing/receiving, and selecting a season
+type. The endpoint is regular-season only; preseason would serve local manual testing against a live
+in-progress week, not the league. Each is a clean follow-on that does not change this contract's shape.
 
 ## Capabilities
 
@@ -47,7 +48,9 @@ None. This extends the existing scoring capability rather than introducing a sep
 ### Modified Capabilities
 
 - `player-week-score`: the Sleeper transform no longer errors on an absent player; the capability gains a batch
-  scoring endpoint alongside the existing fixed-target endpoint; request validation limits are specified.
+  scoring endpoint alongside the existing fixed-target endpoint; the batch endpoint is specified as regular
+  season only; request validation limits are specified; the fixed-target endpoint is respecified to convert an
+  absent player into a 502 itself, since the transform no longer does.
 
 ## Impact
 
