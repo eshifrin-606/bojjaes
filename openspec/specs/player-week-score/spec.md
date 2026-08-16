@@ -12,13 +12,22 @@ specified.
 ### Requirement: Weekly stat line domain object
 
 The system SHALL represent a single player's single-week NFL production in a provider-neutral
-domain object holding raw stat counts and the fantasy points computed from them. Vendor stat keys
-(`rec_yd`, `rush_td_40p`, …) SHALL NOT appear outside the Sleeper transform.
+domain object holding raw stat counts. Vendor stat keys (`rec_yd`, `rush_td_40p`, …) SHALL NOT
+appear outside the Sleeper transform.
 
-#### Scenario: Stat line carries stats and points together
+Fantasy points SHALL NOT be a field of the domain object. Points are computed from a stat line on
+demand, so a stat line cannot carry a total that has drifted from the stats it was derived from.
+Points appear in responses, paired with the stat line they were computed from.
 
-- **WHEN** a stat line has been scored
-- **THEN** it exposes both the underlying NFL stats and the resulting fantasy point total
+#### Scenario: Stat line carries stats only
+
+- **WHEN** a stat line is inspected
+- **THEN** it exposes the underlying NFL stats and carries no fantasy point total
+
+#### Scenario: Points are paired with the stats they came from
+
+- **WHEN** a fantasy point total is served
+- **THEN** it appears alongside the stat line it was computed from
 
 #### Scenario: Absent stats read as zero
 
