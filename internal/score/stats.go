@@ -1,7 +1,7 @@
 package score
 
 // StatLine is one player's NFL production for one week, in provider-neutral
-// terms. Sleeper's stat keys stay behind FetchStatLine.
+// terms. Sleeper's stat keys stay behind statLineFrom.
 //
 // Fantasy points are deliberately absent: a stat line cannot carry a stale
 // total if it never carries a total. See Points.

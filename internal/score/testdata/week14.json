@@ -77,5 +77,15 @@
     "pts_ppr": 11.1,
     "rec_yd": 31.0,
     "bonus_fd_rb": 3.0
+  },
+  "7591": {
+    "gp": 1.0,
+    "gms_active": 1.0,
+    "pos_rank_std": 78.0,
+    "pos_rank_half_ppr": 78.0,
+    "pos_rank_ppr": 79.0,
+    "tm_off_snp": 70.0,
+    "tm_def_snp": 62.0,
+    "tm_st_snp": 31.0
   }
 }
