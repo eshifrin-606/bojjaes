@@ -10,14 +10,28 @@ type StatLine struct {
 	Season   int    `json:"season"`
 	Week     int    `json:"week"`
 
+	PassYd int `json:"pass_yd"`
 	RushYd int `json:"rush_yd"`
 	RecYd  int `json:"rec_yd"`
 
+	PassTD int `json:"pass_td"`
 	RushTD int `json:"rush_td"`
 	RecTD  int `json:"rec_td"`
 
-	// TD40Plus counts rushing and receiving touchdowns of 40+ yards.
+	// TD40Plus counts passing, rushing, and receiving touchdowns of 40+ yards.
+	// The bonus is a flat point regardless of how the touchdown was scored, so
+	// the flavors are summed rather than tracked apart. One long touchdown pass
+	// pays both the passer and the receiver, on their own stat lines.
 	TD40Plus int `json:"td_40_plus"`
+
+	// TwoPt counts two-point conversions in every flavor — thrown, run in, or
+	// caught. The rules pay 2 for each regardless, and one conversion play
+	// pays both the passer and the scorer on their separate stat lines.
+	TwoPt int `json:"two_pt"`
+
+	// PassInt is interceptions thrown, never interceptions caught — the
+	// penalty belongs to the passer.
+	PassInt int `json:"pass_int"`
 
 	FumLost int `json:"fum_lost"`
 }

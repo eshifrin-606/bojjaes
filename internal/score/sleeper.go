@@ -82,11 +82,19 @@ func statLineFrom(weekly map[string]map[string]float64, playerID string, season,
 		PlayerID: playerID,
 		Season:   season,
 		Week:     week,
+		// pass_yd, not pass_rush_yd: the latter is passing plus rushing yards
+		// combined, and it appears on running backs too.
+		PassYd:   stat("pass_yd"),
 		RushYd:   stat("rush_yd"),
 		RecYd:    stat("rec_yd"),
+		PassTD:   stat("pass_td"),
 		RushTD:   stat("rush_td"),
 		RecTD:    stat("rec_td"),
-		TD40Plus: stat("rush_td_40p") + stat("rec_td_40p"),
-		FumLost:  stat("fum_lost"),
+		TD40Plus: stat("pass_td_40p") + stat("rush_td_40p") + stat("rec_td_40p"),
+		TwoPt:    stat("pass_2pt") + stat("rush_2pt") + stat("rec_2pt"),
+		// pass_int is interceptions thrown. Sleeper's int and idp_int are
+		// interceptions caught, which belong to a defender.
+		PassInt: stat("pass_int"),
+		FumLost: stat("fum_lost"),
 	}, true
 }

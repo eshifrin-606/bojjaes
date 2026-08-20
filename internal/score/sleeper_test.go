@@ -49,8 +49,8 @@ func TestFetchWeekly(t *testing.T) {
 		t.Fatalf("fetchWeekly: %v", err)
 	}
 
-	if got := len(weekly); got != 3 {
-		t.Errorf("decoded %d entries, want 3", got)
+	if got := len(weekly); got != 6 {
+		t.Errorf("decoded %d entries, want 6", got)
 	}
 	if got := weekly[NacuaPlayerID]["rec_yd"]; got != 167 {
 		t.Errorf("weekly[%s][rec_yd] = %v, want 167", NacuaPlayerID, got)
@@ -205,6 +205,53 @@ func TestStatLineFrom(t *testing.T) {
 			},
 		},
 		{
+			// Dak Prescott's real week 14 line, the fixture's quarterback:
+			// 376 yards, a 42-yard TD pass, 2 picks and a conversion pass.
+			// Every new passing key is asserted here at a non-zero value, so a
+			// mistyped key cannot pass by reading zero.
+			name:     "quarterback passing stats are mapped",
+			playerID: "3294",
+			want: StatLine{
+				PlayerID: "3294",
+				Season:   2025,
+				Week:     14,
+				PassYd:   376,
+				PassTD:   1,
+				TD40Plus: 1,
+				PassInt:  2,
+				TwoPt:    1,
+				RushYd:   14,
+			},
+		},
+		{
+			// Kyle Monangai ran a conversion in; his entry carries rush_2pt
+			// and none of the passing keys.
+			name:     "a rushed two-point conversion is mapped",
+			playerID: "12534",
+			want: StatLine{
+				PlayerID: "12534",
+				Season:   2025,
+				Week:     14,
+				RushYd:   57,
+				TwoPt:    1,
+			},
+		},
+		{
+			// Jake Ferguson caught the conversion Prescott threw — the same
+			// Dallas play, which the rules pay to both players. Both stat
+			// lines carry a TwoPt of 1.
+			name:     "a caught two-point conversion is mapped",
+			playerID: "8110",
+			want: StatLine{
+				PlayerID: "8110",
+				Season:   2025,
+				Week:     14,
+				RecYd:    58,
+				TwoPt:    1,
+				FumLost:  1,
+			},
+		},
+		{
 			// A player who dressed and recorded nothing carries an entry with
 			// no mapped stat keys. That is a real 0.0, not an absence.
 			name:     "player present but scoreless",
@@ -225,6 +272,74 @@ func TestStatLineFrom(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("statLineFrom = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+// pass_rush_yd is passing plus rushing yards combined, not passing yards.
+// It appears on non-quarterbacks — the fixture's running backs both carry it
+// — so mapping it in place of pass_yd would hand a rusher a passing bonus
+// they never earned. It produces a plausible number rather than a failure,
+// which is why it gets its own test.
+func TestStatLineFromIgnoresCombinedPassRushYards(t *testing.T) {
+	weekly := fixtureWeekly(t)
+
+	for _, playerID := range []string{"8138", "12534"} {
+		got, ok := statLineFrom(weekly, playerID, 2025, 14)
+		if !ok {
+			t.Fatalf("statLineFrom reported player %q absent", playerID)
+		}
+		if raw := weekly[playerID]["pass_rush_yd"]; raw == 0 {
+			t.Fatalf("fixture player %q no longer carries pass_rush_yd; this test guards nothing", playerID)
+		}
+		if got.PassYd != 0 {
+			t.Errorf("player %q: PassYd = %d, want 0; pass_rush_yd is not passing yardage", playerID, got.PassYd)
+		}
+	}
+}
+
+// Scoring the fixture end to end covers the mapping and the rules together:
+// a key mapped to the wrong field can still satisfy statLineFrom's own tests
+// if its expectation was written to match.
+func TestFixtureScores(t *testing.T) {
+	weekly := fixtureWeekly(t)
+
+	tests := []struct {
+		name     string
+		playerID string
+		want     float64
+	}{
+		{
+			// 376 passing yards pays 3 + three 50-yard increments = 6; the TD
+			// pass 6; its 42 yards 1; the conversion 2; the 2 picks -6. The
+			// 14 rushing yards clear no threshold.
+			name:     "quarterback",
+			playerID: "3294",
+			want:     9,
+		},
+		{
+			// 58 receiving yards clear no threshold, so the caught conversion
+			// and the lost fumble are the whole line.
+			name:     "tight end with a conversion and a fumble",
+			playerID: "8110",
+			want:     -1,
+		},
+		{
+			name:     "running back with a rushed conversion",
+			playerID: "12534",
+			want:     2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			line, ok := statLineFrom(weekly, tt.playerID, 2025, 14)
+			if !ok {
+				t.Fatalf("statLineFrom reported player %q absent", tt.playerID)
+			}
+			if got := Points(line); got != tt.want {
+				t.Errorf("Points(%+v) = %v, want %v", line, got, tt.want)
 			}
 		})
 	}

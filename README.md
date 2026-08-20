@@ -26,8 +26,9 @@ curl -s localhost:8080/score | jq
 {
   "stats": {
     "player_id": "9493", "season": 2025, "week": 14,
-    "rush_yd": 0, "rec_yd": 167, "rush_td": 0, "rec_td": 2,
-    "td_40_plus": 0, "fum_lost": 0
+    "pass_yd": 0, "rush_yd": 0, "rec_yd": 167,
+    "pass_td": 0, "rush_td": 0, "rec_td": 2,
+    "td_40_plus": 0, "two_pt": 0, "pass_int": 0, "fum_lost": 0
   },
   "points": 19
 }
@@ -51,16 +52,18 @@ curl -s localhost:8080/scores -d '{
     {
       "stats": {
         "player_id": "9493", "season": 2025, "week": 14,
-        "rush_yd": 0, "rec_yd": 167, "rush_td": 0, "rec_td": 2,
-        "td_40_plus": 0, "fum_lost": 0
+        "pass_yd": 0, "rush_yd": 0, "rec_yd": 167,
+        "pass_td": 0, "rush_td": 0, "rec_td": 2,
+        "td_40_plus": 0, "two_pt": 0, "pass_int": 0, "fum_lost": 0
       },
       "points": 19
     },
     {
       "stats": {
         "player_id": "8138", "season": 2025, "week": 14,
-        "rush_yd": 80, "rec_yd": 31, "rush_td": 0, "rec_td": 0,
-        "td_40_plus": 0, "fum_lost": 1
+        "pass_yd": 0, "rush_yd": 80, "rec_yd": 31,
+        "pass_td": 0, "rush_td": 0, "rec_td": 0,
+        "td_40_plus": 0, "two_pt": 0, "pass_int": 0, "fum_lost": 1
       },
       "points": 0.5
     }
