@@ -13,12 +13,20 @@ import (
 )
 
 // countingFixtureServer serves testdata/week14.json and records how many
-// upstream requests the handler actually made.
+// upstream requests the handler actually made. The response is labelled from
+// the request rather than the fetch, so a handler asking upstream for the
+// wrong week would still look right — the path assertion is what catches it.
 func countingFixtureServer(t *testing.T, requests *int) *httptest.Server {
 	t.Helper()
 
+	const wantPath = "/v1/stats/nfl/regular/2025/14"
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		*requests++
+		if r.URL.Path != wantPath {
+			t.Errorf("requested %q, want %q", r.URL.Path, wantPath)
+			http.NotFound(w, r)
+			return
+		}
 		http.ServeFile(w, r, "testdata/week14.json")
 	}))
 	t.Cleanup(srv.Close)
@@ -148,6 +156,25 @@ func TestBatchHandlerAccountsForEveryRequestedID(t *testing.T) {
 	}
 	if len(got.NoStats) != 2 {
 		t.Errorf("no_stats = %v, want the repeated absent ID twice", got.NoStats)
+	}
+}
+
+// The season and week in the response are echoed from the request, so only
+// the upstream path shows which week was actually fetched.
+func TestBatchHandlerFetchesTheRequestedWeek(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	postScores(t, BatchHandler(srv.URL), `{"season":2023,"week":7,"player_ids":["9493"]}`)
+
+	const wantPath = "/v1/stats/nfl/regular/2023/7"
+	if gotPath != wantPath {
+		t.Errorf("fetched %q, want %q", gotPath, wantPath)
 	}
 }
 

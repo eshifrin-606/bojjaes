@@ -27,7 +27,8 @@ server=${SERVER:-http://localhost:8080}
 
 ids=()
 names=()
-while IFS=, read -r id name; do
+# A players file whose final line has no newline still yields that record.
+while IFS=, read -r id name || [[ -n $id ]]; do
 	id=${id// /}
 	[[ -z $id || $id == \#* ]] && continue
 	ids+=("$id")
