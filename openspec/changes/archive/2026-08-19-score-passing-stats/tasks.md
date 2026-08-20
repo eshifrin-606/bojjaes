@@ -72,7 +72,7 @@ Follow the red-green TDD loop from `CLAUDE.md`: write the failing test first, th
 ## 8. Documentation
 
 - [x] 8.1 Update the sample response in `README.md` to include the new stat fields
-- [ ] 8.2 When syncing the delta spec, narrow the capability's Purpose statement: passing and two-point
+- [x] 8.2 When syncing the delta spec, narrow the capability's Purpose statement: passing and two-point
       conversions are no longer unspecified categories, and a quarterback's score is no longer
       incomplete — kicking and defense remain
 - [x] 8.3 Run `scripts/scores.sh 2025 14 scripts/bojjaes.csv` against a local server and confirm Josh
