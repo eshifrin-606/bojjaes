@@ -33,9 +33,84 @@ func TestPoints(t *testing.T) {
 			want: 4.0,
 		},
 		{
+			name: "below the passing yardage threshold",
+			in:   StatLine{PassYd: 199},
+			want: 0,
+		},
+		{
+			name: "passing increments are floored",
+			in:   StatLine{PassYd: 249},
+			want: 3,
+		},
+		{
+			name: "passing increment earned exactly at the boundary",
+			in:   StatLine{PassYd: 250},
+			want: 4,
+		},
+		{
+			// 299 and 300 together pin the floor at the second increment, not
+			// only at the first.
+			name: "passing increment is floored past the first increment",
+			in:   StatLine{PassYd: 299},
+			want: 4,
+		},
+		{
+			name: "second passing increment",
+			in:   StatLine{PassYd: 300},
+			want: 5,
+		},
+		{
+			// The two awards are earned on different plays, so they stack.
+			// Folding passing into yardageBonus's max() would pay 4 here.
+			name: "passing and rushing yardage awards both apply",
+			in:   StatLine{PassYd: 250, RushYd: 80},
+			want: 7,
+		},
+		{
+			// The same line as "yardage bonus awarded once" above, restated to
+			// pin that a line with no passing production is untouched by the
+			// passing terms.
+			name: "no passing production is unaffected",
+			in:   StatLine{RushYd: 80, RecYd: 80},
+			want: 6.0,
+		},
+		{
 			name: "touchdowns and the long-touchdown bonus",
 			in:   StatLine{RecTD: 2, TD40Plus: 1},
 			want: 13,
+		},
+		{
+			name: "passing touchdowns",
+			in:   StatLine{PassTD: 2},
+			want: 12,
+		},
+		{
+			name: "long passing touchdown bonus",
+			in:   StatLine{PassTD: 2, TD40Plus: 1},
+			want: 13,
+		},
+		{
+			name: "interceptions thrown",
+			in:   StatLine{PassInt: 3},
+			want: -9,
+		},
+		{
+			// -9 above could also be produced by a missing penalty landing on
+			// some other zero; this pins the penalty to a distinguishable
+			// number against a scoring line.
+			name: "interception against a scoring line",
+			in:   StatLine{PassYd: 250, PassInt: 1},
+			want: 1,
+		},
+		{
+			name: "two-point conversion",
+			in:   StatLine{TwoPt: 1},
+			want: 2,
+		},
+		{
+			name: "two conversions in a week",
+			in:   StatLine{TwoPt: 2},
+			want: 4,
 		},
 		{
 			name: "fumble lost",

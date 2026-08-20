@@ -1,4 +1,12 @@
-# Scoring
+# How the HMFFL League Is Scored
+
+These are the league's rules, as the commissioners run them — the spreadsheet's behavior, not this
+codebase's. They are the target the code aims at, and they stay true whether or not any of it is
+built yet.
+
+For what the code actually scores today, read
+[`openspec/specs/player-week-score/spec.md`](../openspec/specs/player-week-score/spec.md). Where the
+two disagree, this document is right and the code is behind.
 
 ### Passing
 
@@ -60,16 +68,18 @@ Confirmed 2026-08-08. These resolve ambiguities in the tables above.
 - **"40+ yards" is inclusive.** Confirmed 2026-08-09. A TD play of exactly 40 yards earns the
   bonus.
 
-## Implementation deviations
+## Planned implementation deviations
 
-The rules above are the league's. These are places where the MVP scoreboard knowingly does not
-implement them, per [ADR 0003](adr/0003-sleeper-as-initial-stat-provider.md). None is a rules
-change.
+**None of these is implemented yet** — they describe how the MVP scoreboard will knowingly diverge
+from the rules above once it scores the categories in question, per
+[ADR 0003](adr/0003-sleeper-as-initial-stat-provider.md). All three concern defensive and kicking
+scoring, which the code does not implement at all as of 2026-08-19. None is a rules change; the rules
+above stand regardless.
 
-- **Safety is not scored at all.** Our source cannot confirm the "solo credit only" qualifier, so
-  we omit the 2 points rather than risk awarding them on shared credit.
-- **The 40+ bonus is not applied to defensive or return TDs.** It is applied to passing, rushing,
-  and receiving TDs only.
-- **Forced fumbles are not turnover-qualified.** The 4 points are awarded on any forced fumble and
-  flagged as provisional in the output; the true rule pays only when the fumble results in a
-  turnover.
+- **Safety will not be scored at all.** Our source cannot confirm the "solo credit only" qualifier,
+  so we will omit the 2 points rather than risk awarding them on shared credit.
+- **The 40+ bonus will not be applied to defensive or return TDs.** It will apply to passing,
+  rushing, and receiving TDs only.
+- **Forced fumbles will not be turnover-qualified.** The 4 points will be awarded on any forced
+  fumble and flagged as provisional in the output; the true rule pays only when the fumble results in
+  a turnover.
