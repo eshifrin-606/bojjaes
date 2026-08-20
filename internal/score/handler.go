@@ -46,15 +46,13 @@ func newBatchResponse(season, week int) BatchResponse {
 	}
 }
 
-// Handler scores the fixed target player and week, as a smoke test over the
-// same path POST /scores takes.
+// fetchTarget scores the target player as a one-element batch, turning his
+// absence into an error the endpoint reports as a 502.
 //
 // Absence is a failure here, though the transform now reports it as an
 // ordinary result: the target is a settled historical week in which the player
 // is known present, so a missing entry means the fetch or the transform broke.
-// The conversion lives in this handler because only this endpoint can make it.
-// fetchTarget scores the target player as a one-element batch, turning his
-// absence into an error the endpoint reports as a 502.
+// The conversion lives here because only this endpoint can make it.
 func fetchTarget(ctx context.Context, baseURL string) (StatLine, error) {
 	weekly, err := fetchWeekly(ctx, baseURL, TargetSeason, TargetWeek)
 	if err != nil {
@@ -69,6 +67,8 @@ func fetchTarget(ctx context.Context, baseURL string) (StatLine, error) {
 	return stats, nil
 }
 
+// Handler scores the fixed target player and week, as a smoke test over the
+// same path POST /scores takes.
 func Handler(baseURL string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		stats, err := fetchTarget(r.Context(), baseURL)
