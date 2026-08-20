@@ -15,14 +15,63 @@ type ScoreResponse struct {
 	Points float64  `json:"points"`
 }
 
-// FetchFunc produces the stat line to score. It takes only a context because
-// player, season, and week are still constants.
-type FetchFunc func(ctx context.Context) (StatLine, error)
+// BatchRequest asks for one season and week. The season type is implicitly
+// regular — the league scores regular-season play.
+type BatchRequest struct {
+	Season    int      `json:"season"`
+	Week      int      `json:"week"`
+	PlayerIDs []string `json:"player_ids"`
+}
 
-// Handler scores whatever fetch returns and serves it as JSON.
-func Handler(fetch FetchFunc) http.Handler {
+// BatchResponse splits scored players from players the payload had nothing for.
+//
+// The split is what keeps the two apart: NoStats is a list of IDs with nowhere
+// to put a number, so an absent player cannot acquire a point total. Points
+// carries no omitempty for the mirror-image reason — a real 0.0 must survive.
+type BatchResponse struct {
+	Season  int             `json:"season"`
+	Week    int             `json:"week"`
+	Scores  []ScoreResponse `json:"scores"`
+	NoStats []string        `json:"no_stats"`
+}
+
+// newBatchResponse starts both buckets non-nil so they serialize as `[]`
+// rather than `null`.
+func newBatchResponse(season, week int) BatchResponse {
+	return BatchResponse{
+		Season:  season,
+		Week:    week,
+		Scores:  []ScoreResponse{},
+		NoStats: []string{},
+	}
+}
+
+// fetchTarget scores the target player as a one-element batch, turning his
+// absence into an error the endpoint reports as a 502.
+//
+// Absence is a failure here, though the transform now reports it as an
+// ordinary result: the target is a settled historical week in which the player
+// is known present, so a missing entry means the fetch or the transform broke.
+// The conversion lives here because only this endpoint can make it.
+func fetchTarget(ctx context.Context, baseURL string) (StatLine, error) {
+	weekly, err := fetchWeekly(ctx, baseURL, TargetSeason, TargetWeek)
+	if err != nil {
+		return StatLine{}, err
+	}
+
+	stats, ok := statLineFrom(weekly, NacuaPlayerID, TargetSeason, TargetWeek)
+	if !ok {
+		return StatLine{}, fmt.Errorf("player %s not found in sleeper stats for season %d week %d",
+			NacuaPlayerID, TargetSeason, TargetWeek)
+	}
+	return stats, nil
+}
+
+// Handler scores the fixed target player and week, as a smoke test over the
+// same path POST /scores takes.
+func Handler(baseURL string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		stats, err := fetch(r.Context())
+		stats, err := fetchTarget(r.Context(), baseURL)
 		if err != nil {
 			// The response body reaches whoever made the request; the log
 			// reaches whoever is running the server.

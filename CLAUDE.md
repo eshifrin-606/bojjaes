@@ -2,9 +2,22 @@
 
 ## Coding guidelines for CLAUDE
 
-#### TDD
+#### Test-Driven Development
 
-Use TDD red-green loop when writing code
+Use a strict TDD red-green loop when writing or changing code.
+
+For each behavior:
+1. Write the smallest test that expresses one specific expected behavior.
+2. Run it and confirm it fails for the expected behavioral reason.
+3. Make the smallest good production-code change that makes the test pass.
+4. Run the test and confirm it passes.
+5. Add or modify a test to expose the next unimplemented behavior, and repeat.
+
+Be meticulous about the red-green loop. A test failing only because production code or symbols do not exist yet, followed by implementing everything and seeing the test pass, is generally not sufficient TDD coverage of a feature. Prefer multiple incremental red-green iterations that independently establish confidence in the important behaviors, edge cases, and branches being developed.
+
+Let the TDD loop guide implementation design when useful: start with a small behavioral test, implement only what that test requires, then use the next failing test to drive the next design decision.
+
+When implementing an OpenSpec change, derive these incremental test cases from the specification's behaviors and scenarios rather than attempting to implement the entire spec before testing.
 
 #### Comments
 Where possible, code should speek for itself. Comments should fill in the gaps. 
