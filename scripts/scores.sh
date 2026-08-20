@@ -41,7 +41,8 @@ request=$(jq -n --argjson season "$season" --argjson week "$week" \
 	'$ARGS.positional as $ids | {season: $season, week: $week, player_ids: $ids}' \
 	--args "${ids[@]}")
 
-response=$(curl -sS --fail-with-body -X POST "$server/scores" -d "$request") || {
+response=$(curl -sS --fail-with-body -X POST "$server/scores" \
+	-H 'Content-Type: application/json' -d "$request") || {
 	echo "request to $server/scores failed: $response" >&2
 	exit 1
 }
