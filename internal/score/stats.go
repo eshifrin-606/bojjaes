@@ -44,4 +44,8 @@ type StatLine struct {
 	FGMade int `json:"fg_made"`
 
 	XPMade int `json:"xp_made"`
+
+	// FG50Plus counts the FGMade kicks that were from 50+ yards, paying a
+	// bonus point on top of them under the same Misc clause as TD40Plus.
+	FG50Plus int `json:"fg_50_plus"`
 }

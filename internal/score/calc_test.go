@@ -144,6 +144,13 @@ func TestPoints(t *testing.T) {
 			want: 4,
 		},
 		{
+			// FG50Plus is a bonus counter, not a second kind of kick: the long
+			// one is counted in FGMade too, so this pays 3 + 3 + 1.
+			name: "long field goal bonus",
+			in:   StatLine{FGMade: 2, FG50Plus: 1},
+			want: 7,
+		},
+		{
 			name: "fumble lost",
 			in:   StatLine{RecYd: 85, FumLost: 1},
 			want: 0,
