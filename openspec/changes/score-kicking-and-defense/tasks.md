@@ -42,8 +42,10 @@ delta spec's scenarios. Do not implement a later group's stats to make an earlie
 - [ ] 4.3 Test: an interception caught and returned for a touchdown scores 12. Should pass from
       3.2 and 4.2 together; it asserts the two rules compose as `docs/scoring.md` says.
 - [ ] 4.4 Test: a receiver with 40 receiving yards and a punt-return touchdown is paid 6 for the
-      return. Fails — return touchdowns are unmapped. Add `ReturnTD` to the same term.
-- [ ] 4.5 Test: the 40+ yard bonus still applies to a 40+ receiving touchdown. Regression guard on
+      return. Add the bare `ReturnTD` field so the failure is a wrong number rather than a build
+      error; leave it out of the term.
+- [ ] 4.5 Add `ReturnTD` to the same 6-point touchdown term. Confirm green.
+- [ ] 4.6 Test: the 40+ yard bonus still applies to a 40+ receiving touchdown. Regression guard on
       the existing offensive path.
 
 ## 5. Assert the deliberate exclusions
