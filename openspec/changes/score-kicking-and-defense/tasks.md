@@ -21,8 +21,6 @@ delta spec's scenarios. Do not implement a later group's stats to make an earlie
 - [x] 2.3 Test: 4 extra points made scores 4. Fails. Add `XPMade` and its `1 ×` term.
 - [x] 2.4 Test: 2 field goals, one from 50+, scores 7. Fails — the bonus is unimplemented. Add
       `FG50Plus` and its `1 ×` bonus term.
-- [ ] 2.5 Test: 1 field goal made alongside 2 missed field goals and a missed extra point scores 3.
-      Should pass without new production code; it asserts that misses were never given a term.
 
 ## 3. Defensive points
 
@@ -136,3 +134,14 @@ very field the exclusion is meant to prevent. They are asserted at the payload l
         and defensive scoring "are not yet specified". Archiving applies the requirement deltas but
         does not rewrite Purpose prose, so it needs an explicit edit.
 - [ ] 8.4 Run `go test ./...` and `go build ./...` clean.
+
+## 9. Deferred
+
+- [ ] 9.1 Test: 1 field goal made alongside 2 missed field goals and a missed extra point scores 3,
+      asserting that misses were never given a term. Moved here from 2.5, unresolved: it was written
+      as a calculator test, but `StatLine` has no missed-kick field and the design forbids adding
+      one (`design.md`, "Exclusions are asserted by test, not just omitted") — so there is no input
+      a calc test can set to express "missed 2". It is the same category as the forced-fumble and
+      safety exclusions, which section 5 pushes to 6.12 as transform tests over the payload's
+      `fgmiss` / `xpmiss` keys. Decide the level before writing it; the kicking requirement's
+      "Misses are not penalised" scenario is unasserted until then.
