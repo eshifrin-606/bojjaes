@@ -42,4 +42,6 @@ type StatLine struct {
 	// FGMade carries no distance: the league pays a flat rate per field goal,
 	// and the 50+ bonus is counted separately.
 	FGMade int `json:"fg_made"`
+
+	XPMade int `json:"xp_made"`
 }
