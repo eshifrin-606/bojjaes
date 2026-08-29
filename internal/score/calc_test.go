@@ -158,6 +158,14 @@ func TestPoints(t *testing.T) {
 			want: 12,
 		},
 		{
+			// Read against "interceptions thrown" above, which is the same
+			// count on the other field: crossing the two terms would turn
+			// that -9 into 18 and this 18 into -9.
+			name: "three interceptions caught",
+			in:   StatLine{IntCaught: 3},
+			want: 18,
+		},
+		{
 			name: "fumble lost",
 			in:   StatLine{RecYd: 85, FumLost: 1},
 			want: 0,
