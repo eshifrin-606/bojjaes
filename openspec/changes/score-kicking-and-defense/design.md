@@ -117,10 +117,12 @@ A rule that is deliberately unscored is indistinguishable from one that was forg
 something says so. Forced fumbles, safeties, and the defensive 40+ bonus each get a test asserting
 they contribute **zero**, so removing the exclusion later breaks a test that explains why it existed.
 
-These sit at two different levels, and the level matters. The defensive 40+ bonus is a *calculator*
-test: both stats it needs already reach `StatLine`, and the excluded thing is a term. Forced fumbles
-and safeties are *transform* tests, because neither stat reaches `StatLine` at all — writing them
-against the calculator would require adding the very field the exclusion exists to prevent.
+All three are *transform* tests. Forced fumbles and safeties reach no `StatLine` field at all, so
+writing them against the calculator would require adding the very field the exclusion exists to
+prevent. The defensive 40+ bonus looked like a calculator test — both `IntCaught` and `DefTD` reach
+the stat line — but the excluded thing is not a term: `Points` adds `TD40Plus` unconditionally, and
+what withholds the bonus is that nothing populates `TD40Plus` from a defensive play. Asserting that
+needs a distance the stat line does not carry, which is the play-by-play data this change excludes.
 
 ## Risks / Trade-offs
 

@@ -53,13 +53,22 @@ delta spec's scenarios. Do not implement a later group's stats to make an earlie
 These should pass without production changes. They exist so that a later contributor who removes an
 exclusion breaks a test that explains why it was there.
 
-The forced-fumble and safety exclusions are **not** calculator tests. Neither stat reaches
-`StatLine` at all, so there is no field to set — a calc test for them could only exist by adding the
-very field the exclusion is meant to prevent. They are asserted at the payload level in 6.12.
+**None of the three exclusions is a calculator test.** Forced fumbles and safeties reach no
+`StatLine` field at all, so a calc test for them could only exist by adding the very field the
+exclusion is meant to prevent. The 40+ bonus on defensive and return touchdowns is the same shape
+once you try to write it: `StatLine` carries no return distance — that needs the play-by-play data
+this change does not introduce (`proposal.md`), because the aggregate reports return yardage only as
+a weekly sum with no distance attributable to the scoring play (`spec.md`, "Scoring rules excluded
+at the aggregate stage"). All three are asserted at the payload level in 6.12.
 
-- [ ] 5.1 Test: an interception returned 63 yards for a touchdown scores 12, not 13 — no 40+ bonus
-      on defensive touchdowns at this stage. This one *is* a calc test: both stats it needs
-      (`IntCaught`, `DefTD`) exist, and the excluded thing is a term rather than a field.
+- [x] 5.1 Both halves of the "interception returned 63 yards for a touchdown scores 12, not 13"
+      scenario are already covered, and neither is a new calc test. The scoring half is the `pick
+      six` case from 4.3, which is the only form the scenario takes as calculator input once the
+      unexpressible 63 yards is dropped — writing it again under another name would duplicate it.
+      The exclusion half belongs to 6.12, whose payload carries `idp_int_ret_yd` and
+      `idp_fum_ret_yd` and asserts they score 0 and reach no stat-line field. `Points` adds
+      `TD40Plus` unconditionally; what keeps a defensive touchdown from earning the bonus is that
+      nothing ever populates `TD40Plus` from a defensive play, which only the transform can assert.
 
 ## 6. Transform: map the new stats
 
