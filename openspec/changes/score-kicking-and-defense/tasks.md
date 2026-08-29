@@ -7,10 +7,12 @@ delta spec's scenarios. Do not implement a later group's stats to make an earlie
 - [x] 1.1 Test: a stat line crediting half a sack scores 1.5. Fails — no sack stat exists.
 - [x] 1.2 Add a fractional `Sack float64` field to `StatLine` and a `3 × Sack` term to `Points`.
       Confirm green.
-- [ ] 1.3 Test: 1.5 sacks scores 4.5, and 2 sacks scores 6. Confirm the award is proportional
+- [x] 1.3 Test: 1.5 sacks scores 4.5, and 2 sacks scores 6. Confirm the award is proportional
       rather than tabulated, and that no rounding was introduced.
-- [ ] 1.4 Test: a stat line with no sacks is unaffected — the score is exactly what the existing
-      rules produce. Guards against a stray constant in the new term.
+- [x] 1.4 Test: a stat line with no sacks is unaffected — the score is exactly what the existing
+      rules produce. Guards against a stray constant in the new term. No new test was needed: the
+      20 pre-existing cases all carry `Sack: 0`, and a mutation to `3*s.Sack + 1` fails every one
+      of them.
 
 ## 2. Kicking points
 

@@ -120,6 +120,18 @@ func TestPoints(t *testing.T) {
 			want: 1.5,
 		},
 		{
+			// Not the half-sack case doubled: 1.5 pays its proportional share
+			// rather than being tabulated up or down to a whole sack.
+			name: "one and a half sacks",
+			in:   StatLine{Sack: 1.5},
+			want: 4.5,
+		},
+		{
+			name: "two sacks",
+			in:   StatLine{Sack: 2},
+			want: 6,
+		},
+		{
 			name: "fumble lost",
 			in:   StatLine{RecYd: 85, FumLost: 1},
 			want: 0,
