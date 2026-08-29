@@ -16,8 +16,8 @@ delta spec's scenarios. Do not implement a later group's stats to make an earlie
 
 ## 2. Kicking points
 
-- [ ] 2.1 Test: 3 field goals made, none from 50+, scores 9. Fails — no field goal stat.
-- [ ] 2.2 Add `FGMade` and its `3 ×` term. Confirm green, and confirm distance affects nothing.
+- [x] 2.1 Test: 3 field goals made, none from 50+, scores 9. Fails — no field goal stat.
+- [x] 2.2 Add `FGMade` and its `3 ×` term. Confirm green, and confirm distance affects nothing.
 - [ ] 2.3 Test: 4 extra points made scores 4. Fails. Add `XPMade` and its `1 ×` term.
 - [ ] 2.4 Test: 2 field goals, one from 50+, scores 7. Fails — the bonus is unimplemented. Add
       `FG50Plus` and its `1 ×` bonus term.

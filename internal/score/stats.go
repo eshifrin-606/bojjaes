@@ -38,4 +38,8 @@ type StatLine struct {
 	// Sack is credited in half-sack granularity, so it is fractional where
 	// every other count is whole.
 	Sack float64 `json:"sack"`
+
+	// FGMade carries no distance: the league pays a flat rate per field goal,
+	// and the 50+ bonus is counted separately.
+	FGMade int `json:"fg_made"`
 }

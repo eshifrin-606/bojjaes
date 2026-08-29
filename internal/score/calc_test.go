@@ -132,6 +132,18 @@ func TestPoints(t *testing.T) {
 			want: 6,
 		},
 		{
+			// The three kicks are of differing distances; the league pays a
+			// flat rate, so only the count reaches the stat line.
+			name: "field goals pay a flat rate",
+			in:   StatLine{FGMade: 3},
+			want: 9,
+		},
+		{
+			name: "extra points",
+			in:   StatLine{XPMade: 4},
+			want: 4,
+		},
+		{
 			name: "fumble lost",
 			in:   StatLine{RecYd: 85, FumLost: 1},
 			want: 0,
