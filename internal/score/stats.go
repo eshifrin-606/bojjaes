@@ -18,6 +18,15 @@ type StatLine struct {
 	RushTD int `json:"rush_td"`
 	RecTD  int `json:"rec_td"`
 
+	// DefTD and ReturnTD are touchdowns of a different flavor, not a
+	// different rule: the league's "TD scored" award is unqualified, so they
+	// are paid by the same term as the offensive ones.
+	DefTD int `json:"def_td"`
+
+	// ReturnTD covers both kick and punt returns; the rules do not tell them
+	// apart.
+	ReturnTD int `json:"return_td"`
+
 	// TD40Plus counts passing, rushing, and receiving touchdowns of 40+ yards.
 	// The bonus is a flat point regardless of how the touchdown was scored, so
 	// the flavors are summed rather than tracked apart. One long touchdown pass

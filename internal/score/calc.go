@@ -9,7 +9,7 @@ package score
 func Points(s StatLine) float64 {
 	pts := yardageBonus(s)
 	pts += thresholdBonus(s.PassYd, 200, 50, 1)
-	pts += 6 * float64(s.PassTD+s.RushTD+s.RecTD)
+	pts += 6 * float64(s.PassTD+s.RushTD+s.RecTD+s.DefTD+s.ReturnTD)
 	pts += float64(s.TD40Plus)
 	pts += 2 * float64(s.TwoPt)
 	pts += 3 * s.Sack

@@ -171,6 +171,32 @@ func TestPoints(t *testing.T) {
 			want: 2,
 		},
 		{
+			name: "defensive touchdown",
+			in:   StatLine{DefTD: 1},
+			want: 6,
+		},
+		{
+			// A pick-six is two awards on one play, not a special case: 6 for
+			// the interception and 6 for the touchdown.
+			name: "pick six",
+			in:   StatLine{IntCaught: 1, DefTD: 1},
+			want: 12,
+		},
+		{
+			// The 40 receiving yards clear no threshold, so the whole 6 is the
+			// return. An offensive player is paid for it on the same terms.
+			name: "punt return touchdown",
+			in:   StatLine{RecYd: 40, ReturnTD: 1},
+			want: 6,
+		},
+		{
+			// The touchdown term grew to five flavors; the 40+ bonus still
+			// rides on top of an offensive one.
+			name: "long receiving touchdown still earns the bonus",
+			in:   StatLine{RecTD: 1, TD40Plus: 1},
+			want: 7,
+		},
+		{
 			name: "fumble lost",
 			in:   StatLine{RecYd: 85, FumLost: 1},
 			want: 0,

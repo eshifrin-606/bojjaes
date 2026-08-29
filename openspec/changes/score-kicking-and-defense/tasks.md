@@ -35,17 +35,17 @@ delta spec's scenarios. Do not implement a later group's stats to make an earlie
 
 ## 4. Finish the unqualified touchdown rule
 
-- [ ] 4.1 Test: a defensive touchdown alone scores 6. Fails — the touchdown term covers only
+- [x] 4.1 Test: a defensive touchdown alone scores 6. Fails — the touchdown term covers only
       passing, rushing, and receiving.
-- [ ] 4.2 Add `DefTD` to the existing 6-point touchdown term rather than a new term, keeping the
+- [x] 4.2 Add `DefTD` to the existing 6-point touchdown term rather than a new term, keeping the
       rule in one place. Confirm green.
-- [ ] 4.3 Test: an interception caught and returned for a touchdown scores 12. Should pass from
+- [x] 4.3 Test: an interception caught and returned for a touchdown scores 12. Should pass from
       3.2 and 4.2 together; it asserts the two rules compose as `docs/scoring.md` says.
-- [ ] 4.4 Test: a receiver with 40 receiving yards and a punt-return touchdown is paid 6 for the
+- [x] 4.4 Test: a receiver with 40 receiving yards and a punt-return touchdown is paid 6 for the
       return. Add the bare `ReturnTD` field so the failure is a wrong number rather than a build
       error; leave it out of the term.
-- [ ] 4.5 Add `ReturnTD` to the same 6-point touchdown term. Confirm green.
-- [ ] 4.6 Test: the 40+ yard bonus still applies to a 40+ receiving touchdown. Regression guard on
+- [x] 4.5 Add `ReturnTD` to the same 6-point touchdown term. Confirm green.
+- [x] 4.6 Test: the 40+ yard bonus still applies to a 40+ receiving touchdown. Regression guard on
       the existing offensive path.
 
 ## 5. Assert the deliberate exclusions
