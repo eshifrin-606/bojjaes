@@ -166,6 +166,11 @@ func TestPoints(t *testing.T) {
 			want: 18,
 		},
 		{
+			name: "fumble recovery",
+			in:   StatLine{FumRec: 1},
+			want: 2,
+		},
+		{
 			name: "fumble lost",
 			in:   StatLine{RecYd: 85, FumLost: 1},
 			want: 0,

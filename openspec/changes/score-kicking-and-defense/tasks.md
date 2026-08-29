@@ -29,9 +29,9 @@ delta spec's scenarios. Do not implement a later group's stats to make an earlie
 - [x] 3.2 Add `IntCaught` and its `6 ×` term. Confirm green.
 - [x] 3.3 Test: a stat line carrying 3 interceptions *thrown* still scores -9, and a stat line
       carrying 3 interceptions *caught* scores 18. Confirms the two stats did not get crossed.
-- [ ] 3.4 Test: 1 fumble recovery resulting in a turnover scores 2. Add the bare `FumRec` field so
+- [x] 3.4 Test: 1 fumble recovery resulting in a turnover scores 2. Add the bare `FumRec` field so
       the failure is a wrong number rather than a build error; no term yet.
-- [ ] 3.5 Add the `2 × FumRec` term. Confirm green.
+- [x] 3.5 Add the `2 × FumRec` term. Confirm green.
 
 ## 4. Finish the unqualified touchdown rule
 

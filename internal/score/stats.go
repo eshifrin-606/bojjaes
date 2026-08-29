@@ -40,6 +40,14 @@ type StatLine struct {
 
 	FumLost int `json:"fum_lost"`
 
+	// FumRec counts only recoveries that resulted in a turnover — an
+	// own-team recovery is not one, and pays nothing. The provider has no
+	// single turnover-qualified key; see the transform for how it is built.
+	//
+	// The tag deliberately avoids `fum_rec`, which is Sleeper's key for the
+	// own-team recoveries this field excludes.
+	FumRec int `json:"fum_rec_turnover"`
+
 	// Sack is credited in half-sack granularity, so it is fractional where
 	// every other count is whole.
 	Sack float64 `json:"sack"`
