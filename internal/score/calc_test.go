@@ -113,6 +113,13 @@ func TestPoints(t *testing.T) {
 			want: 4,
 		},
 		{
+			// Half-sack credit is the first fractional stat; 1.5 pins that it
+			// is scaled rather than rounded to a whole sack either way.
+			name: "half a sack",
+			in:   StatLine{Sack: 0.5},
+			want: 1.5,
+		},
+		{
 			name: "fumble lost",
 			in:   StatLine{RecYd: 85, FumLost: 1},
 			want: 0,

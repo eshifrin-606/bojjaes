@@ -34,4 +34,8 @@ type StatLine struct {
 	PassInt int `json:"pass_int"`
 
 	FumLost int `json:"fum_lost"`
+
+	// Sack is credited in half-sack granularity, so it is fractional where
+	// every other count is whole.
+	Sack float64 `json:"sack"`
 }

@@ -12,6 +12,7 @@ func Points(s StatLine) float64 {
 	pts += 6 * float64(s.PassTD+s.RushTD+s.RecTD)
 	pts += float64(s.TD40Plus)
 	pts += 2 * float64(s.TwoPt)
+	pts += 3 * s.Sack
 	pts -= 3 * float64(s.PassInt+s.FumLost)
 	return pts
 }
