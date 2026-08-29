@@ -151,6 +151,13 @@ func TestPoints(t *testing.T) {
 			want: 7,
 		},
 		{
+			// IntCaught is the defender's 6, not the passer's -3: PassInt on
+			// the same line would score -6 rather than 12.
+			name: "interceptions caught",
+			in:   StatLine{IntCaught: 2},
+			want: 12,
+		},
+		{
 			name: "fumble lost",
 			in:   StatLine{RecYd: 85, FumLost: 1},
 			want: 0,

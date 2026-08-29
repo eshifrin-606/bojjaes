@@ -33,6 +33,11 @@ type StatLine struct {
 	// penalty belongs to the passer.
 	PassInt int `json:"pass_int"`
 
+	// IntCaught is the defender's side of the same play, and pays 6. It is
+	// deliberately a separate field from PassInt: one play fills one of them
+	// on each of two players' stat lines.
+	IntCaught int `json:"int_caught"`
+
 	FumLost int `json:"fum_lost"`
 
 	// Sack is credited in half-sack granularity, so it is fractional where

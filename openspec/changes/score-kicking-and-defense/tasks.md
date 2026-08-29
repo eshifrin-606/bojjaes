@@ -24,9 +24,9 @@ delta spec's scenarios. Do not implement a later group's stats to make an earlie
 
 ## 3. Defensive points
 
-- [ ] 3.1 Test: 2 interceptions caught scores 12. Fails — interceptions caught do not exist, and
+- [x] 3.1 Test: 2 interceptions caught scores 12. Fails — interceptions caught do not exist, and
       must not be confused with `PassInt`, which is a -3 penalty.
-- [ ] 3.2 Add `IntCaught` and its `6 ×` term. Confirm green.
+- [x] 3.2 Add `IntCaught` and its `6 ×` term. Confirm green.
 - [ ] 3.3 Test: a stat line carrying 3 interceptions *thrown* still scores -9, and a stat line
       carrying 3 interceptions *caught* scores 18. Confirms the two stats did not get crossed.
 - [ ] 3.4 Test: 1 fumble recovery resulting in a turnover scores 2. Fails. Add `FumRec` and its
