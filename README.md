@@ -104,6 +104,8 @@ scripts/scores.sh 2025 14  # another
 
 ```
 season 2025 week 14
+
+STARTERS
 Amon-Ra St. Brown        3.5
 Puka Nacua               19
 Luther Burden III        0
@@ -113,22 +115,37 @@ Josh Allen               31
 Harrison Butker          4
 Odafe Oweh               3
 Derrick Harmon           no stats
+TOTAL                    72.5
+
+BENCH
 ```
 
 ```bash
 scripts/scores.sh <season> <week> [players-file]
 ```
 
-The players file defaults to `scripts/bojjaes.csv` — one `id,name` per line,
-blank lines and `#` comments skipped, output in file order. Names are local
-labels the server never sees, so a wrong name pairs silently with the right
-stats. `SERVER=http://host:port` points the script somewhere other than
-`localhost:8080`.
+The players file defaults to `scripts/2025-wk14/bojjaes.csv` — one `id,name`
+per line, blank lines and `#` comments skipped, output in file order within each
+section. Names are local labels the server never sees, so a wrong name pairs
+silently with the right stats. `SERVER=http://host:port` points the script
+somewhere other than `localhost:8080`.
+
+The **first nine records are the starters** and the rest are the bench. That is
+positional only: the file carries no position column, so nothing checks that
+rows 1-9 form a legal lineup, and reordering two lines changes who starts. The
+file *is* the lineup card. The `BENCH` heading prints even when nothing follows
+the ninth record, as it does for every roster file in this repo today.
+
+`TOTAL` sums the starters only. Bench players are scored and printed — useful
+for "should I have started him" — but never totalled, since bench points count
+for nothing.
 
 A player the server put in `no_stats` prints `no stats`, which is not the same
 as a real `0` — see the `no_stats` caveat above for why the difference matters.
-Server errors exit non-zero with the server's message rather than printing a
-partial roster.
+Such a starter contributes nothing to `TOTAL`, and `TOTAL` carries no marker
+saying so: the `no stats` line sits directly above it. In the example above,
+`72.5` is eight players, not nine. Server errors exit non-zero with the
+server's message rather than printing a partial roster.
 
 Tests and compile check:
 

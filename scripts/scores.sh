@@ -3,11 +3,18 @@
 # Score a roster for one season and week against a locally running server.
 #
 #   go run ./cmd/server
-#   scripts/scores.sh 2025 14 [bojjaes.csv]
+#   scripts/scores.sh 2025 14 [2025-wk14/bojjaes.csv]
 #
 # The players file is "id,name" per line; the name is local labeling only — the
-# server never sees it, so a wrong name pairs silently with the wrong stats.
+# server never sees it, so a wrong name pairs silently with the wrong stats. Its
+# first nine records are printed as the starting lineup and totalled; the rest
+# are printed as bench and are not.
 set -euo pipefail
+
+# Starters are the first records in the file, in file order. Nothing validates
+# that they form a legal lineup — the file carries no positions, so the roster
+# file is the lineup card and reordering two lines changes the total.
+lineup_size=9
 
 usage() {
 	echo "usage: $(basename "$0") <season> <week> [players-file]" >&2
@@ -19,7 +26,7 @@ usage() {
 
 season=$1
 week=$2
-players_file=${3:-"$(dirname "$0")/bojjaes.csv"}
+players_file=${3:-"$(dirname "$0")/2025-wk14/bojjaes.csv"}
 server=${SERVER:-http://localhost:8080}
 
 [[ $season =~ ^[0-9]+$ && $week =~ ^[0-9]+$ ]] || usage
@@ -47,11 +54,34 @@ response=$(curl -sS --fail-with-body -X POST "$server/scores" \
 	exit 1
 }
 
+# A player the server has no stats for is not a zero — see README.
+points_for() {
+	jq -r --arg id "$1" \
+		'first(.scores[] | select(.stats.player_id == $id) | .points) // "no stats"' \
+		<<<"$response"
+}
+
+print_players() {
+	local i
+	for ((i = $1; i < $2 && i < ${#ids[@]}; i++)); do
+		printf '%-24s %s\n' "${names[$i]}" "$(points_for "${ids[$i]}")"
+	done
+}
+
 echo "$(jq -r '"season \(.season) week \(.week)"' <<<"$response")"
 
-for i in "${!ids[@]}"; do
-	points=$(jq -r --arg id "${ids[$i]}" \
-		'first(.scores[] | select(.stats.player_id == $id) | .points) // "no stats"' \
-		<<<"$response")
-	printf '%-24s %s\n' "${names[$i]}" "$points"
-done
+echo
+echo "STARTERS"
+print_players 0 "$lineup_size"
+
+# Starters the server had no stats for contribute nothing. The total carries no
+# marker for them: their "no stats" lines sit directly above it.
+total=$(jq -r '$ARGS.positional as $ids
+	| [.scores[] | select(.stats.player_id | IN($ids[])) | .points]
+	| add // 0' \
+	--args "${ids[@]:0:$lineup_size}" <<<"$response")
+printf '%-24s %s\n' "TOTAL" "$total"
+
+echo
+echo "BENCH"
+print_players "$lineup_size" "${#ids[@]}"
