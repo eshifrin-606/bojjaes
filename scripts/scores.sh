@@ -71,16 +71,15 @@ points_for() {
 		<<<"$response"
 }
 
+# The points field is right-aligned and wide enough for "no stats", so every
+# line ends at the same column and the report can be set beside another one.
 print_players() {
 	local i
 	for ((i = $1; i < $2 && i < ${#ids[@]}; i++)); do
-		printf '%-24s %s\n' "${names[$i]}" "$(points_for "${ids[$i]}")"
+		printf '%-24s %8s\n' "${names[$i]}" "$(points_for "${ids[$i]}")"
 	done
 }
 
-echo "$(jq -r '"season \(.season) week \(.week)"' <<<"$response")"
-
-echo
 echo "STARTERS"
 print_players 0 "$lineup_size"
 
@@ -90,7 +89,7 @@ total=$(jq -r '$ARGS.positional as $ids
 	| [.scores[] | select(.stats.player_id | IN($ids[])) | .points]
 	| add // 0' \
 	--args "${ids[@]:0:$lineup_size}" <<<"$response")
-printf '%-24s %s\n' "TOTAL" "$total"
+printf '%-24s %8s\n' "TOTAL" "$total"
 
 echo
 echo "BENCH"
