@@ -299,6 +299,32 @@ func TestStatLineFromIgnoresCombinedPassRushYards(t *testing.T) {
 	}
 }
 
+// The kicking keys are mapped from a hand-built payload rather than the week
+// 14 fixture, which carries no kicker. Each of the three is given a distinct
+// value so a key mapped to the wrong field cannot pass by reading zero.
+func TestStatLineFromKicking(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"kicker": {"fgm": 2, "fgm_50p": 1, "xpm": 4},
+	}
+
+	got, ok := statLineFrom(weekly, "kicker", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the kicker absent")
+	}
+
+	want := StatLine{
+		PlayerID: "kicker",
+		Season:   2025,
+		Week:     14,
+		FGMade:   2,
+		FG50Plus: 1,
+		XPMade:   4,
+	}
+	if got != want {
+		t.Errorf("statLineFrom = %+v, want %+v", got, want)
+	}
+}
+
 // Scoring the fixture end to end covers the mapping and the rules together:
 // a key mapped to the wrong field can still satisfy statLineFrom's own tests
 // if its expectation was written to match.

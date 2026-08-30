@@ -72,9 +72,9 @@ at the aggregate stage"). All three are asserted at the payload level in 6.12.
 
 ## 6. Transform: map the new stats
 
-- [ ] 6.1 Test: a payload entry carrying `fgm`, `fgm_50p`, and `xpm` populates each kicking field
+- [x] 6.1 Test: a payload entry carrying `fgm`, `fgm_50p`, and `xpm` populates each kicking field
       distinctly, so a mistyped key cannot read as zero. Fails — unmapped.
-- [ ] 6.2 Map the kicking keys. Use `fgm_50p` alone for the bonus; it equals `fgm_50_59 + fgm_60p`
+- [x] 6.2 Map the kicking keys. Use `fgm_50p` alone for the bonus; it equals `fgm_50_59 + fgm_60p`
       with zero mismatches across the verified week, so summing is redundant.
 - [ ] 6.3 Test: a payload entry crediting `idp_sack: 0.5` yields 0.5 on the stat line, not 0.
       Fails — the existing reader truncates through `int`.

@@ -96,5 +96,13 @@ func statLineFrom(weekly map[string]map[string]float64, playerID string, season,
 		// interceptions caught, which belong to a defender.
 		PassInt: stat("pass_int"),
 		FumLost: stat("fum_lost"),
+
+		FGMade: stat("fgm"),
+		XPMade: stat("xpm"),
+		// fgm_50p is used alone rather than summing fgm_50_59 and fgm_60p:
+		// it equals their sum on every entry of the verified week, so the
+		// sum would add a way for the three keys to disagree and nothing
+		// else.
+		FG50Plus: stat("fgm_50p"),
 	}, true
 }
