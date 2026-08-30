@@ -165,23 +165,23 @@ at the aggregate stage"). All three are asserted at the payload level in 6.15.
 
 ## 8. Documentation
 
-- [ ] 8.1 Refresh the `README.md` examples. The `/score` and `/scores` stat blocks match the served
+- [x] 8.1 Refresh the `README.md` examples. The `/score` and `/scores` stat blocks match the served
       JSON today and go stale *because of* this change — the stat line gains fields. Separately, the
       `scripts/scores.sh` sample output lists players who are not in `scripts/bojjaes.csv` (Tee
       Higgins, Ja'Marr Chase), which is stale already. Regenerate both from the real roster, which
       puts a kicker and two defenders scoring nonzero in the README as a side effect.
-- [ ] 8.2 Fix the players-file default while in that paragraph. `README.md:112` and
+- [x] 8.2 Fix the players-file default while in that paragraph. `README.md:112` and
       `scripts/scores.sh:22` both default to `scripts/players.csv`, which does not exist — the
       roster is `scripts/bojjaes.csv`, and `scripts/players` is a *directory*. The script's no-arg
       form is broken today. Adjacent to this change rather than caused by it, but it sits in the
       same lines 8.1 is rewriting.
-- [ ] 8.3 Update the stale doc comments this change falsifies:
+- [x] 8.3 Update the stale doc comments this change falsifies:
       - `internal/score/calc.go` — `Points`' comment says "kicking and defensive scoring are not"
         implemented. It becomes false the moment section 2 lands.
       - `openspec/specs/player-week-score/spec.md` — the capability's Purpose paragraph says kicking
         and defensive scoring "are not yet specified". Archiving applies the requirement deltas but
         does not rewrite Purpose prose, so it needs an explicit edit.
-- [ ] 8.4 Run `go test ./...` and `go build ./...` clean.
+- [x] 8.4 Run `go test ./...` and `go build ./...` clean.
 
 ## 9. Deferred
 

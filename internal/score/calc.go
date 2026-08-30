@@ -1,8 +1,9 @@
 package score
 
-// Points computes HMFFL fantasy points for a stat line. The passing,
-// rushing/receiving, and two-point rules of docs/scoring.md are implemented;
-// kicking and defensive scoring are not.
+// Points computes HMFFL fantasy points for a stat line. The rules of
+// docs/scoring.md are implemented except those needing play-by-play data:
+// forced fumbles, safeties, and the 40+ yard bonus on defensive and return
+// touchdowns.
 //
 // It reads stats, never positions, so a category is added as another term
 // rather than as a branch.

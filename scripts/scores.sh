@@ -3,7 +3,7 @@
 # Score a roster for one season and week against a locally running server.
 #
 #   go run ./cmd/server
-#   scripts/scores.sh 2025 14 [players.csv]
+#   scripts/scores.sh 2025 14 [bojjaes.csv]
 #
 # The players file is "id,name" per line; the name is local labeling only — the
 # server never sees it, so a wrong name pairs silently with the wrong stats.
@@ -19,7 +19,7 @@ usage() {
 
 season=$1
 week=$2
-players_file=${3:-"$(dirname "$0")/players.csv"}
+players_file=${3:-"$(dirname "$0")/bojjaes.csv"}
 server=${SERVER:-http://localhost:8080}
 
 [[ $season =~ ^[0-9]+$ && $week =~ ^[0-9]+$ ]] || usage

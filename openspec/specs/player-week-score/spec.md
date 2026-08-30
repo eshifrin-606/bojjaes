@@ -3,12 +3,13 @@
 ## Purpose
 
 Score NFL players' single-week production under the HMFFL rules, from a provider stat feed through
-to an HTTP response. Covers the passing, rushing, receiving, and two-point-conversion rules in
-`docs/scoring.md`; kicking and defensive scoring are not yet specified.
+to an HTTP response. Covers the passing, rushing, receiving, two-point-conversion, kicking, and
+defensive rules in `docs/scoring.md`.
 
-A score is therefore meaningful for every offensive skill player, quarterbacks included. Kicking and
-defensive production is absent from the calculation rather than rejected by it, so an ID belonging to
-a kicker or a defender yields a number rather than an error.
+A score is therefore meaningful for every rostered player, kickers and defenders included. The rules
+that need play-by-play data — forced fumbles, safeties, and the 40+ yard bonus on defensive and
+return touchdowns — are absent from the calculation rather than rejected by it, so a defender's
+score is a number that may be low rather than an error.
 
 ## Requirements
 
