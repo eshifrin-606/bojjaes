@@ -76,9 +76,9 @@ at the aggregate stage"). All three are asserted at the payload level in 6.12.
       distinctly, so a mistyped key cannot read as zero. Fails — unmapped.
 - [x] 6.2 Map the kicking keys. Use `fgm_50p` alone for the bonus; it equals `fgm_50_59 + fgm_60p`
       with zero mismatches across the verified week, so summing is redundant.
-- [ ] 6.3 Test: a payload entry crediting `idp_sack: 0.5` yields 0.5 on the stat line, not 0.
+- [x] 6.3 Test: a payload entry crediting `idp_sack: 0.5` yields 0.5 on the stat line, not 0.
       Fails — the existing reader truncates through `int`.
-- [ ] 6.4 Add a `statFloat` reader beside `stat` and map `idp_sack` through it.
+- [x] 6.4 Add a `statFloat` reader beside `stat` and map `idp_sack` through it.
 - [ ] 6.5 Test: `idp_int` and `idp_def_td` populate their fields, and `pass_int` still maps to the
       passer's penalty. Map the defensive keys. Use `idp_int`, not the generic `int`: the week-14
       pick-six defender was observed carrying `idp_int: 1` alongside `idp_def_td: 1`, and that is

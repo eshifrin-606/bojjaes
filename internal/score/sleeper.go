@@ -78,6 +78,10 @@ func statLineFrom(weekly map[string]map[string]float64, playerID string, season,
 	// is therefore a real scoreless line, not an absence.
 	stat := func(key string) int { return int(raw[key]) }
 
+	// Sacks are credited in halves, and the payload is already float64, so
+	// this reader converts nothing where stat truncates.
+	statFloat := func(key string) float64 { return raw[key] }
+
 	return StatLine{
 		PlayerID: playerID,
 		Season:   season,
@@ -96,6 +100,8 @@ func statLineFrom(weekly map[string]map[string]float64, playerID string, season,
 		// interceptions caught, which belong to a defender.
 		PassInt: stat("pass_int"),
 		FumLost: stat("fum_lost"),
+
+		Sack: statFloat("idp_sack"),
 
 		FGMade: stat("fgm"),
 		XPMade: stat("xpm"),

@@ -325,6 +325,23 @@ func TestStatLineFromKicking(t *testing.T) {
 	}
 }
 
+// A half sack pays 1.5, so the value has to survive the transform as 0.5.
+// Reading idp_sack through the integer reader every other stat uses would
+// truncate it to 0 and drop the points without failing anything.
+func TestStatLineFromHalfSack(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"defender": {"idp_sack": 0.5},
+	}
+
+	got, ok := statLineFrom(weekly, "defender", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the defender absent")
+	}
+	if got.Sack != 0.5 {
+		t.Errorf("Sack = %v, want 0.5", got.Sack)
+	}
+}
+
 // Scoring the fixture end to end covers the mapping and the rules together:
 // a key mapped to the wrong field can still satisfy statLineFrom's own tests
 // if its expectation was written to match.
