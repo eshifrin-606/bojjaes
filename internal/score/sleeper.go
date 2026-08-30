@@ -88,9 +88,14 @@ func statLineFrom(weekly map[string]map[string]float64, playerID string, season,
 		Week:     week,
 		// pass_yd, not pass_rush_yd: the latter is passing plus rushing yards
 		// combined, and it appears on running backs too.
-		PassYd:   stat("pass_yd"),
-		RushYd:   stat("rush_yd"),
-		RecYd:    stat("rec_yd"),
+		PassYd: stat("pass_yd"),
+		RushYd: stat("rush_yd"),
+		RecYd:  stat("rec_yd"),
+		// The touchdown keys are an allowlist. The rest belong to someone
+		// else: pass_int_td to the quarterback who threw the pick-six,
+		// kr_td/pr_td/def_td to team rows, td/anytime_tds to mixed
+		// aggregates. anytime_tds reads like a shortcut for the whole rule
+		// and is not one — it omits defensive touchdowns.
 		PassTD:   stat("pass_td"),
 		RushTD:   stat("rush_td"),
 		RecTD:    stat("rec_td"),
@@ -108,6 +113,8 @@ func statLineFrom(weekly map[string]map[string]float64, playerID string, season,
 		IntCaught: stat("idp_int"),
 		DefTD:     stat("idp_def_td"),
 
+		// idp_sack is the sack recorded; pass_sack is the same play from the
+		// sacked quarterback's side.
 		Sack: statFloat("idp_sack"),
 
 		FGMade: stat("fgm"),

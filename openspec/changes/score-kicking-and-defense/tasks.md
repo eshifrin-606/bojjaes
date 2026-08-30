@@ -107,13 +107,13 @@ at the aggregate stage"). All three are asserted at the payload level in 6.15.
       quarterback who was sacked, not the defender who sacked him. Same shape as 6.7: verify by
       temporarily mapping `pass_sack` into `Sack`, then revert.
 
-- [ ] 6.9 Comment the excluded keys at the mapping site, naming the row each one sits on.
+- [x] 6.9 Comment the excluded keys at the mapping site, naming the row each one sits on.
 
       The keys are `pass_int_td`, `pass_sack`, `fum_rec`, `kr_td`, `pr_td`, `def_td`, `td`, and
       `anytime_tds`. `anytime_tds` is not a shortcut for the rule — it omits defensive touchdowns.
-      `fum_rec` needs the comment most after `pass_int_td`: it is the obvious-looking name for
-      "fumble recovery" and is the wrong key — it holds **own-team** recoveries, which are not
-      turnovers, and excluding it is precisely what leaves `idp_fum_rec` turnover-qualified.
+      Done as two comments rather than eight: one above the touchdown keys covering every excluded
+      TD flavor, one on `Sack` for `pass_sack`. `fum_rec` moved to 6.13, which is where its
+      mapping site first exists.
 
 - [ ] 6.10 Test: `st_td` populates the return touchdown field. Fails — unmapped.
 
@@ -125,7 +125,13 @@ at the aggregate stage"). All three are asserted at the payload level in 6.15.
       Give the three keys distinct values so a dropped term cannot pass as a coincidence. The IDP
       key alone undercounts: it misses special-teams recoveries.
 
-- [ ] 6.13 Map the three-key sum to `FumRec`. Confirm green.
+- [ ] 6.13 Map the three-key sum to `FumRec`. Confirm green, and comment the `fum_rec` exclusion
+      here.
+
+      `fum_rec` is the exclusion that needs the comment most after `pass_int_td`: it is the
+      obvious-looking name for "fumble recovery" and is the wrong key — it holds **own-team**
+      recoveries, which are not turnovers, and excluding it is precisely what leaves `idp_fum_rec`
+      turnover-qualified. Moved here from 6.9, which ran before this mapping existed.
 
 - [ ] 6.14 Test: a payload entry carrying only `idp_fum_rec`, with the two special-teams keys
       absent entirely, reads as that count rather than erroring.
