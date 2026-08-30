@@ -96,10 +96,17 @@ func statLineFrom(weekly map[string]map[string]float64, playerID string, season,
 		RecTD:    stat("rec_td"),
 		TD40Plus: stat("pass_td_40p") + stat("rush_td_40p") + stat("rec_td_40p"),
 		TwoPt:    stat("pass_2pt") + stat("rush_2pt") + stat("rec_2pt"),
-		// pass_int is interceptions thrown. Sleeper's int and idp_int are
-		// interceptions caught, which belong to a defender.
+		// pass_int is interceptions thrown, and pays the passer -3. The
+		// defender's side of the same play is idp_int, below.
 		PassInt: stat("pass_int"),
 		FumLost: stat("fum_lost"),
+
+		// idp_int, not the generic int: idp_int is the key observed on a real
+		// interception, carried by the week 14 pick-six defender alongside
+		// idp_def_td. int is named by Sleeper's documentation but unverified
+		// here.
+		IntCaught: stat("idp_int"),
+		DefTD:     stat("idp_def_td"),
 
 		Sack: statFloat("idp_sack"),
 

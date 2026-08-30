@@ -79,14 +79,14 @@ at the aggregate stage"). All three are asserted at the payload level in 6.13.
 - [x] 6.3 Test: a payload entry crediting `idp_sack: 0.5` yields 0.5 on the stat line, not 0.
       Fails — the existing reader truncates through `int`.
 - [x] 6.4 Add a `statFloat` reader beside `stat` and map `idp_sack` through it.
-- [ ] 6.5 Test: `idp_int` and `idp_def_td` populate their fields, and `pass_int` still lands on the
+- [x] 6.5 Test: `idp_int` and `idp_def_td` populate their fields, and `pass_int` still lands on the
       passer's penalty. Fails — the defensive keys are unmapped.
 
       Both fields already exist on `StatLine`, so the failure is a wrong number rather than a build
       error. The `pass_int` half keeps the caught and thrown interceptions from being crossed at the
       mapping site, the way 3.3 does at the calculator.
 
-- [ ] 6.6 Map `idp_int` to `IntCaught` and `idp_def_td` to `DefTD`. Confirm green.
+- [x] 6.6 Map `idp_int` to `IntCaught` and `idp_def_td` to `DefTD`. Confirm green.
 
       Use `idp_int`, not the generic `int`. The week-14 pick-six defender was observed carrying
       `idp_int: 1` alongside `idp_def_td: 1`, and that is the only interception-caught key this

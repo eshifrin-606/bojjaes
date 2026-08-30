@@ -342,6 +342,42 @@ func TestStatLineFromHalfSack(t *testing.T) {
 	}
 }
 
+// The two interception stats sit on different players and pay opposite signs,
+// so the mapping has to keep them apart: idp_int is the defender's 6, pass_int
+// the passer's -3. Both payloads are asserted in one test because crossing the
+// keys is the failure worth catching, and that only shows up as a pair.
+func TestStatLineFromInterceptionsAreNotCrossed(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"defender": {"idp_int": 1, "idp_def_td": 1},
+		"passer":   {"pass_int": 2},
+	}
+
+	defender, ok := statLineFrom(weekly, "defender", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the defender absent")
+	}
+	if defender.IntCaught != 1 {
+		t.Errorf("defender IntCaught = %d, want 1", defender.IntCaught)
+	}
+	if defender.DefTD != 1 {
+		t.Errorf("defender DefTD = %d, want 1", defender.DefTD)
+	}
+	if defender.PassInt != 0 {
+		t.Errorf("defender PassInt = %d, want 0; an interception caught is not one thrown", defender.PassInt)
+	}
+
+	passer, ok := statLineFrom(weekly, "passer", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the passer absent")
+	}
+	if passer.PassInt != 2 {
+		t.Errorf("passer PassInt = %d, want 2", passer.PassInt)
+	}
+	if passer.IntCaught != 0 {
+		t.Errorf("passer IntCaught = %d, want 0; an interception thrown is not one caught", passer.IntCaught)
+	}
+}
+
 // Scoring the fixture end to end covers the mapping and the rules together:
 // a key mapped to the wrong field can still satisfy statLineFrom's own tests
 // if its expectation was written to match.
