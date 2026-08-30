@@ -18,6 +18,15 @@ type StatLine struct {
 	RushTD int `json:"rush_td"`
 	RecTD  int `json:"rec_td"`
 
+	// DefTD and ReturnTD are touchdowns of a different flavor, not a
+	// different rule: the league's "TD scored" award is unqualified, so they
+	// are paid by the same term as the offensive ones.
+	DefTD int `json:"def_td"`
+
+	// ReturnTD covers both kick and punt returns; the rules do not tell them
+	// apart.
+	ReturnTD int `json:"return_td"`
+
 	// TD40Plus counts passing, rushing, and receiving touchdowns of 40+ yards.
 	// The bonus is a flat point regardless of how the touchdown was scored, so
 	// the flavors are summed rather than tracked apart. One long touchdown pass
@@ -33,5 +42,32 @@ type StatLine struct {
 	// penalty belongs to the passer.
 	PassInt int `json:"pass_int"`
 
+	// IntCaught is the defender's side of the same play, and pays 6. It is
+	// deliberately a separate field from PassInt: one play fills one of them
+	// on each of two players' stat lines.
+	IntCaught int `json:"int_caught"`
+
 	FumLost int `json:"fum_lost"`
+
+	// FumRec counts only recoveries that resulted in a turnover — an
+	// own-team recovery is not one, and pays nothing. The provider has no
+	// single turnover-qualified key; see the transform for how it is built.
+	//
+	// The tag deliberately avoids `fum_rec`, which is Sleeper's key for the
+	// own-team recoveries this field excludes.
+	FumRec int `json:"fum_rec_turnover"`
+
+	// Sack is credited in half-sack granularity, so it is fractional where
+	// every other count is whole.
+	Sack float64 `json:"sack"`
+
+	// FGMade carries no distance: the league pays a flat rate per field goal,
+	// and the 50+ bonus is counted separately.
+	FGMade int `json:"fg_made"`
+
+	XPMade int `json:"xp_made"`
+
+	// FG50Plus counts the FGMade kicks that were from 50+ yards, paying a
+	// bonus point on top of them under the same Misc clause as TD40Plus.
+	FG50Plus int `json:"fg_50_plus"`
 }

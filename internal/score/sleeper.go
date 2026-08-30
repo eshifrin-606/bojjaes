@@ -78,23 +78,58 @@ func statLineFrom(weekly map[string]map[string]float64, playerID string, season,
 	// is therefore a real scoreless line, not an absence.
 	stat := func(key string) int { return int(raw[key]) }
 
+	// Sacks are credited in halves, and the payload is already float64, so
+	// this reader converts nothing where stat truncates.
+	statFloat := func(key string) float64 { return raw[key] }
+
 	return StatLine{
 		PlayerID: playerID,
 		Season:   season,
 		Week:     week,
 		// pass_yd, not pass_rush_yd: the latter is passing plus rushing yards
 		// combined, and it appears on running backs too.
-		PassYd:   stat("pass_yd"),
-		RushYd:   stat("rush_yd"),
-		RecYd:    stat("rec_yd"),
+		PassYd: stat("pass_yd"),
+		RushYd: stat("rush_yd"),
+		RecYd:  stat("rec_yd"),
+		// The touchdown keys are an allowlist. The rest belong to someone
+		// else: pass_int_td to the quarterback who threw the pick-six,
+		// kr_td/pr_td/def_td to team rows, td/anytime_tds to mixed
+		// aggregates. anytime_tds reads like a shortcut for the whole rule
+		// and is not one — it omits defensive touchdowns.
 		PassTD:   stat("pass_td"),
 		RushTD:   stat("rush_td"),
 		RecTD:    stat("rec_td"),
 		TD40Plus: stat("pass_td_40p") + stat("rush_td_40p") + stat("rec_td_40p"),
 		TwoPt:    stat("pass_2pt") + stat("rush_2pt") + stat("rec_2pt"),
-		// pass_int is interceptions thrown. Sleeper's int and idp_int are
-		// interceptions caught, which belong to a defender.
+		// pass_int is interceptions thrown, and pays the passer -3. The
+		// defender's side of the same play is idp_int, below.
 		PassInt: stat("pass_int"),
 		FumLost: stat("fum_lost"),
+
+		// idp_int, not the generic int: idp_int is the key observed on a real
+		// interception, carried by the week 14 pick-six defender alongside
+		// idp_def_td. int is named by Sleeper's documentation but unverified
+		// here.
+		IntCaught: stat("idp_int"),
+		DefTD:     stat("idp_def_td"),
+		ReturnTD:  stat("st_td"),
+
+		// Only recoveries that were turnovers pay, and no single key holds
+		// them: idp_fum_rec alone misses the special-teams ones. fum_rec is
+		// not part of the sum — it holds own-team recoveries, which are not
+		// turnovers, and adding it is what would make this term raw.
+		FumRec: stat("idp_fum_rec") + stat("st_fum_rec") + stat("def_st_fum_rec"),
+
+		// idp_sack is the sack recorded; pass_sack is the same play from the
+		// sacked quarterback's side.
+		Sack: statFloat("idp_sack"),
+
+		FGMade: stat("fgm"),
+		XPMade: stat("xpm"),
+		// fgm_50p is used alone rather than summing fgm_50_59 and fgm_60p:
+		// it equals their sum on every entry of the verified week, so the
+		// sum would add a way for the three keys to disagree and nothing
+		// else.
+		FG50Plus: stat("fgm_50p"),
 	}, true
 }

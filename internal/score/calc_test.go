@@ -113,6 +113,90 @@ func TestPoints(t *testing.T) {
 			want: 4,
 		},
 		{
+			// Half-sack credit is the first fractional stat; 1.5 pins that it
+			// is scaled rather than rounded to a whole sack either way.
+			name: "half a sack",
+			in:   StatLine{Sack: 0.5},
+			want: 1.5,
+		},
+		{
+			// Not the half-sack case doubled: 1.5 pays its proportional share
+			// rather than being tabulated up or down to a whole sack.
+			name: "one and a half sacks",
+			in:   StatLine{Sack: 1.5},
+			want: 4.5,
+		},
+		{
+			name: "two sacks",
+			in:   StatLine{Sack: 2},
+			want: 6,
+		},
+		{
+			// The three kicks are of differing distances; the league pays a
+			// flat rate, so only the count reaches the stat line.
+			name: "field goals pay a flat rate",
+			in:   StatLine{FGMade: 3},
+			want: 9,
+		},
+		{
+			name: "extra points",
+			in:   StatLine{XPMade: 4},
+			want: 4,
+		},
+		{
+			// FG50Plus is a bonus counter, not a second kind of kick: the long
+			// one is counted in FGMade too, so this pays 3 + 3 + 1.
+			name: "long field goal bonus",
+			in:   StatLine{FGMade: 2, FG50Plus: 1},
+			want: 7,
+		},
+		{
+			// IntCaught is the defender's 6, not the passer's -3: PassInt on
+			// the same line would score -6 rather than 12.
+			name: "interceptions caught",
+			in:   StatLine{IntCaught: 2},
+			want: 12,
+		},
+		{
+			// Read against "interceptions thrown" above, which is the same
+			// count on the other field: crossing the two terms would turn
+			// that -9 into 18 and this 18 into -9.
+			name: "three interceptions caught",
+			in:   StatLine{IntCaught: 3},
+			want: 18,
+		},
+		{
+			name: "fumble recovery",
+			in:   StatLine{FumRec: 1},
+			want: 2,
+		},
+		{
+			name: "defensive touchdown",
+			in:   StatLine{DefTD: 1},
+			want: 6,
+		},
+		{
+			// A pick-six is two awards on one play, not a special case: 6 for
+			// the interception and 6 for the touchdown.
+			name: "pick six",
+			in:   StatLine{IntCaught: 1, DefTD: 1},
+			want: 12,
+		},
+		{
+			// The 40 receiving yards clear no threshold, so the whole 6 is the
+			// return. An offensive player is paid for it on the same terms.
+			name: "punt return touchdown",
+			in:   StatLine{RecYd: 40, ReturnTD: 1},
+			want: 6,
+		},
+		{
+			// The touchdown term grew to five flavors; the 40+ bonus still
+			// rides on top of an offensive one.
+			name: "long receiving touchdown still earns the bonus",
+			in:   StatLine{RecTD: 1, TD40Plus: 1},
+			want: 7,
+		},
+		{
 			name: "fumble lost",
 			in:   StatLine{RecYd: 85, FumLost: 1},
 			want: 0,

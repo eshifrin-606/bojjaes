@@ -27,8 +27,10 @@ curl -s localhost:8080/score | jq
   "stats": {
     "player_id": "9493", "season": 2025, "week": 14,
     "pass_yd": 0, "rush_yd": 0, "rec_yd": 167,
-    "pass_td": 0, "rush_td": 0, "rec_td": 2,
-    "td_40_plus": 0, "two_pt": 0, "pass_int": 0, "fum_lost": 0
+    "pass_td": 0, "rush_td": 0, "rec_td": 2, "def_td": 0, "return_td": 0,
+    "td_40_plus": 0, "two_pt": 0,
+    "pass_int": 0, "int_caught": 0, "fum_lost": 0, "fum_rec_turnover": 0,
+    "sack": 0, "fg_made": 0, "xp_made": 0, "fg_50_plus": 0
   },
   "points": 19
 }
@@ -40,7 +42,7 @@ that should never change. Score any players with `POST /scores`:
 ```bash
 curl -s localhost:8080/scores -d '{
   "season": 2025, "week": 14,
-  "player_ids": ["9493", "8138", "4034"]
+  "player_ids": ["9493", "4227", "12561"]
 }' | jq
 ```
 
@@ -53,22 +55,26 @@ curl -s localhost:8080/scores -d '{
       "stats": {
         "player_id": "9493", "season": 2025, "week": 14,
         "pass_yd": 0, "rush_yd": 0, "rec_yd": 167,
-        "pass_td": 0, "rush_td": 0, "rec_td": 2,
-        "td_40_plus": 0, "two_pt": 0, "pass_int": 0, "fum_lost": 0
+        "pass_td": 0, "rush_td": 0, "rec_td": 2, "def_td": 0, "return_td": 0,
+        "td_40_plus": 0, "two_pt": 0,
+        "pass_int": 0, "int_caught": 0, "fum_lost": 0, "fum_rec_turnover": 0,
+        "sack": 0, "fg_made": 0, "xp_made": 0, "fg_50_plus": 0
       },
       "points": 19
     },
     {
       "stats": {
-        "player_id": "8138", "season": 2025, "week": 14,
-        "pass_yd": 0, "rush_yd": 80, "rec_yd": 31,
-        "pass_td": 0, "rush_td": 0, "rec_td": 0,
-        "td_40_plus": 0, "two_pt": 0, "pass_int": 0, "fum_lost": 1
+        "player_id": "4227", "season": 2025, "week": 14,
+        "pass_yd": 0, "rush_yd": 0, "rec_yd": 0,
+        "pass_td": 0, "rush_td": 0, "rec_td": 0, "def_td": 0, "return_td": 0,
+        "td_40_plus": 0, "two_pt": 0,
+        "pass_int": 0, "int_caught": 0, "fum_lost": 0, "fum_rec_turnover": 0,
+        "sack": 0, "fg_made": 1, "xp_made": 1, "fg_50_plus": 0
       },
-      "points": 0.5
+      "points": 4
     }
   ],
-  "no_stats": ["4034"]
+  "no_stats": ["12561"]
 }
 ```
 
@@ -101,15 +107,19 @@ season 2025 week 14
 Amon-Ra St. Brown        3.5
 Puka Nacua               19
 Luther Burden III        0
-Tee Higgins              15.5
-Ja'Marr Chase            0
+Colston Loveland         6
+Jaylen Warren            6
+Josh Allen               31
+Harrison Butker          4
+Odafe Oweh               3
+Derrick Harmon           no stats
 ```
 
 ```bash
 scripts/scores.sh <season> <week> [players-file]
 ```
 
-The players file defaults to `scripts/players.csv` — one `id,name` per line,
+The players file defaults to `scripts/bojjaes.csv` — one `id,name` per line,
 blank lines and `#` comments skipped, output in file order. Names are local
 labels the server never sees, so a wrong name pairs silently with the right
 stats. `SERVER=http://host:port` points the script somewhere other than

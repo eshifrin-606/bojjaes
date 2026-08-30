@@ -49,8 +49,8 @@ func TestFetchWeekly(t *testing.T) {
 		t.Fatalf("fetchWeekly: %v", err)
 	}
 
-	if got := len(weekly); got != 6 {
-		t.Errorf("decoded %d entries, want 6", got)
+	if got := len(weekly); got != 11 {
+		t.Errorf("decoded %d entries, want 11", got)
 	}
 	if got := weekly[NacuaPlayerID]["rec_yd"]; got != 167 {
 		t.Errorf("weekly[%s][rec_yd] = %v, want 167", NacuaPlayerID, got)
@@ -299,6 +299,246 @@ func TestStatLineFromIgnoresCombinedPassRushYards(t *testing.T) {
 	}
 }
 
+// The kicking keys are mapped from a hand-built payload rather than the week
+// 14 fixture, which carries no kicker. Each of the three is given a distinct
+// value so a key mapped to the wrong field cannot pass by reading zero.
+func TestStatLineFromKicking(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"kicker": {"fgm": 2, "fgm_50p": 1, "xpm": 4},
+	}
+
+	got, ok := statLineFrom(weekly, "kicker", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the kicker absent")
+	}
+
+	want := StatLine{
+		PlayerID: "kicker",
+		Season:   2025,
+		Week:     14,
+		FGMade:   2,
+		FG50Plus: 1,
+		XPMade:   4,
+	}
+	if got != want {
+		t.Errorf("statLineFrom = %+v, want %+v", got, want)
+	}
+}
+
+// Missed kicks pay nothing — the league's tables carry no penalty for them, so
+// a miss neither adds nor subtracts. That makes the omission invisible: an
+// unmapped key reads as zero exactly like a rule nobody has written yet.
+//
+// This is the "misses are not penalised" scenario stated at the only level
+// that can express it. StatLine carries no missed-kick field, by design, so a
+// calculator test has no input for "missed 2" — the misses exist only as
+// payload keys.
+//
+// Both keys are observed on real player rows in week 14: fgmiss on six of
+// them, xpmiss on exactly one. The entry is hand-built rather than captured
+// because no real row carries the scenario's combination, and xpmiss is sparse
+// enough (1 row in 2,142) that no captured week reliably holds it.
+func TestStatLineFromIgnoresMissedKicks(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		// One field goal made and two missed, one extra point missed and
+		// none made. fga and xpa are carried too: they are the attempt
+		// counts the misses are derived from, and are equally unscored.
+		"kicker": {"fgm": 1, "fga": 3, "fgmiss": 2, "fgmiss_40_49": 2, "xpa": 1, "xpm": 0, "xpmiss": 1},
+	}
+
+	got, ok := statLineFrom(weekly, "kicker", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the kicker absent")
+	}
+
+	want := StatLine{PlayerID: "kicker", Season: 2025, Week: 14, FGMade: 1}
+	if got != want {
+		t.Errorf("statLineFrom = %+v, want %+v; no miss or attempt key may reach a field", got, want)
+	}
+	if pts := Points(got); pts != 3 {
+		t.Errorf("Points = %v, want 3; the made field goal alone, with the misses free", pts)
+	}
+}
+
+// A half sack pays 1.5, so the value has to survive the transform as 0.5.
+// Reading idp_sack through the integer reader every other stat uses would
+// truncate it to 0 and drop the points without failing anything.
+func TestStatLineFromHalfSack(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"defender": {"idp_sack": 0.5},
+	}
+
+	got, ok := statLineFrom(weekly, "defender", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the defender absent")
+	}
+	if got.Sack != 0.5 {
+		t.Errorf("Sack = %v, want 0.5", got.Sack)
+	}
+}
+
+// The two interception stats sit on different players and pay opposite signs,
+// so the mapping has to keep them apart: idp_int is the defender's 6, pass_int
+// the passer's -3. Both payloads are asserted in one test because crossing the
+// keys is the failure worth catching, and that only shows up as a pair.
+func TestStatLineFromInterceptionsAreNotCrossed(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"defender": {"idp_int": 1, "idp_def_td": 1},
+		"passer":   {"pass_int": 2},
+	}
+
+	defender, ok := statLineFrom(weekly, "defender", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the defender absent")
+	}
+	if defender.IntCaught != 1 {
+		t.Errorf("defender IntCaught = %d, want 1", defender.IntCaught)
+	}
+	if defender.DefTD != 1 {
+		t.Errorf("defender DefTD = %d, want 1", defender.DefTD)
+	}
+	if defender.PassInt != 0 {
+		t.Errorf("defender PassInt = %d, want 0; an interception caught is not one thrown", defender.PassInt)
+	}
+
+	passer, ok := statLineFrom(weekly, "passer", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the passer absent")
+	}
+	if passer.PassInt != 2 {
+		t.Errorf("passer PassInt = %d, want 2", passer.PassInt)
+	}
+	if passer.IntCaught != 0 {
+		t.Errorf("passer IntCaught = %d, want 0; an interception thrown is not one caught", passer.IntCaught)
+	}
+}
+
+// pass_int_td sits on the quarterback who *threw* the pick-six, not on the
+// defender who scored it. Mapping it as the missing touchdown stat would pay
+// the passer 6 for a play the rules dock him 3 — a 9-point swing in the wrong
+// direction, and the most expensive mistake available in this transform.
+// Nothing maps the key, so this test passes today; it exists to fail loudly if
+// that changes.
+func TestStatLineFromIgnoresPickSixThrown(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"passer": {"pass_int": 1, "pass_int_td": 1},
+	}
+
+	got, ok := statLineFrom(weekly, "passer", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the passer absent")
+	}
+	if pts := Points(got); pts != -3 {
+		t.Errorf("Points = %v, want -3; a pick-six thrown is a penalty, never a touchdown scored", pts)
+	}
+}
+
+// pass_sack sits on the quarterback who was sacked. The 3 points belong to the
+// defender who recorded it, whose key is idp_sack. Same shape as the pick-six
+// guard above: correct code never maps this key.
+func TestStatLineFromIgnoresSacksTaken(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"passer": {"pass_sack": 3},
+	}
+
+	got, ok := statLineFrom(weekly, "passer", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the passer absent")
+	}
+	if got.Sack != 0 {
+		t.Errorf("Sack = %v, want 0; being sacked is not recording one", got.Sack)
+	}
+	if pts := Points(got); pts != 0 {
+		t.Errorf("Points = %v, want 0", pts)
+	}
+}
+
+// st_td is the special-teams touchdown, which the rules pay like any other.
+// kr_td and pr_td name the same play but sit on team rows, so st_td is the
+// only one a player lookup ever sees.
+func TestStatLineFromReturnTouchdown(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"returner": {"st_td": 1},
+	}
+
+	got, ok := statLineFrom(weekly, "returner", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the returner absent")
+	}
+	if got.ReturnTD != 1 {
+		t.Errorf("ReturnTD = %d, want 1", got.ReturnTD)
+	}
+}
+
+// A turnover-qualified recovery is spread across three keys, and the IDP one
+// alone undercounts: it misses special-teams recoveries. The three counts are
+// distinct powers of two so a dropped term names itself in the total.
+func TestStatLineFromFumbleRecoveriesSumThreeKeys(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"defender": {"idp_fum_rec": 1, "st_fum_rec": 2, "def_st_fum_rec": 4},
+	}
+
+	got, ok := statLineFrom(weekly, "defender", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the defender absent")
+	}
+	if got.FumRec != 7 {
+		t.Errorf("FumRec = %d, want 7", got.FumRec)
+	}
+}
+
+// The two special-teams recovery keys are sparse — week 14 contains zero
+// occurrences of either — so almost every real entry reaches the sum with only
+// idp_fum_rec present. Absent keys have to read as zero, not as a failure.
+func TestStatLineFromFumbleRecoveriesWithSparseKeysAbsent(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"defender": {"idp_fum_rec": 1},
+	}
+
+	got, ok := statLineFrom(weekly, "defender", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the defender absent")
+	}
+	if got.FumRec != 1 {
+		t.Errorf("FumRec = %d, want 1", got.FumRec)
+	}
+}
+
+// Three rules the league scores are deliberately unimplemented at this stage,
+// and each has a payload key that makes implementing it look trivial:
+//
+//   - idp_ff, forced fumbles. The rules pay only recoveries that were
+//     turnovers; the provider's forced-fumble count includes fumbles the
+//     offense got back, which would overpay by roughly 44%.
+//   - idp_safe, safeties. The league's award turns on solo credit, a
+//     distinction this key does not carry and that is unconfirmed.
+//   - idp_int_ret_yd and idp_fum_ret_yd, return yardage. The 40+ touchdown
+//     bonus needs the distance of the scoring play; these are weekly sums with
+//     no play attribution, so a 63-yard pick-six is indistinguishable from
+//     three short returns.
+//
+// A rule left out silently is indistinguishable from one forgotten, so this
+// asserts the omission: none of the four reaches a stat-line field, and an
+// entry carrying nothing else scores 0.
+func TestStatLineFromIgnoresUnimplementedDefensiveRules(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"defender": {"idp_ff": 2, "idp_safe": 1, "idp_int_ret_yd": 63, "idp_fum_ret_yd": 20},
+	}
+
+	got, ok := statLineFrom(weekly, "defender", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the defender absent")
+	}
+
+	want := StatLine{PlayerID: "defender", Season: 2025, Week: 14}
+	if got != want {
+		t.Errorf("statLineFrom = %+v, want %+v; no excluded key may reach a field", got, want)
+	}
+	if pts := Points(got); pts != 0 {
+		t.Errorf("Points = %v, want 0", pts)
+	}
+}
+
 // Scoring the fixture end to end covers the mapping and the rules together:
 // a key mapped to the wrong field can still satisfy statLineFrom's own tests
 // if its expectation was written to match.
@@ -329,6 +569,46 @@ func TestFixtureScores(t *testing.T) {
 			name:     "running back with a rushed conversion",
 			playerID: "12534",
 			want:     2,
+		},
+		{
+			// Butker made 1 of 2 field goals and his only extra point: 3 + 1.
+			// His entry also carries fgmiss, which pays nothing — misses are
+			// not penalised.
+			name:     "kicker",
+			playerID: "4227",
+			want:     4,
+		},
+		{
+			// 2.5 sacks at 3 apiece. The same entry carries idp_ff: 1, which
+			// scores nothing at this stage — the rules pay recoveries that
+			// were turnovers, and a forced fumble is not one.
+			name:     "defender with fractional sacks and a forced fumble",
+			playerID: "11703",
+			want:     7.5,
+		},
+		{
+			// The week 14 pick-six: 6 for the interception, 6 for the
+			// touchdown, 3 for a sack. Its 63 return yards earn no 40+ bonus,
+			// which is the exclusion this change leaves for play-by-play.
+			name:     "pick-six defender",
+			playerID: "8487",
+			want:     15,
+		},
+		{
+			// Burrow threw that pick-six. 284 yards pays 3 + 1, his 4
+			// touchdown passes 24, his 2 interceptions -6. pass_int_td and
+			// pass_sack sit on this row and pay nothing.
+			name:     "quarterback who threw the pick-six",
+			playerID: "6770",
+			want:     22,
+		},
+		{
+			// Hand-built: week 14 has no special-teams fumble recoveries at
+			// all, so a captured fixture would leave two of the recovery
+			// term's three keys unexercised while the suite stayed green.
+			name:     "special-teams fumble recoveries",
+			playerID: "hand-built-st-fum-rec",
+			want:     4,
 		},
 	}
 

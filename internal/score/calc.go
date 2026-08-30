@@ -1,17 +1,24 @@
 package score
 
-// Points computes HMFFL fantasy points for a stat line. The passing,
-// rushing/receiving, and two-point rules of docs/scoring.md are implemented;
-// kicking and defensive scoring are not.
+// Points computes HMFFL fantasy points for a stat line. The rules of
+// docs/scoring.md are implemented except those needing play-by-play data:
+// forced fumbles, safeties, and the 40+ yard bonus on defensive and return
+// touchdowns.
 //
 // It reads stats, never positions, so a category is added as another term
 // rather than as a branch.
 func Points(s StatLine) float64 {
 	pts := yardageBonus(s)
 	pts += thresholdBonus(s.PassYd, 200, 50, 1)
-	pts += 6 * float64(s.PassTD+s.RushTD+s.RecTD)
+	pts += 6 * float64(s.PassTD+s.RushTD+s.RecTD+s.DefTD+s.ReturnTD)
 	pts += float64(s.TD40Plus)
 	pts += 2 * float64(s.TwoPt)
+	pts += 3 * s.Sack
+	pts += 3 * float64(s.FGMade)
+	pts += float64(s.XPMade)
+	pts += float64(s.FG50Plus)
+	pts += 6 * float64(s.IntCaught)
+	pts += 2 * float64(s.FumRec)
 	pts -= 3 * float64(s.PassInt+s.FumLost)
 	return pts
 }

@@ -70,16 +70,56 @@ Confirmed 2026-08-08. These resolve ambiguities in the tables above.
 
 ## Planned implementation deviations
 
-**None of these is implemented yet** — they describe how the MVP scoreboard will knowingly diverge
-from the rules above once it scores the categories in question, per
-[ADR 0003](adr/0003-sleeper-as-initial-stat-provider.md). All three concern defensive and kicking
-scoring, which the code does not implement at all as of 2026-08-19. None is a rules change; the rules
-above stand regardless.
+**None of these is implemented yet.** They describe how the MVP scoreboard will knowingly diverge
+from the rules above while it scores kicking and defense from Sleeper's REST weekly aggregate alone.
+None is a rules change; the rules above stand regardless.
 
-- **Safety will not be scored at all.** Our source cannot confirm the "solo credit only" qualifier,
-  so we will omit the 2 points rather than risk awarding them on shared credit.
-- **The 40+ bonus will not be applied to defensive or return TDs.** It will apply to passing,
-  rushing, and receiving TDs only.
-- **Forced fumbles will not be turnover-qualified.** The 4 points will be awarded on any forced
-  fumble and flagged as provisional in the output; the true rule pays only when the fumble results in
-  a turnover.
+These deviations are **scoped to the aggregate-only stage**, not permanent positions. Per the
+2026-08-12 amendment to [ADR 0003](adr/0003-sleeper-as-initial-stat-provider.md), all three are
+computable from Sleeper's GraphQL play-by-play surface. They are deferred because opening that
+surface is a second provider path with its own risks, not because the rules are unreachable. Each
+one lifts when play-by-play lands.
+
+- **Safety will not be scored at all.** The aggregate carries a per-player `idp_safe`, but nothing
+  in it confirms the "solo credit only" qualifier, so we omit the 2 points rather than risk awarding
+  them on shared credit. Play-by-play decides solo vs. assisted per play.
+- **The 40+ bonus will not be applied to defensive or return TDs.** It applies to passing, rushing,
+  and receiving TDs only, where the provider buckets at exactly our threshold. Per-player defensive
+  return yardage *is* present in the aggregate, but as a **weekly sum** — a defender with two
+  interception returns has no way to attribute distance to the one that scored. The obstacle is
+  aggregation, not absence.
+- **Forced fumbles will not be scored at all.** The rule pays only when the fumble results in a
+  turnover, and turnover qualification is a property of the play, not of any player's aggregate stat
+  line — so no aggregate key can carry it. Paying the raw count would overpay roughly 44% of forced
+  fumbles, a systematic one-directional disagreement with the spreadsheet. An earlier plan was to pay
+  it and flag the award as provisional; we prefer a visible omission to a knowingly wrong award,
+  consistent with how safety is handled above. The 4 points arrive with play-by-play, which decides
+  turnover qualification per play.
+
+### Attribution hazards
+
+Not deviations — the rules above are scored correctly — but the provider puts several
+plausible-looking stats on the wrong player. Recorded here because getting one wrong produces a
+large, confident, wrong number on a memorable play. Verified against 2025 week 14.
+
+- A **pick-six pays the defender 12** (6 interception + 6 TD) and costs the passer 3. The provider
+  also credits the *passer* with an "interception returned for a touchdown" stat. It must not feed the
+  TD rule, or the quarterback is paid 6 for throwing one.
+- Likewise **sacks taken** by a quarterback and **sacks recorded** by a defender are separate stats.
+  Only the defender's pays 3.
+- **Kick-return, punt-return, and defensive touchdowns appear on team rows**, which the provider
+  mixes in with players. Only the individual special-teams touchdown stat pays a rostered player.
+- **Forced fumbles are credited to opposite players in the aggregate and the play-by-play feeds** —
+  the forcer in one, the fumbler in the other. See ADR 0003.
+
+### Open rules questions
+
+These need a commissioner ruling, not more data:
+
+- **Own-team fumble recovery after an interception return.** The provider credits a recovery; the
+  interception was already the turnover. Does the 2 points pay?
+- **Shared-credit safety.** The solo/assisted distinction rests on two clean observations. Confirm
+  against a safety with shared credit before the exclusion above is lifted.
+- **Is the provider's 40+ touchdown bucket inclusive at exactly 40?** Our rule is inclusive
+  (confirmed 2026-08-09); the provider's boundary is unverified. This affects the already-shipped
+  passing, rushing, and receiving path, not only defense.
