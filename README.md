@@ -103,32 +103,49 @@ scripts/scores.sh 2025 14  # another
 ```
 
 ```
-season 2025 week 14
-
 STARTERS
-Amon-Ra St. Brown        3.5
-Puka Nacua               19
-Luther Burden III        0
-Colston Loveland         6
-Jaylen Warren            6
-Josh Allen               31
-Harrison Butker          4
-Odafe Oweh               3
+Amon-Ra St. Brown             3.5
+Puka Nacua                     19
+Luther Burden III               0
+Colston Loveland                6
+Jaylen Warren                   6
+Josh Allen                     31
+Harrison Butker                 4
+Odafe Oweh                      3
 Derrick Harmon           no stats
-TOTAL                    72.5
+TOTAL                        72.5
 
 BENCH
 ```
 
 ```bash
-scripts/scores.sh <season> <week> [players-file]
+scripts/scores.sh <season> <week> [team|players-file]
 ```
 
-The players file defaults to `scripts/2025-wk14/bojjaes.csv` — one `id,name`
-per line, blank lines and `#` comments skipped, output in file order within each
-section. Names are local labels the server never sees, so a wrong name pairs
-silently with the right stats. `SERVER=http://host:port` points the script
-somewhere other than `localhost:8080`.
+Lineups live under `scripts/lineups/<season>/<week>/`, and the third argument is
+read against that directory. It defaults to `bojjaes.csv` there — so
+`scripts/scores.sh 2025 15` reads the week 15 lineup without being told to — and
+a bare team name picks another file from the same week:
+
+```bash
+scripts/scores.sh 2025 14 wood   # scripts/lineups/2025/14/wood.csv
+```
+
+An argument containing a `/` or ending in `.csv` is used as a path instead, so
+files outside the tree still work:
+
+```bash
+scripts/scores.sh 2025 14 scripts/teams/aroma.csv
+```
+
+Because the shorthand is built from the season and week you asked for, it can
+never read another week's lineup.
+
+A players file is one `id,name` per line, blank lines and `#` comments skipped,
+output in file order within each section. Names are local labels the server
+never sees, so a wrong name pairs silently with the right stats.
+`SERVER=http://host:port` points the script somewhere other than
+`localhost:8080`.
 
 The **first nine records are the starters** and the rest are the bench. That is
 positional only: the file carries no position column, so nothing checks that
@@ -146,6 +163,67 @@ Such a starter contributes nothing to `TOTAL`, and `TOTAL` carries no marker
 saying so: the `no stats` line sits directly above it. In the example above,
 `72.5` is eight players, not nine. Server errors exit non-zero with the
 server's message rather than printing a partial roster.
+
+The report carries no season or week heading of its own — the season and week
+are your own arguments — and points sit in a fixed-width column so a report can
+be set beside another one without ragging. That is what the matchup report does.
+
+## A matchup, side by side
+
+`scripts/fantasycast.sh` prints two rosters as columns, each column a full
+`scores.sh` report, with the season and week stated once above both.
+
+```bash
+scripts/fantasycast.sh <season> <week> <team> [team2]
+```
+
+```
+season 2025 week 14
+
+STARTERS                           STARTERS
+Amon-Ra St. Brown             3.5  CeeDee Lamb                     5
+Puka Nacua                     19  Brock Bowers                    6
+Luther Burden III               0  Quinshon Judkins                0
+Colston Loveland                6  Breece Hall                     0
+Jaylen Warren                   6  Bijan Robinson                  0
+Josh Allen                     31  Patrick Mahomes                -9
+Harrison Butker                 4  Tyler Loop                     10
+Odafe Oweh                      3  Myles Garrett                   3
+Derrick Harmon           no stats  Micah Parsons                   0
+TOTAL                        72.5  TOTAL                          15
+
+BENCH                              BENCH
+```
+
+One team name means that team is the Bojjaes' opponent, so the common case is
+the shortest command. Two names show those two teams and the Bojjaes do not
+appear. **Argument order is column order**: the Bojjaes, or the first team you
+name, is the left column.
+
+```bash
+scripts/fantasycast.sh 2025 14 wood            # bojjaes vs wood
+scripts/fantasycast.sh 2025 16 gonads bojjaes  # gonads on the left
+```
+
+Team names resolve exactly as they do for `scores.sh`, because they are handed
+straight to it — a name means the same file in both tools.
+
+The two `TOTAL` lines face each other, and **nothing computes a margin**. A
+starter whose game has not kicked off is indistinguishable from one who was
+inactive, so a difference printed on Sunday morning would read as a settled
+deficit when it is nothing of the kind. Read the two totals and the `no stats`
+lines above them together.
+
+Columns are independent lists, not a positional matchup — the roster file has no
+position column, so row *n* on the left does not face row *n* on the right. When
+one roster is longer, its extra lines simply print with nothing to their right;
+neither column is padded or truncated to make the `BENCH` headings line up.
+
+**Each team is scored in its own request**, one `POST /scores` per column. So the
+server's per-request player cap applies per roster rather than per matchup, and
+two full rosters work where a merged request would not. Both reports are
+captured before anything prints, so a bad team name or a server error exits
+non-zero with that message and no half-drawn matchup.
 
 Tests and compile check:
 

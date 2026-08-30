@@ -3,7 +3,8 @@
 # Score a roster for one season and week against a locally running server.
 #
 #   go run ./cmd/server
-#   scripts/scores.sh 2025 14 [2025-wk14/bojjaes.csv]
+#   scripts/scores.sh 2025 14
+#   scripts/scores.sh 2025 14 wood
 #
 # The players file is "id,name" per line; the name is local labeling only — the
 # server never sees it, so a wrong name pairs silently with the wrong stats. Its
@@ -17,7 +18,9 @@ set -euo pipefail
 lineup_size=9
 
 usage() {
-	echo "usage: $(basename "$0") <season> <week> [players-file]" >&2
+	echo "usage: $(basename "$0") <season> <week> [team|players-file]" >&2
+	echo "  a bare team name reads lineups/<season>/<week>/<team>.csv" >&2
+	echo "  defaults to that week's bojjaes.csv" >&2
 	echo "  env: SERVER (default http://localhost:8080)" >&2
 	exit 2
 }
@@ -26,7 +29,14 @@ usage() {
 
 season=$1
 week=$2
-players_file=${3:-"$(dirname "$0")/2025-wk14/bojjaes.csv"}
+# The lineup tree is keyed by the same season and week the score is asked for,
+# so neither the default nor a shorthand name can drift onto another week.
+lineups=$(dirname "$0")/lineups/$season/$week
+case ${3:-} in
+"") players_file=$lineups/bojjaes.csv ;;
+*/* | *.csv) players_file=$3 ;;
+*) players_file=$lineups/$3.csv ;;
+esac
 server=${SERVER:-http://localhost:8080}
 
 [[ $season =~ ^[0-9]+$ && $week =~ ^[0-9]+$ ]] || usage
@@ -61,16 +71,15 @@ points_for() {
 		<<<"$response"
 }
 
+# The points field is right-aligned and wide enough for "no stats", so every
+# line ends at the same column and the report can be set beside another one.
 print_players() {
 	local i
 	for ((i = $1; i < $2 && i < ${#ids[@]}; i++)); do
-		printf '%-24s %s\n' "${names[$i]}" "$(points_for "${ids[$i]}")"
+		printf '%-24s %8s\n' "${names[$i]}" "$(points_for "${ids[$i]}")"
 	done
 }
 
-echo "$(jq -r '"season \(.season) week \(.week)"' <<<"$response")"
-
-echo
 echo "STARTERS"
 print_players 0 "$lineup_size"
 
@@ -80,7 +89,7 @@ total=$(jq -r '$ARGS.positional as $ids
 	| [.scores[] | select(.stats.player_id | IN($ids[])) | .points]
 	| add // 0' \
 	--args "${ids[@]:0:$lineup_size}" <<<"$response")
-printf '%-24s %s\n' "TOTAL" "$total"
+printf '%-24s %8s\n' "TOTAL" "$total"
 
 echo
 echo "BENCH"
