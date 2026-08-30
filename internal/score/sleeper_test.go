@@ -325,6 +325,41 @@ func TestStatLineFromKicking(t *testing.T) {
 	}
 }
 
+// Missed kicks pay nothing — the league's tables carry no penalty for them, so
+// a miss neither adds nor subtracts. That makes the omission invisible: an
+// unmapped key reads as zero exactly like a rule nobody has written yet.
+//
+// This is the "misses are not penalised" scenario stated at the only level
+// that can express it. StatLine carries no missed-kick field, by design, so a
+// calculator test has no input for "missed 2" — the misses exist only as
+// payload keys.
+//
+// Both keys are observed on real player rows in week 14: fgmiss on six of
+// them, xpmiss on exactly one. The entry is hand-built rather than captured
+// because no real row carries the scenario's combination, and xpmiss is sparse
+// enough (1 row in 2,142) that no captured week reliably holds it.
+func TestStatLineFromIgnoresMissedKicks(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		// One field goal made and two missed, one extra point missed and
+		// none made. fga and xpa are carried too: they are the attempt
+		// counts the misses are derived from, and are equally unscored.
+		"kicker": {"fgm": 1, "fga": 3, "fgmiss": 2, "fgmiss_40_49": 2, "xpa": 1, "xpm": 0, "xpmiss": 1},
+	}
+
+	got, ok := statLineFrom(weekly, "kicker", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the kicker absent")
+	}
+
+	want := StatLine{PlayerID: "kicker", Season: 2025, Week: 14, FGMade: 1}
+	if got != want {
+		t.Errorf("statLineFrom = %+v, want %+v; no miss or attempt key may reach a field", got, want)
+	}
+	if pts := Points(got); pts != 3 {
+		t.Errorf("Points = %v, want 3; the made field goal alone, with the misses free", pts)
+	}
+}
+
 // A half sack pays 1.5, so the value has to survive the transform as 0.5.
 // Reading idp_sack through the integer reader every other stat uses would
 // truncate it to 0 and drop the points without failing anything.

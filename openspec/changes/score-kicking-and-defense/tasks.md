@@ -185,11 +185,21 @@ at the aggregate stage"). All three are asserted at the payload level in 6.15.
 
 ## 9. Deferred
 
-- [ ] 9.1 Test: 1 field goal made alongside 2 missed field goals and a missed extra point scores 3,
+- [x] 9.1 Test: 1 field goal made alongside 2 missed field goals and a missed extra point scores 3,
       asserting that misses were never given a term. Moved here from 2.5, unresolved: it was written
       as a calculator test, but `StatLine` has no missed-kick field and the design forbids adding
       one (`design.md`, "Exclusions are asserted by test, not just omitted") — so there is no input
-      a calc test can set to express "missed 2". It is the same category as the forced-fumble and
-      safety exclusions, which section 5 pushes to 6.15 as transform tests over the payload's
-      `fgmiss` / `xpmiss` keys. Decide the level before writing it; the kicking requirement's
-      "Misses are not penalised" scenario is unasserted until then.
+      a calc test can set to express "missed 2".
+
+      **Resolved at the transform level**, the same answer section 5 reached for forced fumbles and
+      safeties: the misses exist only as payload keys, so only the transform can assert they reach
+      no field. Written as `TestStatLineFromIgnoresMissedKicks`, a guard rather than a red-green
+      step — verified to have teeth by temporarily mapping `fgmiss` and then `xpmiss` into their
+      made-kick fields, watching each fail, and reverting.
+
+      Both keys were confirmed against a live 2025 week 14 fetch (2,142 entries) before writing it:
+      `fgmiss` appears on six player rows and `xpmiss` on exactly one (player 12711, `xpa: 2,
+      xpm: 1, xpmiss: 1`). Neither is a team-row-only key, so no half of the scenario needed
+      deferring. The entry is hand-built for the reason 7.2 gives: no real row carries the
+      scenario's combination — week 14's maximum `fgmiss` is 1 and no row carries both misses — and
+      `xpmiss` is sparse enough that no captured week reliably holds it.
