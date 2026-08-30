@@ -418,6 +418,40 @@ func TestStatLineFromIgnoresSacksTaken(t *testing.T) {
 	}
 }
 
+// st_td is the special-teams touchdown, which the rules pay like any other.
+// kr_td and pr_td name the same play but sit on team rows, so st_td is the
+// only one a player lookup ever sees.
+func TestStatLineFromReturnTouchdown(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"returner": {"st_td": 1},
+	}
+
+	got, ok := statLineFrom(weekly, "returner", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the returner absent")
+	}
+	if got.ReturnTD != 1 {
+		t.Errorf("ReturnTD = %d, want 1", got.ReturnTD)
+	}
+}
+
+// A turnover-qualified recovery is spread across three keys, and the IDP one
+// alone undercounts: it misses special-teams recoveries. The three counts are
+// distinct powers of two so a dropped term names itself in the total.
+func TestStatLineFromFumbleRecoveriesSumThreeKeys(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"defender": {"idp_fum_rec": 1, "st_fum_rec": 2, "def_st_fum_rec": 4},
+	}
+
+	got, ok := statLineFrom(weekly, "defender", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the defender absent")
+	}
+	if got.FumRec != 7 {
+		t.Errorf("FumRec = %d, want 7", got.FumRec)
+	}
+}
+
 // Scoring the fixture end to end covers the mapping and the rules together:
 // a key mapped to the wrong field can still satisfy statLineFrom's own tests
 // if its expectation was written to match.

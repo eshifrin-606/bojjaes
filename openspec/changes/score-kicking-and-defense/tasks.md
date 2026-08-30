@@ -115,17 +115,17 @@ at the aggregate stage"). All three are asserted at the payload level in 6.15.
       TD flavor, one on `Sack` for `pass_sack`. `fum_rec` moved to 6.13, which is where its
       mapping site first exists.
 
-- [ ] 6.10 Test: `st_td` populates the return touchdown field. Fails — unmapped.
+- [x] 6.10 Test: `st_td` populates the return touchdown field. Fails — unmapped.
 
-- [ ] 6.11 Map `st_td` to `ReturnTD`. Confirm green.
+- [x] 6.11 Map `st_td` to `ReturnTD`. Confirm green.
 
-- [ ] 6.12 Test: `idp_fum_rec`, `st_fum_rec`, and `def_st_fum_rec` sum into one recovery count.
+- [x] 6.12 Test: `idp_fum_rec`, `st_fum_rec`, and `def_st_fum_rec` sum into one recovery count.
       Fails — none of the three is mapped.
 
       Give the three keys distinct values so a dropped term cannot pass as a coincidence. The IDP
       key alone undercounts: it misses special-teams recoveries.
 
-- [ ] 6.13 Map the three-key sum to `FumRec`. Confirm green, and comment the `fum_rec` exclusion
+- [x] 6.13 Map the three-key sum to `FumRec`. Confirm green, and comment the `fum_rec` exclusion
       here.
 
       `fum_rec` is the exclusion that needs the comment most after `pass_int_td`: it is the

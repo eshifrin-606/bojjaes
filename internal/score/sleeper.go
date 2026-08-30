@@ -112,6 +112,13 @@ func statLineFrom(weekly map[string]map[string]float64, playerID string, season,
 		// here.
 		IntCaught: stat("idp_int"),
 		DefTD:     stat("idp_def_td"),
+		ReturnTD:  stat("st_td"),
+
+		// Only recoveries that were turnovers pay, and no single key holds
+		// them: idp_fum_rec alone misses the special-teams ones. fum_rec is
+		// not part of the sum — it holds own-team recoveries, which are not
+		// turnovers, and adding it is what would make this term raw.
+		FumRec: stat("idp_fum_rec") + stat("st_fum_rec") + stat("def_st_fum_rec"),
 
 		// idp_sack is the sack recorded; pass_sack is the same play from the
 		// sacked quarterback's side.
