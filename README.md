@@ -121,14 +121,33 @@ BENCH
 ```
 
 ```bash
-scripts/scores.sh <season> <week> [players-file]
+scripts/scores.sh <season> <week> [team|players-file]
 ```
 
-The players file defaults to `scripts/2025-wk14/bojjaes.csv` — one `id,name`
-per line, blank lines and `#` comments skipped, output in file order within each
-section. Names are local labels the server never sees, so a wrong name pairs
-silently with the right stats. `SERVER=http://host:port` points the script
-somewhere other than `localhost:8080`.
+Lineups live under `scripts/lineups/<season>/<week>/`, and the third argument is
+read against that directory. It defaults to `bojjaes.csv` there — so
+`scripts/scores.sh 2025 15` reads the week 15 lineup without being told to — and
+a bare team name picks another file from the same week:
+
+```bash
+scripts/scores.sh 2025 14 wood   # scripts/lineups/2025/14/wood.csv
+```
+
+An argument containing a `/` or ending in `.csv` is used as a path instead, so
+files outside the tree still work:
+
+```bash
+scripts/scores.sh 2025 14 scripts/teams/aroma.csv
+```
+
+Because the shorthand is built from the season and week you asked for, it can
+never read another week's lineup.
+
+A players file is one `id,name` per line, blank lines and `#` comments skipped,
+output in file order within each section. Names are local labels the server
+never sees, so a wrong name pairs silently with the right stats.
+`SERVER=http://host:port` points the script somewhere other than
+`localhost:8080`.
 
 The **first nine records are the starters** and the rest are the bench. That is
 positional only: the file carries no position column, so nothing checks that
