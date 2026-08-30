@@ -59,13 +59,13 @@ exclusion is meant to prevent. The 40+ bonus on defensive and return touchdowns 
 once you try to write it: `StatLine` carries no return distance — that needs the play-by-play data
 this change does not introduce (`proposal.md`), because the aggregate reports return yardage only as
 a weekly sum with no distance attributable to the scoring play (`spec.md`, "Scoring rules excluded
-at the aggregate stage"). All three are asserted at the payload level in 6.13.
+at the aggregate stage"). All three are asserted at the payload level in 6.15.
 
 - [x] 5.1 Both halves of the "interception returned 63 yards for a touchdown scores 12, not 13"
       scenario are already covered, and neither is a new calc test. The scoring half is the `pick
       six` case from 4.3, which is the only form the scenario takes as calculator input once the
       unexpressible 63 yards is dropped — writing it again under another name would duplicate it.
-      The exclusion half belongs to 6.13, whose payload carries `idp_int_ret_yd` and
+      The exclusion half belongs to 6.15, whose payload carries `idp_int_ret_yd` and
       `idp_fum_ret_yd` and asserts they score 0 and reach no stat-line field. `Points` adds
       `TD40Plus` unconditionally; what keeps a defensive touchdown from earning the bonus is that
       nothing ever populates `TD40Plus` from a defensive play, which only the transform can assert.
@@ -93,32 +93,54 @@ at the aggregate stage"). All three are asserted at the payload level in 6.13.
       project has verified on a real row. `int` is unverified here — the existing comment in
       `sleeper.go` names it from Sleeper's documentation, not from observation.
 
-- [ ] 6.7 Test: a payload entry carrying `pass_int_td` — a quarterback who threw a pick-six — scores
-      -3, not +3 or +6. **This is the change's most expensive possible mistake.** This is a guard,
-      not a red-green step: it passes on correct code because the key is never mapped. Verify it has
-      teeth by *temporarily* mapping `pass_int_td` into the touchdown term, watching the test fail,
-      then reverting the mapping. Do not commit the temporary mapping.
-- [ ] 6.8 Test: a payload entry carrying `pass_sack` contributes nothing to the sack count. Confirms
-      sacks taken were not crossed with sacks recorded. Same shape as 6.7 — verify by temporarily
-      mapping `pass_sack` into `Sack`, then revert.
-- [ ] 6.9 Comment the exclusions at the mapping site — `pass_int_td`, `pass_sack`, `fum_rec`,
-      `kr_td`, `pr_td`, `def_td`, `td`, `anytime_tds` — with the row each sits on. Note that
-      `anytime_tds` is not a shortcut for the rule: it omits defensive touchdowns. `fum_rec` needs
-      the comment most after `pass_int_td`: it is the obvious-looking name for "fumble recovery" and
-      is the wrong key — it holds **own-team** recoveries, which are not turnovers, and excluding it
-      is precisely what leaves `idp_fum_rec` turnover-qualified.
-- [ ] 6.10 Test: `st_td` populates the return touchdown field. Map it.
-- [ ] 6.11 Test: `idp_fum_rec`, `st_fum_rec`, and `def_st_fum_rec` sum into one recovery count. Map
-      the three-key sum.
-- [ ] 6.12 Test: a payload entry carrying only `idp_fum_rec`, with the two special-teams keys absent
-      entirely, reads as that count rather than erroring. These keys are sparse and absent from most
-      weeks.
-- [ ] 6.13 Test: a payload entry carrying `idp_ff`, `idp_safe`, `idp_int_ret_yd`, and
-      `idp_fum_ret_yd` and nothing else scores **0**, and none of those values appears on any
-      stat-line field. This is where the forced-fumble and safety exclusions from section 5 are
-      actually asserted, at the only level where they are expressible. Comment the test with why
-      each is excluded — the turnover-qualification rule and its ~44% overpay for `idp_ff`, the
-      unconfirmed solo-credit qualifier for `idp_safe`. Guard, not red-green: verify it has teeth by
+- [ ] 6.7 Test: a payload entry carrying `pass_int_td` — a quarterback who threw a pick-six —
+      scores -3, not +3 or +6.
+
+      **This is the change's most expensive possible mistake.** A guard, not a red-green step: it
+      passes on correct code, because the key is never mapped. Verify it has teeth by *temporarily*
+      mapping `pass_int_td` into the touchdown term, watching the test fail, then reverting. Do not
+      commit the temporary mapping.
+
+- [ ] 6.8 Test: a payload entry carrying `pass_sack` contributes nothing to the sack count.
+
+      Confirms sacks taken were not crossed with sacks recorded — `pass_sack` sits on the
+      quarterback who was sacked, not the defender who sacked him. Same shape as 6.7: verify by
+      temporarily mapping `pass_sack` into `Sack`, then revert.
+
+- [ ] 6.9 Comment the excluded keys at the mapping site, naming the row each one sits on.
+
+      The keys are `pass_int_td`, `pass_sack`, `fum_rec`, `kr_td`, `pr_td`, `def_td`, `td`, and
+      `anytime_tds`. `anytime_tds` is not a shortcut for the rule — it omits defensive touchdowns.
+      `fum_rec` needs the comment most after `pass_int_td`: it is the obvious-looking name for
+      "fumble recovery" and is the wrong key — it holds **own-team** recoveries, which are not
+      turnovers, and excluding it is precisely what leaves `idp_fum_rec` turnover-qualified.
+
+- [ ] 6.10 Test: `st_td` populates the return touchdown field. Fails — unmapped.
+
+- [ ] 6.11 Map `st_td` to `ReturnTD`. Confirm green.
+
+- [ ] 6.12 Test: `idp_fum_rec`, `st_fum_rec`, and `def_st_fum_rec` sum into one recovery count.
+      Fails — none of the three is mapped.
+
+      Give the three keys distinct values so a dropped term cannot pass as a coincidence. The IDP
+      key alone undercounts: it misses special-teams recoveries.
+
+- [ ] 6.13 Map the three-key sum to `FumRec`. Confirm green.
+
+- [ ] 6.14 Test: a payload entry carrying only `idp_fum_rec`, with the two special-teams keys
+      absent entirely, reads as that count rather than erroring.
+
+      These keys are sparse — week 14 contains zero occurrences of either — so most real entries
+      take this path.
+
+- [ ] 6.15 Test: a payload entry carrying `idp_ff`, `idp_safe`, `idp_int_ret_yd`, and
+      `idp_fum_ret_yd` and nothing else scores **0**, and none of those values reaches a stat-line
+      field.
+
+      This is where the forced-fumble and safety exclusions from section 5 are actually asserted,
+      at the only level where they are expressible. Comment the test with why each is excluded —
+      the turnover-qualification rule and its ~44% overpay for `idp_ff`, the unconfirmed
+      solo-credit qualifier for `idp_safe`. Guard, not red-green: verify it has teeth by
       temporarily mapping one key, then revert.
 
 ## 7. Fixtures
@@ -127,7 +149,7 @@ at the aggregate stage"). All three are asserted at the payload level in 6.13.
       with fractional sacks, the week-14 pick-six defender, and the quarterback who threw it.
       Real payload shapes, so the fixture cannot drift from the provider's actual key set.
 - [ ] 7.2 Hand-build the special-teams fumble-recovery entry. Week 14 contains zero occurrences of
-      `st_fum_rec` and `def_st_fum_rec`, so a captured fixture leaves 6.11 untested while green.
+      `st_fum_rec` and `def_st_fum_rec`, so a captured fixture leaves 6.12 untested while green.
 - [ ] 7.3 Update `TestFetchWeekly`'s entry-count assertion. `internal/score/sleeper_test.go:52`
       asserts `len(weekly) == 6`; 7.1 and 7.2 add entries, so that number must move with the
       fixture. This is an expected update, not a regression. The batch tests are unaffected — their
@@ -162,6 +184,6 @@ at the aggregate stage"). All three are asserted at the payload level in 6.13.
       as a calculator test, but `StatLine` has no missed-kick field and the design forbids adding
       one (`design.md`, "Exclusions are asserted by test, not just omitted") — so there is no input
       a calc test can set to express "missed 2". It is the same category as the forced-fumble and
-      safety exclusions, which section 5 pushes to 6.13 as transform tests over the payload's
+      safety exclusions, which section 5 pushes to 6.15 as transform tests over the payload's
       `fgmiss` / `xpmiss` keys. Decide the level before writing it; the kicking requirement's
       "Misses are not penalised" scenario is unasserted until then.
