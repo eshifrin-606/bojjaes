@@ -151,16 +151,16 @@ at the aggregate stage"). All three are asserted at the payload level in 6.15.
 
 ## 7. Fixtures
 
-- [ ] 7.1 Extend `internal/score/testdata/week14.json` with real entries for a kicker, a defender
+- [x] 7.1 Extend `internal/score/testdata/week14.json` with real entries for a kicker, a defender
       with fractional sacks, the week-14 pick-six defender, and the quarterback who threw it.
       Real payload shapes, so the fixture cannot drift from the provider's actual key set.
-- [ ] 7.2 Hand-build the special-teams fumble-recovery entry. Week 14 contains zero occurrences of
+- [x] 7.2 Hand-build the special-teams fumble-recovery entry. Week 14 contains zero occurrences of
       `st_fum_rec` and `def_st_fum_rec`, so a captured fixture leaves 6.12 untested while green.
-- [ ] 7.3 Update `TestFetchWeekly`'s entry-count assertion. `internal/score/sleeper_test.go:52`
+- [x] 7.3 Update `TestFetchWeekly`'s entry-count assertion. `internal/score/sleeper_test.go:52`
       asserts `len(weekly) == 6`; 7.1 and 7.2 add entries, so that number must move with the
       fixture. This is an expected update, not a regression. The batch tests are unaffected — their
       absent-player IDs are `"nope"`, which no new entry claims.
-- [ ] 7.4 Confirm the existing offensive fixture cases still produce the same scores. The touchdown
+- [x] 7.4 Confirm the existing offensive fixture cases still produce the same scores. The touchdown
       term and the stat line both changed shape; no offensive player's total should move.
 
 ## 8. Documentation

@@ -49,8 +49,8 @@ func TestFetchWeekly(t *testing.T) {
 		t.Fatalf("fetchWeekly: %v", err)
 	}
 
-	if got := len(weekly); got != 6 {
-		t.Errorf("decoded %d entries, want 6", got)
+	if got := len(weekly); got != 11 {
+		t.Errorf("decoded %d entries, want 11", got)
 	}
 	if got := weekly[NacuaPlayerID]["rec_yd"]; got != 167 {
 		t.Errorf("weekly[%s][rec_yd] = %v, want 167", NacuaPlayerID, got)
@@ -534,6 +534,46 @@ func TestFixtureScores(t *testing.T) {
 			name:     "running back with a rushed conversion",
 			playerID: "12534",
 			want:     2,
+		},
+		{
+			// Butker made 1 of 2 field goals and his only extra point: 3 + 1.
+			// His entry also carries fgmiss, which pays nothing — misses are
+			// not penalised.
+			name:     "kicker",
+			playerID: "4227",
+			want:     4,
+		},
+		{
+			// 2.5 sacks at 3 apiece. The same entry carries idp_ff: 1, which
+			// scores nothing at this stage — the rules pay recoveries that
+			// were turnovers, and a forced fumble is not one.
+			name:     "defender with fractional sacks and a forced fumble",
+			playerID: "11703",
+			want:     7.5,
+		},
+		{
+			// The week 14 pick-six: 6 for the interception, 6 for the
+			// touchdown, 3 for a sack. Its 63 return yards earn no 40+ bonus,
+			// which is the exclusion this change leaves for play-by-play.
+			name:     "pick-six defender",
+			playerID: "8487",
+			want:     15,
+		},
+		{
+			// Burrow threw that pick-six. 284 yards pays 3 + 1, his 4
+			// touchdown passes 24, his 2 interceptions -6. pass_int_td and
+			// pass_sack sit on this row and pay nothing.
+			name:     "quarterback who threw the pick-six",
+			playerID: "6770",
+			want:     22,
+		},
+		{
+			// Hand-built: week 14 has no special-teams fumble recoveries at
+			// all, so a captured fixture would leave two of the recovery
+			// term's three keys unexercised while the suite stayed green.
+			name:     "special-teams fumble recoveries",
+			playerID: "hand-built-st-fum-rec",
+			want:     4,
 		},
 	}
 
