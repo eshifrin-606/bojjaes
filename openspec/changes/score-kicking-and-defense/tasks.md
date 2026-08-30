@@ -93,7 +93,7 @@ at the aggregate stage"). All three are asserted at the payload level in 6.15.
       project has verified on a real row. `int` is unverified here — the existing comment in
       `sleeper.go` names it from Sleeper's documentation, not from observation.
 
-- [ ] 6.7 Test: a payload entry carrying `pass_int_td` — a quarterback who threw a pick-six —
+- [x] 6.7 Test: a payload entry carrying `pass_int_td` — a quarterback who threw a pick-six —
       scores -3, not +3 or +6.
 
       **This is the change's most expensive possible mistake.** A guard, not a red-green step: it
@@ -101,7 +101,7 @@ at the aggregate stage"). All three are asserted at the payload level in 6.15.
       mapping `pass_int_td` into the touchdown term, watching the test fail, then reverting. Do not
       commit the temporary mapping.
 
-- [ ] 6.8 Test: a payload entry carrying `pass_sack` contributes nothing to the sack count.
+- [x] 6.8 Test: a payload entry carrying `pass_sack` contributes nothing to the sack count.
 
       Confirms sacks taken were not crossed with sacks recorded — `pass_sack` sits on the
       quarterback who was sacked, not the defender who sacked him. Same shape as 6.7: verify by

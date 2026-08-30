@@ -378,6 +378,46 @@ func TestStatLineFromInterceptionsAreNotCrossed(t *testing.T) {
 	}
 }
 
+// pass_int_td sits on the quarterback who *threw* the pick-six, not on the
+// defender who scored it. Mapping it as the missing touchdown stat would pay
+// the passer 6 for a play the rules dock him 3 — a 9-point swing in the wrong
+// direction, and the most expensive mistake available in this transform.
+// Nothing maps the key, so this test passes today; it exists to fail loudly if
+// that changes.
+func TestStatLineFromIgnoresPickSixThrown(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"passer": {"pass_int": 1, "pass_int_td": 1},
+	}
+
+	got, ok := statLineFrom(weekly, "passer", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the passer absent")
+	}
+	if pts := Points(got); pts != -3 {
+		t.Errorf("Points = %v, want -3; a pick-six thrown is a penalty, never a touchdown scored", pts)
+	}
+}
+
+// pass_sack sits on the quarterback who was sacked. The 3 points belong to the
+// defender who recorded it, whose key is idp_sack. Same shape as the pick-six
+// guard above: correct code never maps this key.
+func TestStatLineFromIgnoresSacksTaken(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"passer": {"pass_sack": 3},
+	}
+
+	got, ok := statLineFrom(weekly, "passer", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the passer absent")
+	}
+	if got.Sack != 0 {
+		t.Errorf("Sack = %v, want 0; being sacked is not recording one", got.Sack)
+	}
+	if pts := Points(got); pts != 0 {
+		t.Errorf("Points = %v, want 0", pts)
+	}
+}
+
 // Scoring the fixture end to end covers the mapping and the rules together:
 // a key mapped to the wrong field can still satisfy statLineFrom's own tests
 // if its expectation was written to match.
