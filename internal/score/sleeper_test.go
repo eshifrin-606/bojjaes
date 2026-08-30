@@ -452,6 +452,58 @@ func TestStatLineFromFumbleRecoveriesSumThreeKeys(t *testing.T) {
 	}
 }
 
+// The two special-teams recovery keys are sparse — week 14 contains zero
+// occurrences of either — so almost every real entry reaches the sum with only
+// idp_fum_rec present. Absent keys have to read as zero, not as a failure.
+func TestStatLineFromFumbleRecoveriesWithSparseKeysAbsent(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"defender": {"idp_fum_rec": 1},
+	}
+
+	got, ok := statLineFrom(weekly, "defender", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the defender absent")
+	}
+	if got.FumRec != 1 {
+		t.Errorf("FumRec = %d, want 1", got.FumRec)
+	}
+}
+
+// Three rules the league scores are deliberately unimplemented at this stage,
+// and each has a payload key that makes implementing it look trivial:
+//
+//   - idp_ff, forced fumbles. The rules pay only recoveries that were
+//     turnovers; the provider's forced-fumble count includes fumbles the
+//     offense got back, which would overpay by roughly 44%.
+//   - idp_safe, safeties. The league's award turns on solo credit, a
+//     distinction this key does not carry and that is unconfirmed.
+//   - idp_int_ret_yd and idp_fum_ret_yd, return yardage. The 40+ touchdown
+//     bonus needs the distance of the scoring play; these are weekly sums with
+//     no play attribution, so a 63-yard pick-six is indistinguishable from
+//     three short returns.
+//
+// A rule left out silently is indistinguishable from one forgotten, so this
+// asserts the omission: none of the four reaches a stat-line field, and an
+// entry carrying nothing else scores 0.
+func TestStatLineFromIgnoresUnimplementedDefensiveRules(t *testing.T) {
+	weekly := map[string]map[string]float64{
+		"defender": {"idp_ff": 2, "idp_safe": 1, "idp_int_ret_yd": 63, "idp_fum_ret_yd": 20},
+	}
+
+	got, ok := statLineFrom(weekly, "defender", 2025, 14)
+	if !ok {
+		t.Fatal("statLineFrom reported the defender absent")
+	}
+
+	want := StatLine{PlayerID: "defender", Season: 2025, Week: 14}
+	if got != want {
+		t.Errorf("statLineFrom = %+v, want %+v; no excluded key may reach a field", got, want)
+	}
+	if pts := Points(got); pts != 0 {
+		t.Errorf("Points = %v, want 0", pts)
+	}
+}
+
 // Scoring the fixture end to end covers the mapping and the rules together:
 // a key mapped to the wrong field can still satisfy statLineFrom's own tests
 // if its expectation was written to match.

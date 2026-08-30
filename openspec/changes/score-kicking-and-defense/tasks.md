@@ -133,13 +133,13 @@ at the aggregate stage"). All three are asserted at the payload level in 6.15.
       recoveries, which are not turnovers, and excluding it is precisely what leaves `idp_fum_rec`
       turnover-qualified. Moved here from 6.9, which ran before this mapping existed.
 
-- [ ] 6.14 Test: a payload entry carrying only `idp_fum_rec`, with the two special-teams keys
+- [x] 6.14 Test: a payload entry carrying only `idp_fum_rec`, with the two special-teams keys
       absent entirely, reads as that count rather than erroring.
 
       These keys are sparse — week 14 contains zero occurrences of either — so most real entries
       take this path.
 
-- [ ] 6.15 Test: a payload entry carrying `idp_ff`, `idp_safe`, `idp_int_ret_yd`, and
+- [x] 6.15 Test: a payload entry carrying `idp_ff`, `idp_safe`, `idp_int_ret_yd`, and
       `idp_fum_ret_yd` and nothing else scores **0**, and none of those values reaches a stat-line
       field.
 
