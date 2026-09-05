@@ -70,9 +70,13 @@ hosted on Fly.io.
    prefix and is otherwise open. **Reads are public and writes do not exist.**
 
 8. **Presentation carries the honesty constraint.** The page shows two equal columns of scored
-   starters and their two totals, plus a visible **as-of timestamp** sourced from Sleeper's
-   `updated_at` (ADR 0003), not from our fetch time. It must not show a margin, a win probability,
-   a progress bar, a leader highlight, or any winner-implying styling.
+   starters and their two totals, plus a visible **as-of timestamp**. The timestamp is **our
+   Sleeper fetch time, labelled as such** — the REST weekly aggregate the web path reads carries
+   no `updated_at`; only the GraphQL shapes do (ADR 0003), and changing fetch shape is not worth
+   it for this alone. What it claims is "when we last asked," which is honest and is what the
+   reader needs. Moving it to upstream `updated_at` later is an upgrade, not a correction. The
+   page must not show a margin, a win probability, a progress bar, a leader highlight, or any
+   winner-implying styling.
 
 9. **Lineup files gain display fields.** The roster CSV format grows position and team alongside
    the existing id and name. These are **local labels only** — the Sleeper player ID remains the
@@ -110,7 +114,9 @@ hosted on Fly.io.
 - **The no-margin rule is a design constraint, not a preference.** It is the same reasoning
   `fantasycast.sh` already encodes, and it is more load-bearing on the web than in a terminal: a
   terminal report is obviously a snapshot the reader just produced, while a page left open on a
-  phone has no such anchor. The as-of timestamp is the substitute anchor.
+  phone has no such anchor. The as-of timestamp is the substitute anchor — and a fetch time
+  serves that purpose, because what the reader is being warned about is a page that has gone
+  quiet, which "last asked at 1:07pm" tells them exactly as well as an upstream timestamp would.
 
 ## Consequences
 
@@ -133,6 +139,10 @@ hosted on Fly.io.
   here, and both are now visible to more people. The as-of timestamp is the only mitigation in
   scope.
 
+- **A fetch-time as-of overstates freshness by whatever the upstream lag is.** Bounded in practice
+  by the endpoint's 30 s current-week edge TTL plus however long Sleeper takes to post a stat, but
+  unmeasured live. The label is what keeps it honest; the measurement is a follow-up.
+
 - **No margin means the reader does the subtraction.** This is a real ergonomic cost on the feature
   people most want, accepted until per-player game state makes the number honest.
 
@@ -148,8 +158,8 @@ hosted on Fly.io.
 - Decide the exact roster CSV field order and whether position denotes a **lineup slot** or the
   player's listed position — `scripts/scores.sh` currently derives the starting lineup from file
   order alone, and a rendered slot label that disagrees with file order would be worse than none.
-- Confirm Sleeper's `updated_at` is available on the fetch shape the web path uses, so the as-of
-  timestamp is genuinely upstream freshness rather than our own clock.
+- Watch the fetch-time as-of on a live Sunday and see how far it drifts from when stats actually
+  move. If the gap is big enough to mislead, the fix is the GraphQL shape's `updated_at`.
 - Probe Sleeper rate-limit tolerance at the deployed polling cadence (still open from ADR 0003).
 - Revisit the margin once per-player game state lands; it is a presentation flip, not a redesign.
 - Choose the unguessable path prefix and record where it lives, so it is not accidentally logged or
