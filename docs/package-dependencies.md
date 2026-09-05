@@ -42,7 +42,7 @@ that way.
 | --- | --- | --- | --- | --- |
 | `cmd/server` | Process entrypoint. Registers routes, owns the listen address. | `internal/score` | `log`, `net/http` | — |
 | `internal/score` | Scoring rules + the Sleeper adapter + the HTTP handlers over both. | none | `context`, `encoding/json`, `fmt`, `log`, `net/http`, `time` | `cmd/server` |
-| `internal/roster` | Roster/lineup knowledge: file format, tree layout, starters/bench split. | none | `bufio`, `fmt`, `io`, `os`, `path/filepath`, `strings` | *nothing yet* |
+| `internal/roster` | Roster/lineup knowledge: file format, tree layout, matchup resolution, starters/bench split. | none | `bufio`, `errors`, `fmt`, `io`, `os`, `path/filepath`, `strings` | *nothing yet* |
 
 ### `cmd/server`
 
@@ -75,6 +75,14 @@ Pure domain plus a file reader; no network, no HTTP. It is the Go home for what 
 knows in bash: the `id,name` record format, the `<root>/<season>/<week>/<team>.csv` layout, and the
 positional rule that the first nine records are starters.
 
+It also answers a question no script asks: *who is playing this week*. `Tree.Matchup` lists a week
+directory and returns the two team names, ours first, refusing anything that is not exactly two
+rosters with `bojjaes.csv` among them. That is why the package now imports `errors` — the four
+refusals are sentinel values so a caller can tell an unstaged week from a stray third file. The
+rule lives here rather than in the first handler that needs it, because a week directory holding
+one matchup is a fact about the tree's layout, and the layout is stated in this package and nowhere
+else.
+
 **Nothing imports it yet.** That is expected, not a gap: it was built ahead of the served
 `/{season}/{week}` page from [ADR 0004](adr/0004-web-frontend-stack.md), and the shell scripts keep
 their own bash parsing on purpose rather than gaining a CLI shim that would be deleted later.
@@ -90,8 +98,9 @@ their own bash parsing on purpose rather than gaining a CLI shim that would be d
 - **`internal/score` is the package to watch.** It is the one with a network dependency, the one
   with an HTTP surface, and the one carrying four jobs. Growth pressure lands here first.
 - **Test imports add nothing.** Every test is in-package and stdlib-only (`testing`, `httptest`,
-  `os`), so the graph above is the whole truth — no hidden test-only coupling, no third-party
-  dependencies anywhere in `go.mod`.
+  `os`, `path/filepath`), so the graph above is the whole truth — no hidden test-only coupling, no
+  third-party dependencies anywhere in `go.mod`. `roster`'s matchup tests build their fixtures in
+  `t.TempDir()`, so the suite never reads the real `scripts/lineups` tree.
 
 ## Keeping this current
 
