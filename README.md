@@ -231,3 +231,9 @@ Tests and compile check:
 go test ./...
 go build ./...
 ```
+## Design docs
+
+[docs/package-dependencies.md](docs/package-dependencies.md) maps how the Go packages relate — a
+diagram, each package's imports, and where the next dependency is likely to land. Start there
+before deciding where new code belongs. Decisions behind the current shape are in
+[docs/adr/](docs/adr/), and the league's scoring rules in [docs/scoring.md](docs/scoring.md).
