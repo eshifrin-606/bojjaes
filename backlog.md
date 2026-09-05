@@ -14,7 +14,7 @@ One line each, roughly in dependency order. Not sized, not scheduled.
   know where the lineup tree lives, know that the first nine records are the starters. Done as
   `internal/roster`. The bash parsing in `scores.sh` deliberately stays until the served page
   replaces the scripts.
-- [ ] Resolve a matchup from a week directory: exactly two rosters, opponent is the file that isn't `bojjaes.csv`, three files is an error rather than a guess.
+- [x] Resolve a matchup from a week directory: exactly two rosters, opponent is the file that isn't `bojjaes.csv`, three files is an error rather than a guess.
 - [ ] Grow the roster CSV to carry position and team as display-only labels, and update `scores.sh` so the scripts and the page agree on the format.
 
 ## Serving the page

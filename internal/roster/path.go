@@ -27,5 +27,5 @@ func (t *Tree) Path(season, week int, team string) (string, error) {
 		return "", fmt.Errorf("roster: invalid team name %q", team)
 	}
 
-	return filepath.Join(t.root, fmt.Sprint(season), fmt.Sprint(week), team+".csv"), nil
+	return filepath.Join(t.weekDir(season, week), team+".csv"), nil
 }
