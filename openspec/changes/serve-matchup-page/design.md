@@ -48,19 +48,20 @@ neither learns about HTML. The alternative — putting the handler in `internal/
 JSON handlers — would make the scoring package depend on the roster package and on a template, for
 one page.
 
-**`internal/web` declares the week source it needs; `main` supplies it.** `score.Week` and
-`sleeper.FetchWeek(ctx, baseURL, season, week) (score.Week, error)` already exist. This package does
-not import `internal/sleeper`; like `internal/api` it declares the one method it uses —
+**`internal/web` declares the stats source it needs; `main` supplies it.** `score.WeekStats` and
+`sleeper.FetchWeekStats(ctx, baseURL, season, week) (score.WeekStats, error)` already exist. This
+package does not import `internal/sleeper`; like `internal/api` it declares the one method it uses —
 
 ```go
-type WeekSource interface {
-    Week(ctx context.Context, season, week int) (score.Week, error)
+type StatsSource interface {
+    WeekStats(ctx context.Context, season, week int) (score.WeekStats, error)
 }
 ```
 
 — and `main` hands it a `sleeper.Client`. That keeps the provider out of the page's tests, which
-build a `score.Week` with `score.NewWeek` rather than standing up an `httptest` server, and it means
-the coming TTL cache is a wrapping `WeekSource` wired in `main` with nothing here edited.
+build a `score.WeekStats` with `score.NewWeekStats` rather than standing up an `httptest` server,
+and it means the coming TTL cache is a wrapping `StatsSource` wired in `main` with nothing here
+edited.
 
 **The view model carries strings, not floats, for points.** The template renders what the handler
 decided: a scored starter carries its formatted points, an absent one carries the literal

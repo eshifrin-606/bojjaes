@@ -16,32 +16,32 @@ import (
 	"github.com/eshifrin/bojjaes/internal/score"
 )
 
-// fakeWeeks stands in for the provider. It records what it was asked for, so
+// fakeSource stands in for the provider. It records what it was asked for, so
 // the tests that used to read an upstream request path can read a call instead.
-type fakeWeeks struct {
-	week score.Week
-	err  error
+type fakeSource struct {
+	weekStats score.WeekStats
+	err       error
 
 	calls              int
 	gotSeason, gotWeek int
 	gotCtxErr          error
 }
 
-func (f *fakeWeeks) Week(ctx context.Context, season, week int) (score.Week, error) {
+func (f *fakeSource) WeekStats(ctx context.Context, season, week int) (score.WeekStats, error) {
 	f.calls++
 	f.gotSeason, f.gotWeek = season, week
 	f.gotCtxErr = ctx.Err()
 	if f.err != nil {
-		return score.Week{}, f.err
+		return score.WeekStats{}, f.err
 	}
-	return f.week, nil
+	return f.weekStats, nil
 }
 
 // week14 is the slice of the real 2025 week 14 stats these tests turn on, built
 // here rather than fetched: 9493 scored twice for 167 receiving yards, 8138 ran
 // and caught for 111 yards and lost a fumble, and 7591 dressed and did nothing.
-func week14() score.Week {
-	return score.NewWeek(2025, 14, map[string]score.StatLine{
+func week14() score.WeekStats {
+	return score.NewWeekStats(2025, 14, map[string]score.StatLine{
 		"9493": {PlayerID: "9493", RecYd: 167, RecTD: 2},
 		"8138": {PlayerID: "8138", RushYd: 80, RecYd: 31, FumLost: 1},
 		"7591": {PlayerID: "7591"},
@@ -103,18 +103,18 @@ func TestBatchHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			weeks := &fakeWeeks{week: week14()}
+			source := &fakeSource{weekStats: week14()}
 
 			body, _ := json.Marshal(BatchRequest{Season: 2025, Week: 14, PlayerIDs: tt.playerIDs})
-			got := decodeBatch(t, postScores(t, BatchHandler(weeks), string(body)))
+			got := decodeBatch(t, postScores(t, BatchHandler(source), string(body)))
 
 			// One fetch serves every requested player; scoring a roster must
 			// not fan out into a fetch per player.
-			if weeks.calls != 1 {
-				t.Errorf("made %d fetches, want 1", weeks.calls)
+			if source.calls != 1 {
+				t.Errorf("made %d fetches, want 1", source.calls)
 			}
-			if weeks.gotSeason != 2025 || weeks.gotWeek != 14 {
-				t.Errorf("fetched season %d week %d, want 2025/14", weeks.gotSeason, weeks.gotWeek)
+			if source.gotSeason != 2025 || source.gotWeek != 14 {
+				t.Errorf("fetched season %d week %d, want 2025/14", source.gotSeason, source.gotWeek)
 			}
 
 			if len(got.Scores) != len(tt.wantScored) {
@@ -141,7 +141,7 @@ func TestBatchHandler(t *testing.T) {
 // The fetch must run under the request's context so a client disconnect
 // cancels the upstream call instead of leaving it in flight.
 func TestBatchHandlerPassesRequestContext(t *testing.T) {
-	weeks := &fakeWeeks{week: week14()}
+	source := &fakeSource{weekStats: week14()}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -149,9 +149,9 @@ func TestBatchHandlerPassesRequestContext(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/scores",
 		strings.NewReader(`{"season":2025,"week":14,"player_ids":["9493"]}`)).WithContext(ctx)
-	BatchHandler(weeks).ServeHTTP(rec, req)
+	BatchHandler(source).ServeHTTP(rec, req)
 
-	if weeks.gotCtxErr == nil {
+	if source.gotCtxErr == nil {
 		t.Error("the source was called under a live context; the fetch is not running under the request's")
 	}
 }
@@ -159,9 +159,9 @@ func TestBatchHandlerPassesRequestContext(t *testing.T) {
 // An unplayed week returns an empty payload. That is a legitimate answer, so
 // every player lands in no_stats and the request still succeeds.
 func TestBatchHandlerEveryPlayerAbsent(t *testing.T) {
-	weeks := &fakeWeeks{week: score.NewWeek(2026, 1, nil)}
+	source := &fakeSource{weekStats: score.NewWeekStats(2026, 1, nil)}
 
-	got := decodeBatch(t, postScores(t, BatchHandler(weeks),
+	got := decodeBatch(t, postScores(t, BatchHandler(source),
 		`{"season":2026,"week":1,"player_ids":["9493","8138"]}`))
 
 	if len(got.Scores) != 0 {
@@ -175,14 +175,14 @@ func TestBatchHandlerEveryPlayerAbsent(t *testing.T) {
 // Splitting the response into two lists is what makes an ID able to vanish
 // from both. The counts have to account for every requested player.
 func TestBatchHandlerAccountsForEveryRequestedID(t *testing.T) {
-	weeks := &fakeWeeks{week: week14()}
+	source := &fakeSource{weekStats: week14()}
 
 	// A repeated present ID and a repeated absent one: each occurrence is
 	// echoed, so the caller gets back what it asked for.
 	playerIDs := []string{"9493", "9493", "8138", "nope", "nope"}
 	body, _ := json.Marshal(BatchRequest{Season: 2025, Week: 14, PlayerIDs: playerIDs})
 
-	got := decodeBatch(t, postScores(t, BatchHandler(weeks), string(body)))
+	got := decodeBatch(t, postScores(t, BatchHandler(source), string(body)))
 
 	if len(got.Scores)+len(got.NoStats) != len(playerIDs) {
 		t.Errorf("scores (%d) + no_stats (%d) != requested (%d)",
@@ -196,12 +196,12 @@ func TestBatchHandlerAccountsForEveryRequestedID(t *testing.T) {
 // The season and week in the response are echoed from the request, so only
 // what the handler asked the source for shows which week was actually fetched.
 func TestBatchHandlerFetchesTheRequestedWeek(t *testing.T) {
-	weeks := &fakeWeeks{week: score.NewWeek(2023, 7, nil)}
+	source := &fakeSource{weekStats: score.NewWeekStats(2023, 7, nil)}
 
-	postScores(t, BatchHandler(weeks), `{"season":2023,"week":7,"player_ids":["9493"]}`)
+	postScores(t, BatchHandler(source), `{"season":2023,"week":7,"player_ids":["9493"]}`)
 
-	if weeks.gotSeason != 2023 || weeks.gotWeek != 7 {
-		t.Errorf("fetched season %d week %d, want 2023/7", weeks.gotSeason, weeks.gotWeek)
+	if source.gotSeason != 2023 || source.gotWeek != 7 {
+		t.Errorf("fetched season %d week %d, want 2023/7", source.gotSeason, source.gotWeek)
 	}
 }
 
@@ -234,17 +234,17 @@ func TestBatchHandlerRejectsMalformedRequests(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			weeks := &fakeWeeks{week: week14()}
+			source := &fakeSource{weekStats: week14()}
 
-			rec := postScores(t, BatchHandler(weeks), tt.body)
+			rec := postScores(t, BatchHandler(source), tt.body)
 
 			if rec.Code < 400 || rec.Code > 499 {
 				t.Errorf("status = %d, want 4xx (body: %s)", rec.Code, rec.Body)
 			}
 			// A request we already know is malformed must not cost an
 			// upstream call.
-			if weeks.calls != 0 {
-				t.Errorf("made %d fetches for a malformed request, want 0", weeks.calls)
+			if source.calls != 0 {
+				t.Errorf("made %d fetches for a malformed request, want 0", source.calls)
 			}
 			if !strings.Contains(rec.Body.String(), tt.wantMsg) {
 				t.Errorf("error %q does not name the problem (%q)", strings.TrimSpace(rec.Body.String()), tt.wantMsg)
@@ -256,9 +256,9 @@ func TestBatchHandlerRejectsMalformedRequests(t *testing.T) {
 // The cap is the league's maximum roster size, so a full roster is a valid
 // request rather than an off-by-one rejection.
 func TestBatchHandlerAcceptsMaxPlayerIDs(t *testing.T) {
-	weeks := &fakeWeeks{week: week14()}
+	source := &fakeSource{weekStats: week14()}
 
-	got := decodeBatch(t, postScores(t, BatchHandler(weeks), playerIDsBody(t, maxPlayerIDs)))
+	got := decodeBatch(t, postScores(t, BatchHandler(source), playerIDsBody(t, maxPlayerIDs)))
 
 	if len(got.Scores)+len(got.NoStats) != maxPlayerIDs {
 		t.Errorf("accounted for %d players, want %d", len(got.Scores)+len(got.NoStats), maxPlayerIDs)
@@ -270,9 +270,9 @@ func TestBatchHandlerUpstreamFailure(t *testing.T) {
 	log.SetOutput(&logged)
 	t.Cleanup(func() { log.SetOutput(os.Stderr) })
 
-	weeks := &fakeWeeks{err: errors.New("sleeper is down")}
+	source := &fakeSource{err: errors.New("sleeper is down")}
 
-	rec := postScores(t, BatchHandler(weeks), `{"season":2025,"week":14,"player_ids":["9493"]}`)
+	rec := postScores(t, BatchHandler(source), `{"season":2025,"week":14,"player_ids":["9493"]}`)
 
 	if rec.Code < 500 || rec.Code > 599 {
 		t.Errorf("status = %d, want 5xx", rec.Code)

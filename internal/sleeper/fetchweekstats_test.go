@@ -10,12 +10,12 @@ import (
 	"github.com/eshifrin/bojjaes/internal/score"
 )
 
-func TestFetchWeekReturnsAPlayerFromTheFixture(t *testing.T) {
+func TestFetchWeekStatsReturnsAPlayerFromTheFixture(t *testing.T) {
 	srv := fixtureServer(t)
 
-	week, err := FetchWeek(context.Background(), srv.URL, 2025, 14)
+	week, err := FetchWeekStats(context.Background(), srv.URL, 2025, 14)
 	if err != nil {
-		t.Fatalf("FetchWeek: %v", err)
+		t.Fatalf("FetchWeekStats: %v", err)
 	}
 
 	line, ok := week.Player("9493")
@@ -30,12 +30,12 @@ func TestFetchWeekReturnsAPlayerFromTheFixture(t *testing.T) {
 // A null entry decodes to a nil map, which reads every stat as zero. Carrying
 // it into the snapshot would turn "we have nothing for this player" into a
 // scoreless week.
-func TestFetchWeekSkipsNullEntries(t *testing.T) {
+func TestFetchWeekStatsSkipsNullEntries(t *testing.T) {
 	srv := jsonServer(t, `{"9493": null}`)
 
-	week, err := FetchWeek(context.Background(), srv.URL, 2025, 14)
+	week, err := FetchWeekStats(context.Background(), srv.URL, 2025, 14)
 	if err != nil {
-		t.Fatalf("FetchWeek: %v", err)
+		t.Fatalf("FetchWeekStats: %v", err)
 	}
 
 	if line, ok := week.Player("9493"); ok {
@@ -44,12 +44,12 @@ func TestFetchWeekSkipsNullEntries(t *testing.T) {
 }
 
 // An unplayed week returns 200 with `{}`. That is an answer, not a failure.
-func TestFetchWeekEmptyPayloadIsNotAnError(t *testing.T) {
+func TestFetchWeekStatsEmptyPayloadIsNotAnError(t *testing.T) {
 	srv := jsonServer(t, `{}`)
 
-	week, err := FetchWeek(context.Background(), srv.URL, 2025, 18)
+	week, err := FetchWeekStats(context.Background(), srv.URL, 2025, 18)
 	if err != nil {
-		t.Fatalf("FetchWeek on an empty payload: %v", err)
+		t.Fatalf("FetchWeekStats on an empty payload: %v", err)
 	}
 
 	if line, ok := week.Player("9493"); ok {
@@ -57,15 +57,15 @@ func TestFetchWeekEmptyPayloadIsNotAnError(t *testing.T) {
 	}
 }
 
-func TestFetchWeekUpstreamFailureIsAnError(t *testing.T) {
+func TestFetchWeekStatsUpstreamFailureIsAnError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "sleeper is down", http.StatusInternalServerError)
 	}))
 	t.Cleanup(srv.Close)
 
-	week, err := FetchWeek(context.Background(), srv.URL, 2025, 14)
+	week, err := FetchWeekStats(context.Background(), srv.URL, 2025, 14)
 	if err == nil {
-		t.Fatal("FetchWeek returned no error on a 500")
+		t.Fatal("FetchWeekStats returned no error on a 500")
 	}
 	for _, want := range []string{"2025", "14"} {
 		if !strings.Contains(err.Error(), want) {
@@ -75,19 +75,19 @@ func TestFetchWeekUpstreamFailureIsAnError(t *testing.T) {
 
 	// A snapshot alongside an error is a snapshot someone will read.
 	if _, ok := week.Player(nacuaPlayerID); ok {
-		t.Error("a populated Week was returned alongside the error")
+		t.Error("a populated WeekStats was returned alongside the error")
 	}
 }
 
 // The settled week that GET /score existed to prove: Nacua's real 2025 week 14
 // line, fetched and transformed and scored. It cannot change, so a difference
 // here is the fetch or the transform breaking.
-func TestFetchWeekSettledWeek(t *testing.T) {
+func TestFetchWeekStatsSettledWeek(t *testing.T) {
 	srv := fixtureServer(t)
 
-	week, err := FetchWeek(context.Background(), srv.URL, 2025, 14)
+	week, err := FetchWeekStats(context.Background(), srv.URL, 2025, 14)
 	if err != nil {
-		t.Fatalf("FetchWeek: %v", err)
+		t.Fatalf("FetchWeekStats: %v", err)
 	}
 
 	got, ok := week.Player(nacuaPlayerID)

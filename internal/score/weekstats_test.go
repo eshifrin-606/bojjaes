@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestWeekPlayerReturnsHeldStatLine(t *testing.T) {
-	w := NewWeek(2025, 14, map[string]StatLine{
+func TestWeekStatsPlayerReturnsHeldStatLine(t *testing.T) {
+	w := NewWeekStats(2025, 14, map[string]StatLine{
 		"9493": {PlayerID: "9493", Season: 2025, Week: 14, RecYd: 105},
 	})
 
@@ -19,8 +19,8 @@ func TestWeekPlayerReturnsHeldStatLine(t *testing.T) {
 	}
 }
 
-func TestWeekPlayerAbsentIsAValue(t *testing.T) {
-	w := NewWeek(2025, 14, map[string]StatLine{
+func TestWeekStatsPlayerAbsentIsAValue(t *testing.T) {
+	w := NewWeekStats(2025, 14, map[string]StatLine{
 		"9493": {PlayerID: "9493", Season: 2025, Week: 14, RecYd: 105},
 	})
 
@@ -35,8 +35,8 @@ func TestWeekPlayerAbsentIsAValue(t *testing.T) {
 
 // A stat line cannot be attributed to a week other than the one it was fetched
 // for, however it was labelled on the way in.
-func TestWeekPlayerCarriesTheWeeksSeasonAndWeek(t *testing.T) {
-	w := NewWeek(2025, 14, map[string]StatLine{
+func TestWeekStatsPlayerCarriesTheWeeksSeasonAndWeek(t *testing.T) {
+	w := NewWeekStats(2025, 14, map[string]StatLine{
 		"9493": {PlayerID: "9493", Season: 1999, Week: 3, RecYd: 105},
 	})
 
@@ -46,11 +46,11 @@ func TestWeekPlayerCarriesTheWeeksSeasonAndWeek(t *testing.T) {
 	}
 }
 
-// A Week is one value shared by every request in flight. Reading it is safe
+// A WeekStats is one value shared by every request in flight. Reading it is safe
 // only because nothing writes to it after construction — under -race, a
 // memoising read would show up here.
-func TestWeekConcurrentReadsAgree(t *testing.T) {
-	w := NewWeek(2025, 14, map[string]StatLine{
+func TestWeekStatsConcurrentReadsAgree(t *testing.T) {
+	w := NewWeekStats(2025, 14, map[string]StatLine{
 		"9493": {PlayerID: "9493", RecYd: 167, RecTD: 2},
 	})
 
