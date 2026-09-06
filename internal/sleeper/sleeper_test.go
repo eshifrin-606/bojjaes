@@ -1,4 +1,4 @@
-package score
+package sleeper
 
 import (
 	"context"
@@ -9,7 +9,13 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/eshifrin/bojjaes/internal/score"
 )
+
+// The player the week 14 fixture is verified against: 9493 is Puka Nacua,
+// LAR WR. A test constant now that no endpoint hardcodes him.
+const nacuaPlayerID = "9493"
 
 // fixtureServer serves testdata/week14.json, failing the test if the caller
 // asks for any path but the expected one.
@@ -52,8 +58,8 @@ func TestFetchWeekly(t *testing.T) {
 	if got := len(weekly); got != 11 {
 		t.Errorf("decoded %d entries, want 11", got)
 	}
-	if got := weekly[NacuaPlayerID]["rec_yd"]; got != 167 {
-		t.Errorf("weekly[%s][rec_yd] = %v, want 167", NacuaPlayerID, got)
+	if got := weekly[nacuaPlayerID]["rec_yd"]; got != 167 {
+		t.Errorf("weekly[%s][rec_yd] = %v, want 167", nacuaPlayerID, got)
 	}
 }
 
@@ -172,7 +178,7 @@ func TestStatLineFrom(t *testing.T) {
 	tests := []struct {
 		name     string
 		playerID string
-		want     StatLine
+		want     score.StatLine
 	}{
 		{
 			// Nacua's real week 14 line: 7 catches for 167 and 2 TDs, no
@@ -180,8 +186,8 @@ func TestStatLineFrom(t *testing.T) {
 			// his fixture entry, so this also covers missing keys reading as
 			// zero.
 			name:     "player present in the weekly payload",
-			playerID: NacuaPlayerID,
-			want: StatLine{
+			playerID: nacuaPlayerID,
+			want: score.StatLine{
 				PlayerID: "9493",
 				Season:   2025,
 				Week:     14,
@@ -195,7 +201,7 @@ func TestStatLineFrom(t *testing.T) {
 			// cannot pass both cases.
 			name:     "a different player in the same payload",
 			playerID: "8138",
-			want: StatLine{
+			want: score.StatLine{
 				PlayerID: "8138",
 				Season:   2025,
 				Week:     14,
@@ -211,7 +217,7 @@ func TestStatLineFrom(t *testing.T) {
 			// mistyped key cannot pass by reading zero.
 			name:     "quarterback passing stats are mapped",
 			playerID: "3294",
-			want: StatLine{
+			want: score.StatLine{
 				PlayerID: "3294",
 				Season:   2025,
 				Week:     14,
@@ -228,7 +234,7 @@ func TestStatLineFrom(t *testing.T) {
 			// and none of the passing keys.
 			name:     "a rushed two-point conversion is mapped",
 			playerID: "12534",
-			want: StatLine{
+			want: score.StatLine{
 				PlayerID: "12534",
 				Season:   2025,
 				Week:     14,
@@ -242,7 +248,7 @@ func TestStatLineFrom(t *testing.T) {
 			// lines carry a TwoPt of 1.
 			name:     "a caught two-point conversion is mapped",
 			playerID: "8110",
-			want: StatLine{
+			want: score.StatLine{
 				PlayerID: "8110",
 				Season:   2025,
 				Week:     14,
@@ -256,7 +262,7 @@ func TestStatLineFrom(t *testing.T) {
 			// no mapped stat keys. That is a real 0.0, not an absence.
 			name:     "player present but scoreless",
 			playerID: "7591",
-			want: StatLine{
+			want: score.StatLine{
 				PlayerID: "7591",
 				Season:   2025,
 				Week:     14,
@@ -312,7 +318,7 @@ func TestStatLineFromKicking(t *testing.T) {
 		t.Fatal("statLineFrom reported the kicker absent")
 	}
 
-	want := StatLine{
+	want := score.StatLine{
 		PlayerID: "kicker",
 		Season:   2025,
 		Week:     14,
@@ -330,7 +336,7 @@ func TestStatLineFromKicking(t *testing.T) {
 // unmapped key reads as zero exactly like a rule nobody has written yet.
 //
 // This is the "misses are not penalised" scenario stated at the only level
-// that can express it. StatLine carries no missed-kick field, by design, so a
+// that can express it. score.StatLine carries no missed-kick field, by design, so a
 // calculator test has no input for "missed 2" — the misses exist only as
 // payload keys.
 //
@@ -351,11 +357,11 @@ func TestStatLineFromIgnoresMissedKicks(t *testing.T) {
 		t.Fatal("statLineFrom reported the kicker absent")
 	}
 
-	want := StatLine{PlayerID: "kicker", Season: 2025, Week: 14, FGMade: 1}
+	want := score.StatLine{PlayerID: "kicker", Season: 2025, Week: 14, FGMade: 1}
 	if got != want {
 		t.Errorf("statLineFrom = %+v, want %+v; no miss or attempt key may reach a field", got, want)
 	}
-	if pts := Points(got); pts != 3 {
+	if pts := score.Points(got); pts != 3 {
 		t.Errorf("Points = %v, want 3; the made field goal alone, with the misses free", pts)
 	}
 }
@@ -428,7 +434,7 @@ func TestStatLineFromIgnoresPickSixThrown(t *testing.T) {
 	if !ok {
 		t.Fatal("statLineFrom reported the passer absent")
 	}
-	if pts := Points(got); pts != -3 {
+	if pts := score.Points(got); pts != -3 {
 		t.Errorf("Points = %v, want -3; a pick-six thrown is a penalty, never a touchdown scored", pts)
 	}
 }
@@ -448,7 +454,7 @@ func TestStatLineFromIgnoresSacksTaken(t *testing.T) {
 	if got.Sack != 0 {
 		t.Errorf("Sack = %v, want 0; being sacked is not recording one", got.Sack)
 	}
-	if pts := Points(got); pts != 0 {
+	if pts := score.Points(got); pts != 0 {
 		t.Errorf("Points = %v, want 0", pts)
 	}
 }
@@ -530,11 +536,11 @@ func TestStatLineFromIgnoresUnimplementedDefensiveRules(t *testing.T) {
 		t.Fatal("statLineFrom reported the defender absent")
 	}
 
-	want := StatLine{PlayerID: "defender", Season: 2025, Week: 14}
+	want := score.StatLine{PlayerID: "defender", Season: 2025, Week: 14}
 	if got != want {
 		t.Errorf("statLineFrom = %+v, want %+v; no excluded key may reach a field", got, want)
 	}
-	if pts := Points(got); pts != 0 {
+	if pts := score.Points(got); pts != 0 {
 		t.Errorf("Points = %v, want 0", pts)
 	}
 }
@@ -618,8 +624,8 @@ func TestFixtureScores(t *testing.T) {
 			if !ok {
 				t.Fatalf("statLineFrom reported player %q absent", tt.playerID)
 			}
-			if got := Points(line); got != tt.want {
-				t.Errorf("Points(%+v) = %v, want %v", line, got, tt.want)
+			if got := score.Points(line); got != tt.want {
+				t.Errorf("score.Points(%+v) = %v, want %v", line, got, tt.want)
 			}
 		})
 	}
@@ -637,9 +643,9 @@ func TestStatLineFromAbsent(t *testing.T) {
 // reads every stat as zero, so it has to report absent rather than scoring a
 // plausible 0.0.
 func TestStatLineFromNullEntry(t *testing.T) {
-	weekly := map[string]map[string]float64{NacuaPlayerID: nil}
+	weekly := map[string]map[string]float64{nacuaPlayerID: nil}
 
-	if _, ok := statLineFrom(weekly, NacuaPlayerID, 2025, 14); ok {
+	if _, ok := statLineFrom(weekly, nacuaPlayerID, 2025, 14); ok {
 		t.Error("statLineFrom reported a null entry as present; a silent zero score is exactly the failure this guards")
 	}
 }

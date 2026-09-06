@@ -535,32 +535,43 @@ reader does not mistake any of them for an oversight:
   return touchdown, or safety stats
 - **THEN** those entries are not treated as players and their stats do not reach any player's score
 
-### Requirement: Score endpoint
+### Requirement: Weekly stat snapshot
 
-The system SHALL expose an HTTP endpoint that, when hit, fetches and scores the hardcoded target
-player and week (Puka Nacua, 2025 regular season, week 14), prints the resulting score to standard
-output, and returns the stat line and score as JSON.
+One fetch of a season and week SHALL yield a provider-neutral snapshot from which any player's stat
+line can be read. The snapshot SHALL carry the season and week it was fetched for, so a stat line
+read from it cannot be attributed to a different week.
 
-This endpoint SHALL treat an absent player as a failure, even though the transform now reports
-absence as an ordinary result. The endpoint performs that conversion itself. Its target is a settled
-historical week in which the player is known to be present, so absence there indicates the fetch or
-the transform is broken rather than that the player has no stats.
+The snapshot SHALL NOT expose the provider's payload shape or its stat keys. A consumer holding a
+snapshot SHALL be able to read a player without knowing which provider produced it.
 
-#### Scenario: Successful scoring request
+Reading a player from a snapshot SHALL report absence as a value rather than an error, on the same
+terms as the transform: the payload cannot say whether a missing player has not kicked off, was
+inactive, or does not exist.
 
-- **WHEN** the endpoint is requested and Sleeper returns the weekly payload
-- **THEN** the server responds 200 with JSON containing the player's stats and fantasy points, and
-  writes the score to standard output
+A snapshot SHALL be complete when it is returned — no part of its content is computed later — so
+that reading from it cannot fail, cannot vary between reads, and is safe to share between concurrent
+requests.
 
-#### Scenario: Upstream failure
+#### Scenario: A player is read from a snapshot
 
-- **WHEN** the Sleeper request fails or returns a non-200 status
-- **THEN** the server responds with a 5xx status and an error message rather than a zero score
+- **WHEN** a snapshot has been fetched for a season and week and a player is present in it
+- **THEN** reading that player yields the stat line for that season and week
 
-#### Scenario: Target player absent from a settled week
+#### Scenario: An absent player is a value, not an error
 
-- **WHEN** the target player is absent from the weekly payload
-- **THEN** the endpoint responds 502 rather than reporting the player as unscored
+- **WHEN** a player has no entry in the snapshot
+- **THEN** reading that player reports absence without an error and without a zeroed stat line
+
+#### Scenario: The snapshot carries no provider shape
+
+- **WHEN** a snapshot is held by a consumer
+- **THEN** that consumer can read any player without referring to a provider stat key or payload type
+
+#### Scenario: Repeated reads agree
+
+- **WHEN** the same player is read from the same snapshot twice, including from two concurrent
+  requests
+- **THEN** both reads yield the same result
 
 ### Requirement: Multi-player score endpoint
 

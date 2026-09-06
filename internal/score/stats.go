@@ -1,7 +1,11 @@
+// Package score is the league's scoring domain: a provider-neutral stat line,
+// the HMFFL rules over it, and a weekly snapshot of both. It performs no I/O
+// and speaks no wire format, and it may not depend on a provider package or on
+// the transport that serves it.
 package score
 
 // StatLine is one player's NFL production for one week, in provider-neutral
-// terms. Sleeper's stat keys stay behind statLineFrom.
+// terms. A provider's stat keys stay behind that provider's adapter.
 //
 // Fantasy points are deliberately absent: a stat line cannot carry a stale
 // total if it never carries a total. See Points.

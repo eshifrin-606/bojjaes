@@ -19,6 +19,9 @@ One line each, roughly in dependency order. Not sized, not scheduled.
 
 ## Serving the page
 
+- [x] Split `internal/score` into `internal/score` (domain), `internal/sleeper` (adapter), and
+  `internal/api` (JSON), with `cmd/server` the only package naming a provider, so that a second
+  consumer can score a roster from one fetch without going through HTTP.
 - [ ] Add `GET /{season}/{week}` rendering two equal columns of scored starters plus their two totals with `html/template`.
 - [ ] Keep the page honest: as-of timestamp visible, and no margin, win probability, progress bar, or leader highlight anywhere in the markup or CSS.
 - [ ] Stamp the as-of from our own Sleeper fetch time for now, labelled as such, and watch on a live Sunday how far it drifts from when the stats actually moved.
@@ -34,7 +37,9 @@ One line each, roughly in dependency order. Not sized, not scheduled.
 ## Making the binary deployable
 
 - [ ] Teach `main.go` to read `PORT`, use its own `http.Server` with timeouts instead of `DefaultServeMux`, and shut down gracefully.
-- [ ] Drop the walking-skeleton `fmt.Printf` out of the `/score` handler.
+- [x] Drop the walking-skeleton `fmt.Printf` out of the `/score` handler. Done by deleting
+  `GET /score` outright in the package split: the fixed player and week it proved is now a test in
+  `internal/sleeper`, and `POST /scores` covers what the endpoint did.
 - [ ] Dockerfile and `fly.toml`, one region, one machine.
 
 ## Later, deliberately

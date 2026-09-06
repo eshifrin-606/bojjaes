@@ -1,8 +1,10 @@
-package score
+package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,27 +12,40 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/eshifrin/bojjaes/internal/score"
 )
 
-// countingFixtureServer serves testdata/week14.json and records how many
-// upstream requests the handler actually made. The response is labelled from
-// the request rather than the fetch, so a handler asking upstream for the
-// wrong week would still look right — the path assertion is what catches it.
-func countingFixtureServer(t *testing.T, requests *int) *httptest.Server {
-	t.Helper()
+// fakeWeeks stands in for the provider. It records what it was asked for, so
+// the tests that used to read an upstream request path can read a call instead.
+type fakeWeeks struct {
+	week score.Week
+	err  error
 
-	const wantPath = "/v1/stats/nfl/regular/2025/14"
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		*requests++
-		if r.URL.Path != wantPath {
-			t.Errorf("requested %q, want %q", r.URL.Path, wantPath)
-			http.NotFound(w, r)
-			return
-		}
-		http.ServeFile(w, r, "testdata/week14.json")
-	}))
-	t.Cleanup(srv.Close)
-	return srv
+	calls              int
+	gotSeason, gotWeek int
+	gotCtxErr          error
+}
+
+func (f *fakeWeeks) Week(ctx context.Context, season, week int) (score.Week, error) {
+	f.calls++
+	f.gotSeason, f.gotWeek = season, week
+	f.gotCtxErr = ctx.Err()
+	if f.err != nil {
+		return score.Week{}, f.err
+	}
+	return f.week, nil
+}
+
+// week14 is the slice of the real 2025 week 14 stats these tests turn on, built
+// here rather than fetched: 9493 scored twice for 167 receiving yards, 8138 ran
+// and caught for 111 yards and lost a fumble, and 7591 dressed and did nothing.
+func week14() score.Week {
+	return score.NewWeek(2025, 14, map[string]score.StatLine{
+		"9493": {PlayerID: "9493", RecYd: 167, RecTD: 2},
+		"8138": {PlayerID: "8138", RushYd: 80, RecYd: 31, FumLost: 1},
+		"7591": {PlayerID: "7591"},
+	})
 }
 
 func postScores(t *testing.T, h http.Handler, body string) *httptest.ResponseRecorder {
@@ -65,15 +80,15 @@ func TestBatchHandler(t *testing.T) {
 	}{
 		{
 			name:      "all players present",
-			playerIDs: []string{NacuaPlayerID, "8138"},
+			playerIDs: []string{"9493", "8138"},
 			// Cook: 111 combined yards pays 3.5, one lost fumble costs 3.
-			wantScored:  map[string]float64{NacuaPlayerID: 19, "8138": 0.5},
+			wantScored:  map[string]float64{"9493": 19, "8138": 0.5},
 			wantNoStats: []string{},
 		},
 		{
 			name:        "a mix of present and absent players",
-			playerIDs:   []string{NacuaPlayerID, "does-not-exist"},
-			wantScored:  map[string]float64{NacuaPlayerID: 19},
+			playerIDs:   []string{"9493", "does-not-exist"},
+			wantScored:  map[string]float64{"9493": 19},
 			wantNoStats: []string{"does-not-exist"},
 		},
 		{
@@ -88,16 +103,18 @@ func TestBatchHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var requests int
-			srv := countingFixtureServer(t, &requests)
+			weeks := &fakeWeeks{week: week14()}
 
 			body, _ := json.Marshal(BatchRequest{Season: 2025, Week: 14, PlayerIDs: tt.playerIDs})
-			got := decodeBatch(t, postScores(t, BatchHandler(srv.URL), string(body)))
+			got := decodeBatch(t, postScores(t, BatchHandler(weeks), string(body)))
 
-			// One upstream fetch serves every requested player; scoring a
-			// roster must not fan out into a request per player.
-			if requests != 1 {
-				t.Errorf("made %d upstream requests, want 1", requests)
+			// One fetch serves every requested player; scoring a roster must
+			// not fan out into a fetch per player.
+			if weeks.calls != 1 {
+				t.Errorf("made %d fetches, want 1", weeks.calls)
+			}
+			if weeks.gotSeason != 2025 || weeks.gotWeek != 14 {
+				t.Errorf("fetched season %d week %d, want 2025/14", weeks.gotSeason, weeks.gotWeek)
 			}
 
 			if len(got.Scores) != len(tt.wantScored) {
@@ -121,12 +138,30 @@ func TestBatchHandler(t *testing.T) {
 	}
 }
 
+// The fetch must run under the request's context so a client disconnect
+// cancels the upstream call instead of leaving it in flight.
+func TestBatchHandlerPassesRequestContext(t *testing.T) {
+	weeks := &fakeWeeks{week: week14()}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/scores",
+		strings.NewReader(`{"season":2025,"week":14,"player_ids":["9493"]}`)).WithContext(ctx)
+	BatchHandler(weeks).ServeHTTP(rec, req)
+
+	if weeks.gotCtxErr == nil {
+		t.Error("the source was called under a live context; the fetch is not running under the request's")
+	}
+}
+
 // An unplayed week returns an empty payload. That is a legitimate answer, so
 // every player lands in no_stats and the request still succeeds.
 func TestBatchHandlerEveryPlayerAbsent(t *testing.T) {
-	srv := jsonServer(t, `{}`)
+	weeks := &fakeWeeks{week: score.NewWeek(2026, 1, nil)}
 
-	got := decodeBatch(t, postScores(t, BatchHandler(srv.URL),
+	got := decodeBatch(t, postScores(t, BatchHandler(weeks),
 		`{"season":2026,"week":1,"player_ids":["9493","8138"]}`))
 
 	if len(got.Scores) != 0 {
@@ -140,15 +175,14 @@ func TestBatchHandlerEveryPlayerAbsent(t *testing.T) {
 // Splitting the response into two lists is what makes an ID able to vanish
 // from both. The counts have to account for every requested player.
 func TestBatchHandlerAccountsForEveryRequestedID(t *testing.T) {
-	var requests int
-	srv := countingFixtureServer(t, &requests)
+	weeks := &fakeWeeks{week: week14()}
 
 	// A repeated present ID and a repeated absent one: each occurrence is
 	// echoed, so the caller gets back what it asked for.
-	playerIDs := []string{NacuaPlayerID, NacuaPlayerID, "8138", "nope", "nope"}
+	playerIDs := []string{"9493", "9493", "8138", "nope", "nope"}
 	body, _ := json.Marshal(BatchRequest{Season: 2025, Week: 14, PlayerIDs: playerIDs})
 
-	got := decodeBatch(t, postScores(t, BatchHandler(srv.URL), string(body)))
+	got := decodeBatch(t, postScores(t, BatchHandler(weeks), string(body)))
 
 	if len(got.Scores)+len(got.NoStats) != len(playerIDs) {
 		t.Errorf("scores (%d) + no_stats (%d) != requested (%d)",
@@ -160,21 +194,14 @@ func TestBatchHandlerAccountsForEveryRequestedID(t *testing.T) {
 }
 
 // The season and week in the response are echoed from the request, so only
-// the upstream path shows which week was actually fetched.
+// what the handler asked the source for shows which week was actually fetched.
 func TestBatchHandlerFetchesTheRequestedWeek(t *testing.T) {
-	var gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{}`))
-	}))
-	t.Cleanup(srv.Close)
+	weeks := &fakeWeeks{week: score.NewWeek(2023, 7, nil)}
 
-	postScores(t, BatchHandler(srv.URL), `{"season":2023,"week":7,"player_ids":["9493"]}`)
+	postScores(t, BatchHandler(weeks), `{"season":2023,"week":7,"player_ids":["9493"]}`)
 
-	const wantPath = "/v1/stats/nfl/regular/2023/7"
-	if gotPath != wantPath {
-		t.Errorf("fetched %q, want %q", gotPath, wantPath)
+	if weeks.gotSeason != 2023 || weeks.gotWeek != 7 {
+		t.Errorf("fetched season %d week %d, want 2023/7", weeks.gotSeason, weeks.gotWeek)
 	}
 }
 
@@ -207,18 +234,17 @@ func TestBatchHandlerRejectsMalformedRequests(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var requests int
-			srv := countingFixtureServer(t, &requests)
+			weeks := &fakeWeeks{week: week14()}
 
-			rec := postScores(t, BatchHandler(srv.URL), tt.body)
+			rec := postScores(t, BatchHandler(weeks), tt.body)
 
 			if rec.Code < 400 || rec.Code > 499 {
 				t.Errorf("status = %d, want 4xx (body: %s)", rec.Code, rec.Body)
 			}
 			// A request we already know is malformed must not cost an
 			// upstream call.
-			if requests != 0 {
-				t.Errorf("made %d upstream requests for a malformed request, want 0", requests)
+			if weeks.calls != 0 {
+				t.Errorf("made %d fetches for a malformed request, want 0", weeks.calls)
 			}
 			if !strings.Contains(rec.Body.String(), tt.wantMsg) {
 				t.Errorf("error %q does not name the problem (%q)", strings.TrimSpace(rec.Body.String()), tt.wantMsg)
@@ -230,10 +256,9 @@ func TestBatchHandlerRejectsMalformedRequests(t *testing.T) {
 // The cap is the league's maximum roster size, so a full roster is a valid
 // request rather than an off-by-one rejection.
 func TestBatchHandlerAcceptsMaxPlayerIDs(t *testing.T) {
-	var requests int
-	srv := countingFixtureServer(t, &requests)
+	weeks := &fakeWeeks{week: week14()}
 
-	got := decodeBatch(t, postScores(t, BatchHandler(srv.URL), playerIDsBody(t, maxPlayerIDs)))
+	got := decodeBatch(t, postScores(t, BatchHandler(weeks), playerIDsBody(t, maxPlayerIDs)))
 
 	if len(got.Scores)+len(got.NoStats) != maxPlayerIDs {
 		t.Errorf("accounted for %d players, want %d", len(got.Scores)+len(got.NoStats), maxPlayerIDs)
@@ -245,12 +270,9 @@ func TestBatchHandlerUpstreamFailure(t *testing.T) {
 	log.SetOutput(&logged)
 	t.Cleanup(func() { log.SetOutput(os.Stderr) })
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "sleeper is down", http.StatusInternalServerError)
-	}))
-	t.Cleanup(srv.Close)
+	weeks := &fakeWeeks{err: errors.New("sleeper is down")}
 
-	rec := postScores(t, BatchHandler(srv.URL), `{"season":2025,"week":14,"player_ids":["9493"]}`)
+	rec := postScores(t, BatchHandler(weeks), `{"season":2025,"week":14,"player_ids":["9493"]}`)
 
 	if rec.Code < 500 || rec.Code > 599 {
 		t.Errorf("status = %d, want 5xx", rec.Code)

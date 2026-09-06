@@ -1,4 +1,8 @@
-package score
+// Package sleeper adapts Sleeper's weekly stats REST API to the neutral types
+// in internal/score. It is the only package in which a Sleeper stat key or
+// payload shape appears; nothing here may be imported by a scoring or serving
+// package.
+package sleeper
 
 import (
 	"context"
@@ -6,19 +10,12 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/eshifrin/bojjaes/internal/score"
 )
 
-// The one player and week this walking skeleton scores. Verified against
-// Sleeper's player index (9493 = Puka Nacua, LAR WR, BYU) and the week 14 box
-// score.
-const (
-	NacuaPlayerID = "9493"
-	TargetSeason  = 2025
-	TargetWeek    = 14
-)
-
-// SleeperBaseURL is the live REST host; tests pass an httptest.Server URL.
-const SleeperBaseURL = "https://api.sleeper.app"
+// BaseURL is the live REST host; tests pass an httptest.Server URL.
+const BaseURL = "https://api.sleeper.app"
 
 // http.DefaultClient has no timeout, so a stalled upstream would hang the
 // request forever. The budget covers the whole exchange, body included.
@@ -65,12 +62,12 @@ func fetchWeekly(ctx context.Context, baseURL string, season, week int) (map[str
 // Absence is a value rather than an error because the payload cannot say why a
 // player is missing: not yet kicked off, inactive, and unknown ID all look
 // identical. Only the caller can decide what absence means for its request.
-func statLineFrom(weekly map[string]map[string]float64, playerID string, season, week int) (StatLine, bool) {
+func statLineFrom(weekly map[string]map[string]float64, playerID string, season, week int) (score.StatLine, bool) {
 	// A null entry decodes to a nil map, which reads every stat as zero just as
 	// convincingly as a missing player does.
 	raw, ok := weekly[playerID]
 	if !ok || raw == nil {
-		return StatLine{}, false
+		return score.StatLine{}, false
 	}
 
 	// A stat the player did not record is absent from their entry, which reads
@@ -82,7 +79,7 @@ func statLineFrom(weekly map[string]map[string]float64, playerID string, season,
 	// this reader converts nothing where stat truncates.
 	statFloat := func(key string) float64 { return raw[key] }
 
-	return StatLine{
+	return score.StatLine{
 		PlayerID: playerID,
 		Season:   season,
 		Week:     week,
@@ -132,4 +129,44 @@ func statLineFrom(weekly map[string]map[string]float64, playerID string, season,
 		// else.
 		FG50Plus: stat("fgm_50p"),
 	}, true
+}
+
+// FetchWeek reads one season and week's stats and returns them as a
+// provider-neutral snapshot.
+//
+// Every entry in the payload is transformed, not only the ones a caller will
+// ask for: that is what lets the decoded map's lifetime end in this function,
+// so no Sleeper shape escapes the package.
+func FetchWeek(ctx context.Context, baseURL string, season, week int) (score.Week, error) {
+	weekly, err := fetchWeekly(ctx, baseURL, season, week)
+	if err != nil {
+		return score.Week{}, err
+	}
+
+	players := make(map[string]score.StatLine, len(weekly))
+	for playerID := range weekly {
+		line, ok := statLineFrom(weekly, playerID, season, week)
+		if !ok {
+			// A null entry is not a scoreless week; leaving it out of the map
+			// keeps absence absent.
+			continue
+		}
+		players[playerID] = line
+	}
+	return score.NewWeek(season, week, players), nil
+}
+
+// Client is a handle on one Sleeper host. Its Week method satisfies the
+// week-source interfaces the serving packages declare for themselves.
+//
+// It lives here rather than in main because it is provider state — a base URL —
+// and holding it here means each composition root wires a value instead of
+// redeclaring the same adapter. Nothing in this package names the interfaces it
+// happens to satisfy, so the dependency still points one way.
+type Client struct {
+	BaseURL string
+}
+
+func (c Client) Week(ctx context.Context, season, week int) (score.Week, error) {
+	return FetchWeek(ctx, c.BaseURL, season, week)
 }
