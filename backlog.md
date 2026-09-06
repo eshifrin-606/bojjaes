@@ -25,7 +25,9 @@ One line each, roughly in dependency order. Not sized, not scheduled.
 - [x] Add `GET /{season}/{week}` rendering two equal columns of scored starters plus their two totals with `html/template`.
 - [ ] Keep the page honest: as-of timestamp visible, and no margin, win probability, progress bar, or leader highlight anywhere in the markup or CSS.
 - [ ] Stamp the as-of from our own Sleeper fetch time for now, labelled as such, and watch on a live Sunday how far it drifts from when the stats actually moved.
-- [ ] Add the ~5 minute client refresh in a few lines of vanilla JS, and only while the tab is visible.
+- [x] Add the ~5 minute client refresh in a few lines of vanilla JS, and only while the tab is visible.
+  The rendered contract is tested; the browser behaviours are still unobserved (see
+  `openspec/changes/refresh-page-while-visible/notes.md`).
 - [ ] Embed templates, CSS, and the lineup tree with `//go:embed` — which means the lineup files have to move somewhere a package can reach, since embed won't cross `..` or follow symlinks.
 - [ ] Pick the unguessable path prefix and decide where it lives so it doesn't end up in logs or a public README.
 
