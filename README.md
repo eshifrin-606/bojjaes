@@ -16,6 +16,27 @@ go run ./cmd/server
 
 It logs `listening on :8080` and stays in the foreground (Ctrl-C to stop).
 
+### The matchup page
+
+`GET /{season}/{week}` serves that week's matchup as an HTML page: the two teams
+of that week's lineup directory, their nine starters with points, and each
+lineup's total. The Bojjaes always hold the left column.
+
+```
+open http://localhost:8080/2025/15
+```
+
+No team appears in the URL — the week directory under `scripts/lineups` names
+both. A week that is not exactly one Bojjaes matchup is refused rather than
+guessed at: a week we never played is a `404`, a malformed week directory is a
+`500`, and a failed upstream fetch is a `502` rather than a page of zeros.
+
+The page shows both totals and nowhere shows their difference. A starter whose
+game has not kicked off is indistinguishable from one who was inactive, so it
+carries no margin, win probability, or leader highlight.
+
+### The scoring endpoint
+
 Hit the endpoint. `POST /scores` takes a season, a week, and up to a roster's
 worth of player IDs — the equivalent of the old `GET /score` smoke test is
 Nacua's settled 2025 week 14:
@@ -26,9 +47,8 @@ curl -s localhost:8080/scores -d '{
 }' | jq
 ```
 
-It is the only endpoint, and it is interim: it exists so `scripts/scores.sh` and
-`scripts/fantasycast.sh` can run, and it retires with them when the matchup page
-replaces them.
+It is interim: it exists so `scripts/scores.sh` and `scripts/fantasycast.sh` can
+run, and it retires with them when the matchup page replaces them.
 
 Score a whole lineup the same way:
 

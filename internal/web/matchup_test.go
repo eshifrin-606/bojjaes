@@ -1,0 +1,509 @@
+package web
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"regexp"
+	"slices"
+	"strconv"
+	"strings"
+	"testing"
+
+	"github.com/eshifrin/bojjaes/internal/roster"
+	"github.com/eshifrin/bojjaes/internal/score"
+)
+
+// unusedSource fails the test if the page ever reaches the provider.
+type unusedSource struct{ t *testing.T }
+
+func (u unusedSource) WeekStats(context.Context, int, int) (score.WeekStats, error) {
+	u.t.Helper()
+	u.t.Error("provider was called for a request that should never have reached it")
+	return score.WeekStats{}, nil
+}
+
+// fakeSource stands in for the provider: a WeekStats built here rather than
+// fetched, and a count of how many times the page asked for one.
+type fakeSource struct {
+	weekStats score.WeekStats
+	err       error
+
+	calls int
+}
+
+func (f *fakeSource) WeekStats(context.Context, int, int) (score.WeekStats, error) {
+	f.calls++
+	if f.err != nil {
+		return score.WeekStats{}, f.err
+	}
+	return f.weekStats, nil
+}
+
+// writeWeek lays out one week of a lineup tree and returns its root. Each entry
+// is a team name mapped to that roster file's contents.
+func writeWeek(t *testing.T, season, week int, rosters map[string]string) string {
+	t.Helper()
+
+	root := t.TempDir()
+	dir := filepath.Join(root, strconv.Itoa(season), strconv.Itoa(week))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("creating week directory: %v", err)
+	}
+	for team, body := range rosters {
+		if err := os.WriteFile(filepath.Join(dir, team+".csv"), []byte(body), 0o644); err != nil {
+			t.Fatalf("writing %s roster: %v", team, err)
+		}
+	}
+	return root
+}
+
+// A column of nine starters scoring 12, 0, 6, 3, 9, 0, 15, 4 and 7 — the spec's
+// worked example, totalling 56 — against an opponent's seven touchdowns and two
+// scoreless lines, totalling 42.
+var (
+	ourLine = []struct {
+		id, name string
+		points   float64
+		stats    score.StatLine
+	}{
+		{id: "1", name: "Puka Nacua", points: 12, stats: score.StatLine{RushTD: 2}},
+		{id: "2", name: "Bijan Robinson", points: 0},
+		{id: "3", name: "Rachaad White", points: 6, stats: score.StatLine{RushTD: 1}},
+		{id: "4", name: "Cam Little", points: 3, stats: score.StatLine{FGMade: 1}},
+		{id: "5", name: "Jaxon Smith-Njigba", points: 9, stats: score.StatLine{RushTD: 1, FGMade: 1}},
+		{id: "6", name: "Tyreek Hill", points: 0},
+		{id: "7", name: "Brandon Aubrey", points: 15, stats: score.StatLine{FGMade: 5}},
+		{id: "8", name: "Chase McLaughlin", points: 4, stats: score.StatLine{XPMade: 4}},
+		{id: "9", name: "Kyren Williams", points: 7, stats: score.StatLine{RushTD: 1, XPMade: 1}},
+	}
+
+	theirLine = []struct {
+		id, name string
+		points   float64
+		stats    score.StatLine
+	}{
+		{id: "11", name: "Josh Allen", points: 6, stats: score.StatLine{RushTD: 1}},
+		{id: "12", name: "Saquon Barkley", points: 6, stats: score.StatLine{RushTD: 1}},
+		{id: "13", name: "CeeDee Lamb", points: 6, stats: score.StatLine{RecTD: 1}},
+		{id: "14", name: "Amon-Ra St. Brown", points: 6, stats: score.StatLine{RecTD: 1}},
+		{id: "15", name: "Derrick Henry", points: 6, stats: score.StatLine{RushTD: 1}},
+		{id: "16", name: "Malik Nabers", points: 6, stats: score.StatLine{RecTD: 1}},
+		{id: "17", name: "Trey McBride", points: 6, stats: score.StatLine{RecTD: 1}},
+		{id: "18", name: "Jayden Daniels", points: 0},
+		{id: "19", name: "Ladd McConkey", points: 0},
+	}
+)
+
+// lineupCSV writes one of the fixtures above as a roster file.
+func lineupCSV(records []struct {
+	id, name string
+	points   float64
+	stats    score.StatLine
+}) string {
+	var b strings.Builder
+	for _, r := range records {
+		fmt.Fprintf(&b, "%s,%s\n", r.id, r.name)
+	}
+	return b.String()
+}
+
+// fixtureStats is the payload both fixture lineups are scored from. A record
+// the caller leaves out is a player the provider has no entry for.
+func fixtureStats(omit ...string) score.WeekStats {
+	skip := make(map[string]bool, len(omit))
+	for _, id := range omit {
+		skip[id] = true
+	}
+
+	players := make(map[string]score.StatLine)
+	for _, r := range append(append([]struct {
+		id, name string
+		points   float64
+		stats    score.StatLine
+	}{}, ourLine...), theirLine...) {
+		if skip[r.id] {
+			continue
+		}
+		line := r.stats
+		line.PlayerID = r.id
+		players[r.id] = line
+	}
+	return score.NewWeekStats(2025, 15, players)
+}
+
+// fixtureWeek lays out the two fixture lineups as a week of a lineup tree.
+func fixtureWeek(t *testing.T) string {
+	t.Helper()
+	return writeWeek(t, 2025, 15, map[string]string{
+		"bojjaes": lineupCSV(ourLine),
+		"wood":    lineupCSV(theirLine),
+	})
+}
+
+// renderedStarters pulls each rendered starter line out of the page as
+// "name=points". Reading the markup lives here alone, so a restyle touches one
+// helper rather than every assertion.
+var starterPattern = regexp.MustCompile(`(?s)<li>.*?class="player">(.*?)</span>.*?class="points">(.*?)</span>.*?</li>`)
+
+func renderedStarters(body string) []string {
+	var lines []string
+	for _, m := range starterPattern.FindAllStringSubmatch(body, -1) {
+		lines = append(lines, m[1]+"="+m[2])
+	}
+	return lines
+}
+
+var classPattern = regexp.MustCompile(`class="([^"]*)"`)
+
+// renderedTotals pulls the two column totals out of the page.
+var totalPattern = regexp.MustCompile(`class="total">(.*?)</`)
+
+func renderedTotals(body string) []string {
+	var totals []string
+	for _, m := range totalPattern.FindAllStringSubmatch(body, -1) {
+		totals = append(totals, m[1])
+	}
+	return totals
+}
+
+// serve routes through the same mux pattern main registers, so the tests cover
+// the segment wildcards and the method qualifier rather than the handler alone.
+func serve(h http.Handler, method, path string) *httptest.ResponseRecorder {
+	mux := http.NewServeMux()
+	mux.Handle("GET /{season}/{week}", h)
+
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest(method, path, nil))
+	return rec
+}
+
+func TestBadRequestPaths(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+	}{
+		{name: "non-numeric week", path: "/2025/fifteen"},
+		{name: "week past the season", path: "/2025/23"},
+		{name: "season before the provider's records", path: "/1998/3"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// A tree root that does not exist and a provider that fails the
+			// test if called: a refusal that touched either would show up as
+			// something other than a 400.
+			h := Handler(roster.New(filepath.Join(t.TempDir(), "no-such-tree")), unusedSource{t})
+
+			if rec := serve(h, http.MethodGet, tt.path); rec.Code != http.StatusBadRequest {
+				t.Errorf("GET %s = %d, want %d", tt.path, rec.Code, http.StatusBadRequest)
+			}
+		})
+	}
+}
+
+// The 405 comes from the mux's method-qualified pattern, not from the handler.
+// The test pins the registration: dropping the GET would make the page answer
+// a POST.
+func TestPostIsNotAllowed(t *testing.T) {
+	h := Handler(roster.New(t.TempDir()), unusedSource{t})
+
+	if rec := serve(h, http.MethodPost, "/2025/15"); rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("POST /2025/15 = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+	}
+}
+
+func TestBothTeamsAppearWithUsFirst(t *testing.T) {
+	root := writeWeek(t, 2025, 15, map[string]string{
+		"bojjaes": "9493,Puka Nacua\n",
+		"wood":    "8138,Bijan Robinson\n",
+	})
+
+	rec := serve(Handler(roster.New(root), &fakeSource{}), http.MethodGet, "/2025/15")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body)
+	}
+
+	body := rec.Body.String()
+	ours, theirs := strings.Index(body, "bojjaes"), strings.Index(body, "wood")
+	switch {
+	case ours < 0 || theirs < 0:
+		t.Fatalf("body names bojjaes at %d and wood at %d; want both present:\n%s", ours, theirs, body)
+	case ours > theirs:
+		t.Errorf("wood appears before bojjaes; the Bojjaes hold the left column")
+	}
+}
+
+// The column order comes from Matchup, which knows which roster is ours, and
+// never from the directory listing.
+func TestAlphabeticallyEarlierOpponentStaysOnTheRight(t *testing.T) {
+	root := writeWeek(t, 2025, 15, map[string]string{
+		"bojjaes":   "9493,Puka Nacua\n",
+		"aardvarks": "8138,Bijan Robinson\n",
+	})
+
+	rec := serve(Handler(roster.New(root), &fakeSource{}), http.MethodGet, "/2025/15")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body)
+	}
+
+	body := rec.Body.String()
+	if ours, theirs := strings.Index(body, "bojjaes"), strings.Index(body, "aardvarks"); ours > theirs {
+		t.Errorf("aardvarks appears before bojjaes; the Bojjaes hold the left column")
+	}
+}
+
+func TestWeekRefusals(t *testing.T) {
+	tests := []struct {
+		name    string
+		rosters map[string]string
+		week    int
+		want    int
+	}{
+		{
+			name: "no such week directory",
+			week: 17,
+			want: http.StatusNotFound,
+		},
+		{
+			name: "three rosters",
+			rosters: map[string]string{
+				"bojjaes": "9493,Puka Nacua\n",
+				"wood":    "8138,Bijan Robinson\n",
+				"aroma":   "7591,Rachaad White\n",
+			},
+			week: 15,
+			want: http.StatusInternalServerError,
+		},
+		{
+			name:    "one roster",
+			rosters: map[string]string{"bojjaes": "9493,Puka Nacua\n"},
+			week:    15,
+			want:    http.StatusInternalServerError,
+		},
+		{
+			name: "a matchup we are not in",
+			rosters: map[string]string{
+				"wood":  "8138,Bijan Robinson\n",
+				"aroma": "7591,Rachaad White\n",
+			},
+			week: 15,
+			want: http.StatusInternalServerError,
+		},
+		{
+			name: "a roster line with no id",
+			rosters: map[string]string{
+				"bojjaes": "9493,Puka Nacua\n",
+				"wood":    "8138,Bijan Robinson\n,Rachaad White\n",
+			},
+			week: 15,
+			want: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := writeWeek(t, 2025, 15, tt.rosters)
+
+			// No refusal reaches the provider: there is no reason to fetch a
+			// week we already know we cannot render.
+			rec := serve(Handler(roster.New(root), unusedSource{t}), http.MethodGet, "/2025/"+strconv.Itoa(tt.week))
+			if rec.Code != tt.want {
+				t.Errorf("status = %d, want %d", rec.Code, tt.want)
+			}
+			body := rec.Body.String()
+			if strings.Contains(body, "<ol>") {
+				t.Errorf("a refusal rendered a scoreboard:\n%s", body)
+			}
+			// The failing path goes to the log, which reaches whoever runs the
+			// server; the body reaches whoever asked for the page.
+			if strings.Contains(body, root) {
+				t.Errorf("the response body names a filesystem path:\n%s", body)
+			}
+		})
+	}
+}
+
+func TestStartersRenderWithTheirPoints(t *testing.T) {
+	rec := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body)
+	}
+
+	want := []string{
+		"Puka Nacua=12", "Bijan Robinson=0", "Rachaad White=6",
+		"Cam Little=3", "Jaxon Smith-Njigba=9", "Tyreek Hill=0",
+		"Brandon Aubrey=15", "Chase McLaughlin=4", "Kyren Williams=7",
+		"Josh Allen=6", "Saquon Barkley=6", "CeeDee Lamb=6",
+		"Amon-Ra St. Brown=6", "Derrick Henry=6", "Malik Nabers=6",
+		"Trey McBride=6", "Jayden Daniels=0", "Ladd McConkey=0",
+	}
+	if got := renderedStarters(rec.Body.String()); !slices.Equal(got, want) {
+		t.Errorf("rendered starters:\n got %q\nwant %q", got, want)
+	}
+}
+
+func TestEachColumnTotalsItsStarters(t *testing.T) {
+	rec := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	want := []string{"56", "42"}
+	if got := renderedTotals(rec.Body.String()); !slices.Equal(got, want) {
+		t.Errorf("totals = %q, want %q", got, want)
+	}
+}
+
+func TestBenchPlayersAreNotRendered(t *testing.T) {
+	bench := "20,First Bench\n21,Second Bench\n22,Third Bench\n"
+	root := writeWeek(t, 2025, 15, map[string]string{
+		"bojjaes": lineupCSV(ourLine) + bench,
+		"wood":    lineupCSV(theirLine),
+	})
+
+	rec := serve(Handler(roster.New(root), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	body := rec.Body.String()
+	for _, name := range []string{"First Bench", "Second Bench", "Third Bench"} {
+		if strings.Contains(body, name) {
+			t.Errorf("bench player %q appears on the page", name)
+		}
+	}
+	if got := renderedTotals(body); !slices.Equal(got, []string{"56", "42"}) {
+		t.Errorf("totals = %q, want the starters-only totals [56 42]", got)
+	}
+}
+
+func TestOneFetchServesBothColumns(t *testing.T) {
+	source := &fakeSource{weekStats: fixtureStats()}
+
+	serve(Handler(roster.New(fixtureWeek(t)), source), http.MethodGet, "/2025/15")
+
+	if source.calls != 1 {
+		t.Errorf("provider called %d times, want 1: the two columns must come from one snapshot", source.calls)
+	}
+}
+
+func TestAFailedFetchServesNoPage(t *testing.T) {
+	source := &fakeSource{err: errors.New("upstream is down")}
+
+	rec := serve(Handler(roster.New(fixtureWeek(t)), source), http.MethodGet, "/2025/15")
+
+	if rec.Code != http.StatusBadGateway {
+		t.Errorf("status = %d, want %d", rec.Code, http.StatusBadGateway)
+	}
+	if body := rec.Body.String(); strings.Contains(body, "<ol>") {
+		t.Errorf("a failed fetch rendered a scoreboard:\n%s", body)
+	}
+}
+
+// The provider's payload cannot say whether a missing player has not kicked
+// off, is inactive, or does not exist, so absence is shown as absence.
+func TestAMissingStarterIsNotZero(t *testing.T) {
+	// Brandon Aubrey, who would have scored 15, has no entry this week.
+	rec := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats("7")}), http.MethodGet, "/2025/15")
+
+	body := rec.Body.String()
+	if !slices.Contains(renderedStarters(body), "Brandon Aubrey=no stats") {
+		t.Errorf("absent starter did not render the placeholder; got %q", renderedStarters(body))
+	}
+	if slices.Contains(renderedStarters(body), "Brandon Aubrey=0") {
+		t.Error("absent starter rendered as 0, which claims he played and scored nothing")
+	}
+}
+
+func TestAnAbsentStarterContributesNothingToTheTotal(t *testing.T) {
+	rec := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats("7")}), http.MethodGet, "/2025/15")
+
+	// 56 less Aubrey's 15: the other eight starters, and nothing for him.
+	if got := renderedTotals(rec.Body.String()); !slices.Equal(got, []string{"41", "42"}) {
+		t.Errorf("totals = %q, want [41 42]", got)
+	}
+}
+
+// A scoreless week is a real line, not an absence: Jayden Daniels is in the
+// payload having done nothing.
+func TestAScorelessStarterIsZero(t *testing.T) {
+	rec := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	if !slices.Contains(renderedStarters(rec.Body.String()), "Jayden Daniels=0") {
+		t.Errorf("scoreless starter did not render 0; got %q", renderedStarters(rec.Body.String()))
+	}
+}
+
+// A starter whose game has not kicked off looks exactly like one who was
+// inactive, so anything implying a winner would present an unsettled reading
+// as a result.
+func TestThePageShowsNoMargin(t *testing.T) {
+	rec := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	body := rec.Body.String()
+
+	if got := renderedTotals(body); !slices.Equal(got, []string{"56", "42"}) {
+		t.Fatalf("totals = %q, want [56 42]", got)
+	}
+
+	// 56 - 42. It appears nowhere as a rendered value, and no element carries
+	// a difference under any name.
+	for _, line := range append(renderedStarters(body), renderedTotals(body)...) {
+		if strings.HasSuffix(line, "=14") || line == "14" {
+			t.Errorf("the margin is rendered as a value: %q", line)
+		}
+	}
+	// Every value the page renders is a starter's points or a column total.
+	// The difference is not among them, and there is no third kind of value
+	// for it to hide in.
+	for _, line := range append(renderedStarters(body), renderedTotals(body)...) {
+		if strings.HasSuffix(line, "=14") || line == "14" {
+			t.Errorf("the margin is rendered as a value: %q", line)
+		}
+	}
+}
+
+// The two columns differ only in their content: one class, used twice, with
+// nothing keyed on which total is larger.
+func TestTheTwoColumnsCarryTheSameMarkup(t *testing.T) {
+	rec := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	body := rec.Body.String()
+
+	if got := strings.Count(body, `class="column"`); got != 2 {
+		t.Errorf("class=\"column\" appears %d times, want exactly 2", got)
+	}
+	// Class names carry a leader vocabulary only if someone adds one; the CSS
+	// has no rule for such a class to reach.
+	for _, m := range classPattern.FindAllStringSubmatch(body, -1) {
+		for _, word := range []string{"win", "lead", "los", "ahead", "behind", "trail"} {
+			if strings.Contains(strings.ToLower(m[1]), word) {
+				t.Errorf("class %q carries a leader vocabulary", m[1])
+			}
+		}
+	}
+}
+
+// Names reach the page from file names and hand-edited CSV, so contextual
+// escaping is the only thing between a typo and injected markup.
+func TestRosterTextIsEscaped(t *testing.T) {
+	root := writeWeek(t, 2025, 15, map[string]string{
+		"bojjaes": "1,<b>Puka</b> Nacua\n",
+		"wood":    "11,Josh Allen\n",
+	})
+
+	rec := serve(Handler(roster.New(root), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	body := rec.Body.String()
+	if strings.Contains(body, "<b>") {
+		t.Errorf("a roster name was rendered as markup:\n%s", body)
+	}
+	if !strings.Contains(body, "&lt;b&gt;Puka&lt;/b&gt; Nacua") {
+		t.Errorf("the name was not rendered as escaped text:\n%s", body)
+	}
+}
+
+func TestThePageIsServedAsHTML(t *testing.T) {
+	rec := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	if got := rec.Header().Get("Content-Type"); got != "text/html; charset=utf-8" {
+		t.Errorf("Content-Type = %q, want an HTML type", got)
+	}
+}
