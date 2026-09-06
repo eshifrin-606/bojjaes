@@ -18,11 +18,11 @@ import (
 const addr = ":8080"
 
 func main() {
-	weeks := sleeper.Client{BaseURL: sleeper.BaseURL}
+	stats := sleeper.Client{BaseURL: sleeper.BaseURL}
 
 	// Method-qualified pattern, so anything but POST on this path gets a 405
 	// from the mux rather than reaching a handler.
-	http.Handle("POST /scores", api.BatchHandler(weeks))
+	http.Handle("POST /scores", api.BatchHandler(stats))
 
 	log.Printf("listening on %s; POST http://localhost%s/scores", addr, addr)
 	log.Fatal(http.ListenAndServe(addr, nil))

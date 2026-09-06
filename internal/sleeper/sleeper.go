@@ -131,16 +131,16 @@ func statLineFrom(weekly map[string]map[string]float64, playerID string, season,
 	}, true
 }
 
-// FetchWeek reads one season and week's stats and returns them as a
+// FetchWeekStats reads one season and week's stats and returns them as a
 // provider-neutral snapshot.
 //
 // Every entry in the payload is transformed, not only the ones a caller will
 // ask for: that is what lets the decoded map's lifetime end in this function,
 // so no Sleeper shape escapes the package.
-func FetchWeek(ctx context.Context, baseURL string, season, week int) (score.Week, error) {
+func FetchWeekStats(ctx context.Context, baseURL string, season, week int) (score.WeekStats, error) {
 	weekly, err := fetchWeekly(ctx, baseURL, season, week)
 	if err != nil {
-		return score.Week{}, err
+		return score.WeekStats{}, err
 	}
 
 	players := make(map[string]score.StatLine, len(weekly))
@@ -153,11 +153,11 @@ func FetchWeek(ctx context.Context, baseURL string, season, week int) (score.Wee
 		}
 		players[playerID] = line
 	}
-	return score.NewWeek(season, week, players), nil
+	return score.NewWeekStats(season, week, players), nil
 }
 
-// Client is a handle on one Sleeper host. Its Week method satisfies the
-// week-source interfaces the serving packages declare for themselves.
+// Client is a handle on one Sleeper host. Its WeekStats method satisfies the
+// stats-source interfaces the serving packages declare for themselves.
 //
 // It lives here rather than in main because it is provider state — a base URL —
 // and holding it here means each composition root wires a value instead of
@@ -167,6 +167,6 @@ type Client struct {
 	BaseURL string
 }
 
-func (c Client) Week(ctx context.Context, season, week int) (score.Week, error) {
-	return FetchWeek(ctx, c.BaseURL, season, week)
+func (c Client) WeekStats(ctx context.Context, season, week int) (score.WeekStats, error) {
+	return FetchWeekStats(ctx, c.BaseURL, season, week)
 }

@@ -55,13 +55,12 @@ comment.
 | `internal/roster` | Roster/lineup knowledge: file format, tree layout, matchup resolution, starters/bench split. | none | `bufio`, `errors`, `fmt`, `io`, `os`, `path/filepath`, `strings` | *nothing yet* |
 
 ### `cmd/server`
-
-Thin by design, and the only place the provider and the transport meet: it constructs a
-`sleeper.Client` and hands it to `api.BatchHandler`, which knows only the one-method `WeekSource`
+ Thin by design, and the only place the provider and the transport meet: it constructs a
+`sleeper.Client` and hands it to `api.BatchHandler`, which knows only the one-method `StatsSource`
 interface it declares for itself. If logic starts appearing here, it belongs in a package instead —
 this file should stay readable as a table of contents for the service.
 
-Because the wiring is here, a TTL cache over the weekly fetch is additive: a caching `WeekSource`
+Because the wiring is here, a TTL cache over the weekly fetch is additive: a caching `StatsSource`
 that wraps another one, constructed in `main`, with no consumer edited.
 
 ### `internal/score`
@@ -92,8 +91,9 @@ provider.
 ### `internal/api`
 
 The JSON edge: request validation, bounds, wire shapes, and `POST /scores`. It declares the
-`WeekSource` interface it needs and never imports `internal/sleeper` — which is also why its tests
-build a `score.Week` directly instead of standing up an `httptest` server with Sleeper JSON.
+`StatsSource` interface it needs and never imports `internal/sleeper` — which is also why its
+tests build a `score.WeekStats` directly instead of standing up an `httptest` server with
+Sleeper JSON.
 
 The endpoint is interim. It exists so `scripts/scores.sh` and `scripts/fantasycast.sh` run, and it
 retires with them when the served page replaces them.

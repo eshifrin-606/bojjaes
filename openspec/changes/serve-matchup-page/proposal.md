@@ -16,8 +16,9 @@ served over HTTP.
 - Rendering is Go `html/template`, parsed from a template file embedded in its own package. No
   JavaScript, no build step.
 - Wire the existing pieces behind the handler: `roster.Tree.Matchup` picks the two teams,
-  `roster.Tree.Read` and `Roster.Starters` give the lineups, one `WeekSource.Week` fetch scores
-  both columns, and a starter the provider has no entry for renders as a dash contributing nothing.
+  `roster.Tree.Read` and `Roster.Starters` give the lineups, one `StatsSource.WeekStats` fetch
+  scores both columns, and a starter the provider has no entry for renders as a dash contributing
+  nothing.
 - `main.go` constructs the lineup tree and the provider client, and registers the route alongside
   `POST /scores`, which is unchanged.
 
@@ -45,5 +46,5 @@ None. `matchup-report` governs the terminal report and is untouched; `roster-sou
 - New package for the page handler and its template; it depends on `internal/roster` and on the
   scoring path in `internal/score`.
 - `internal/score` and `internal/sleeper`: consumed as `split-score-packages` leaves them. That
-  change is a prerequisite — it built the `score.Week` seam this page scores through.
+  change is a prerequisite — it built the `score.WeekStats` seam this page scores through.
 - No change to `scripts/*.sh`, the roster CSV format, or `POST /scores`.

@@ -1,6 +1,6 @@
 // Package api is the JSON transport over scoring: request and response
 // shapes, validation, and the handlers. It depends on internal/score and on
-// the WeekSource interface it declares below — never on a provider package.
+// the StatsSource interface it declares below — never on a provider package.
 package api
 
 import (
@@ -13,11 +13,11 @@ import (
 	"github.com/eshifrin/bojjaes/internal/score"
 )
 
-// WeekSource supplies one season and week's stats. It is declared here, by the
+// StatsSource supplies one season and week's stats. It is declared here, by the
 // consumer, so that no provider package is named on this side of the boundary;
 // main supplies the implementation.
-type WeekSource interface {
-	Week(ctx context.Context, season, week int) (score.Week, error)
+type StatsSource interface {
+	WeekStats(ctx context.Context, season, week int) (score.WeekStats, error)
 }
 
 // Request bounds. The roster cap is the league's maximum roster size, which
@@ -38,7 +38,7 @@ const (
 // Interim: this endpoint exists so scripts/scores.sh and scripts/fantasycast.sh
 // can run, and retires with them when the matchup page replaces them. It is not
 // a designed public API.
-func BatchHandler(weeks WeekSource) http.Handler {
+func BatchHandler(source StatsSource) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req BatchRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -50,7 +50,7 @@ func BatchHandler(weeks WeekSource) http.Handler {
 			return
 		}
 
-		weekly, err := weeks.Week(r.Context(), req.Season, req.Week)
+		weekStats, err := source.WeekStats(r.Context(), req.Season, req.Week)
 		if err != nil {
 			// The response body reaches whoever made the request; the log
 			// reaches whoever is running the server.
@@ -64,7 +64,7 @@ func BatchHandler(weeks WeekSource) http.Handler {
 
 		resp := newBatchResponse(req.Season, req.Week)
 		for _, playerID := range req.PlayerIDs {
-			stats, ok := weekly.Player(playerID)
+			stats, ok := weekStats.Player(playerID)
 			if !ok {
 				// The payload cannot say why a player is missing — not yet
 				// kicked off, inactive, and unknown ID look identical — so the

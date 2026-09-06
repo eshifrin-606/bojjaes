@@ -4,17 +4,17 @@ task assumes the symbols it calls already exist, stubbed to a wrong-but-compilin
 preceding task. GREEN tasks make the smallest change that turns that failure into a pass, then
 re-run the test.
 
-The provider stand-in throughout is a fake `WeekSource` returning a `score.Week` built with
-`score.NewWeek`, as in `internal/api`'s batch tests — no `httptest` server and no Sleeper JSON. The
-lineup tree is a `t.TempDir()` written per test, never the real `scripts/lineups`.
+The provider stand-in throughout is a fake `StatsSource` returning a `score.WeekStats` built with
+`score.NewWeekStats`, as in `internal/api`'s batch tests — no `httptest` server and no Sleeper JSON.
+The lineup tree is a `t.TempDir()` written per test, never the real `scripts/lineups`.
 
-`split-score-packages` is a prerequisite: it built `score.Week`, `sleeper.FetchWeek`, and the
-consumer-declared `WeekSource` pattern this change consumes.
+`split-score-packages` is a prerequisite: it built `score.WeekStats`, `sleeper.FetchWeekStats`, and
+the consumer-declared `StatsSource` pattern this change consumes.
 
 ## 1. The scoring seam
 
-`split-score-packages` delivered `score.Week`, `score.NewWeek`, `sleeper.FetchWeek`, and the
-`WeekSource` interface pattern, so the seam itself needs no work here.
+`split-score-packages` delivered `score.WeekStats`, `score.NewWeekStats`, `sleeper.FetchWeekStats`,
+and the `StatsSource` interface pattern, so the seam itself needs no work here.
 
 - [ ] 1.1 Move the season and week bound constants (`minSeason`, `maxSeason`, `minWeek`, `maxWeek`,
       today unexported in `internal/api`) to where both the batch validator and this page's URL
@@ -25,8 +25,8 @@ consumer-declared `WeekSource` pattern this change consumes.
 ## 2. The page's URL
 
 - [ ] 2.1 Create `internal/web`, declaring its own
-      `WeekSource interface { Week(ctx context.Context, season, week int) (score.Week, error) }` and
-      `Handler(tree *roster.Tree, weeks WeekSource) http.Handler`, stubbed to write `501` and
+      `StatsSource interface { WeekStats(ctx, season, week int) (score.WeekStats, error) }` and
+      `Handler(tree *roster.Tree, source StatsSource) http.Handler`, stubbed to write `501` and
       nothing else. Confirm it does not import `internal/sleeper`. Register nothing in `main.go` yet. Confirm it builds.
 - [ ] 2.2 RED: test, through an `http.ServeMux` registered as `GET /{season}/{week}`, that
       `GET /2025/fifteen` responds `400`. Run; confirm it fails on the `501`.
@@ -36,7 +36,7 @@ consumer-declared `WeekSource` pattern this change consumes.
       currently pass the range check that does not exist yet.
 - [ ] 2.5 GREEN: range-check against the shared bounds from 1.1. Re-run; confirm pass.
 - [ ] 2.6 RED: test that a `400` request opens no roster file and makes no upstream request —
-      point the handler at a lineup tree that does not exist and at a fake `WeekSource` that fails
+      point the handler at a lineup tree that does not exist and at a fake `StatsSource` that fails
       the test if called. Run; confirm.
 - [ ] 2.7 GREEN: confirm the validation returns before both. Comment why the order matters: a typo
       in a URL must not reach Sleeper.
@@ -86,11 +86,11 @@ consumer-declared `WeekSource` pattern this change consumes.
       contains none of the last three names. Run; confirm bench players currently appear or the
       total is wrong.
 - [ ] 4.6 GREEN: take `Roster.Starters()`. Re-run; confirm pass.
-- [ ] 4.7 RED: test that the `WeekSource` is called exactly **once** for a request that renders both
-      columns — count calls in the fake. Run; confirm it is currently two.
-- [ ] 4.8 GREEN: fetch once and score both columns from the same `Week`. Re-run; confirm pass.
+- [ ] 4.7 RED: test that the `StatsSource` is called exactly **once** for a request that renders
+      both columns — count calls in the fake. Run; confirm it is currently two.
+- [ ] 4.8 GREEN: fetch once and score both columns from the same `WeekStats`. Re-run; confirm pass.
       Comment that the two columns must not be read from different snapshots of the week.
-- [ ] 4.9 RED: test that a `WeekSource` returning an error makes the page respond `502` with no
+- [ ] 4.9 RED: test that a `StatsSource` returning an error makes the page respond `502` with no
       scoreboard in the body. Run; confirm.
 - [ ] 4.10 GREEN: map a fetch failure to `502`. Re-run; confirm pass. Comment that a zeroed page
       would read as "these players scored nothing" rather than "we do not know".

@@ -45,7 +45,7 @@ func grownPayload(t testing.TB) []byte {
 }
 
 // BenchmarkTransform isolates the mapping from the fetch and the decode: this
-// is the cost the eager Week pays that a lazy one would not.
+// is the cost the eager WeekStats pays that a lazy one would not.
 func BenchmarkTransform(b *testing.B) {
 	var weekly map[string]map[string]float64
 	if err := json.Unmarshal(grownPayload(b), &weekly); err != nil {
