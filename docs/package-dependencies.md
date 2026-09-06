@@ -4,8 +4,8 @@ A one-page picture of how the Go packages relate, so a design question ("where d
 "what would that import cost me?") can be answered by looking rather than by reading code.
 
 Scope: first-party packages only. Standard-library imports are listed per package below because
-they say a lot about what a package *is* — `net/http` marks a boundary, no imports at all marks a
-pure domain package.
+they say a lot about what a package *is* — `net/http` marks a boundary, `os` marks a reader of the
+lineup tree, `html/template` marks the one package that renders.
 
 ## The map
 
@@ -21,6 +21,7 @@ graph TD
     subgraph adapters["internal — adapters + transport"]
         sleeperpkg["internal/sleeper"]
         api["internal/api"]
+        web["internal/web"]
     end
     subgraph ext["outside the binary"]
         sleeper(["Sleeper REST API"])
@@ -28,58 +29,76 @@ graph TD
     end
 
     main --> api
+    main --> web
     main --> sleeperpkg
-    main -.->|"not yet wired"| roster
+    main --> roster
     api --> score
+    web --> score
+    web --> roster
     sleeperpkg --> score
     sleeperpkg --> sleeper
     roster --> files
-
-    classDef pending stroke-dasharray: 5 5
-    class roster pending
 ```
 
-Every arrow into the domain points inward: `score` imports nothing at all, not even from the
-standard library, and nothing but `main` names a provider. That is the shape [ADR
-0002](adr/0002-live-scoreboard-backend.md) asked for, now held by the compiler rather than by a
-comment.
+Every arrow into the domain points inward, and nothing but `main` names a provider. That is the
+shape [ADR 0002](adr/0002-live-scoreboard-backend.md) asked for, now held by the compiler rather
+than by a comment.
+
+The invariant is directional, not a count: `score` and `roster` must not import `api`, `sleeper`,
+or `web`. `score` also takes no stdlib import that would commit the domain to something it should
+not decide — no `net/http`, `os`, or `io` (side effects), and no `encoding/json` (a wire format).
+It does import `fmt`, which commits it to nothing: a validation error naming the seasons the
+league could have played is domain vocabulary, not transport.
+
+Worth knowing that this is a weaker guarantee than it looks: `StatLine` already carries `json`
+struct tags, which need no import and so cost nothing by any import metric while still encoding a
+serialization decision. Read the direction of the arrows, not the length of the import lists.
 
 ## The packages
 
 | Package | Role | Imports (first-party) | Imports (stdlib) | Imported by |
 | --- | --- | --- | --- | --- |
-| `cmd/server` | Process entrypoint and composition root. Constructs the provider, registers routes, owns the listen address. | `internal/api`, `internal/sleeper` | `log`, `net/http` | — |
-| `internal/score` | The scoring domain: `StatLine`, `Points`, `Week`. | none | none | `internal/api`, `internal/sleeper` |
+| `cmd/server` | Process entrypoint and composition root. Constructs the provider and the lineup tree, registers routes, owns the listen address. | `internal/api`, `internal/roster`, `internal/sleeper`, `internal/web` | `log`, `net/http` | — |
+| `internal/score` | The scoring domain: `StatLine`, `Points`, `WeekStats`, and the season/week bounds. | none | `fmt` | `internal/api`, `internal/sleeper`, `internal/web` |
 | `internal/sleeper` | The Sleeper adapter: the HTTP client, the base URL, the stat-key transform. | `internal/score` | `context`, `encoding/json`, `fmt`, `net/http`, `time` | `cmd/server` |
 | `internal/api` | The JSON transport: `POST /scores`, its DTOs, its validation. | `internal/score` | `context`, `encoding/json`, `fmt`, `log`, `net/http` | `cmd/server` |
-| `internal/roster` | Roster/lineup knowledge: file format, tree layout, matchup resolution, starters/bench split. | none | `bufio`, `errors`, `fmt`, `io`, `os`, `path/filepath`, `strings` | *nothing yet* |
+| `internal/web` | The HTML transport: `GET /{season}/{week}`, its view model, its template. | `internal/roster`, `internal/score` | `bytes`, `context`, `embed`, `errors`, `html/template`, `log`, `net/http`, `strconv` | `cmd/server` |
+| `internal/roster` | Roster/lineup knowledge: file format, tree layout, matchup resolution, starters/bench split. | none | `bufio`, `errors`, `fmt`, `io`, `os`, `path/filepath`, `strings` | `cmd/server`, `internal/web` |
 
 ### `cmd/server`
- Thin by design, and the only place the provider and the transport meet: it constructs a
-`sleeper.Client` and hands it to `api.BatchHandler`, which knows only the one-method `StatsSource`
-interface it declares for itself. If logic starts appearing here, it belongs in a package instead —
-this file should stay readable as a table of contents for the service.
+ Thin by design, and the only place the provider and the transports meet: it constructs a
+`sleeper.Client` and a `roster.Tree` and hands them to `api.BatchHandler` and `web.Handler`, each of
+which knows only the one-method `StatsSource` interface it declares for itself. If logic starts
+appearing here, it belongs in a package instead — this file should stay readable as a table of
+contents for the service.
+
+The lineup-tree root is a constant here (`scripts/lineups`, relative to the working directory),
+which is knowingly interim: it becomes an embedded filesystem when the tree moves inside a package.
 
 Because the wiring is here, a TTL cache over the weekly fetch is additive: a caching `StatsSource`
 that wraps another one, constructed in `main`, with no consumer edited.
 
 ### `internal/score`
 
-The domain, and the only package with no imports at all — not even stdlib. Three files:
+The domain. Four files, and `fmt` is the whole of its stdlib surface:
 
 - **`calc.go` — the rules.** `Points(StatLine) float64`.
 - **`stats.go` — the vocabulary.** `StatLine`, provider-neutral. Deliberately carries no points
   field, so a stat line can never hold a stale total.
-- **`week.go` — the snapshot.** `Week`, one season and week's stat lines keyed by player ID, built
-  by an adapter through `NewWeek` and read through `Player`. It lives here rather than in the
-  adapter so that consumers can name it without importing a provider — that is what makes the
-  boundary structural rather than decorative. It is complete when returned and never written
-  afterwards, so concurrent handlers can share one.
+- **`weekstats.go` — the snapshot.** `WeekStats`, one season and week's stat lines keyed by player
+  ID, built by an adapter through `NewWeekStats` and read through `Player`. It lives here rather
+  than in the adapter so that consumers can name it without importing a provider — that is what
+  makes the boundary structural rather than decorative. It is complete when returned and never
+  written afterwards, so concurrent handlers can share one.
+- **`bounds.go` — what may be asked about.** `ValidateSeasonWeek`. The bounds live in the domain
+  because every way into the scoring path has to refuse the same nonsense: `api` validates a
+  request body against them and `web` validates two URL segments. Two copies would eventually
+  disagree.
 
 ### `internal/sleeper`
 
 The only package that talks to the network, and the only one in which a Sleeper stat key appears —
-a fact worth re-checking by grep rather than trusting. `FetchWeek` fetches once and transforms
+a fact worth re-checking by grep rather than trusting. `FetchWeekStats` fetches once and transforms
 **every** entry in the payload, so the decoded `map[string]map[string]float64` never outlives the
 call. `Client` is the same thing with the base URL held in a field, so `main` wires a value.
 
@@ -90,7 +109,8 @@ provider.
 
 ### `internal/api`
 
-The JSON edge: request validation, bounds, wire shapes, and `POST /scores`. It declares the
+The JSON edge: request validation, wire shapes, and `POST /scores`. The season and week bounds it
+validates against belong to `score`; the roster-size cap is its own. It declares the
 `StatsSource` interface it needs and never imports `internal/sleeper` — which is also why its
 tests build a `score.WeekStats` directly instead of standing up an `httptest` server with
 Sleeper JSON.
@@ -112,25 +132,45 @@ rule lives here rather than in the first handler that needs it, because a week d
 one matchup is a fact about the tree's layout, and the layout is stated in this package and nowhere
 else.
 
-**Nothing imports it yet.** That is expected, not a gap: it was built ahead of the served
-`/{season}/{week}` page from [ADR 0004](adr/0004-web-frontend-stack.md), and the shell scripts keep
-their own bash parsing on purpose rather than gaining a CLI shim that would be deleted later.
+`internal/web` is its one consumer, which is what it was built for. The shell scripts keep their own
+bash parsing on purpose rather than gaining a CLI shim that would be deleted later, so nothing else
+imports it.
+
+### `internal/web`
+
+The HTML edge, and the third thing this map used to predict: it imports both domain packages so
+neither has to import the other. It resolves a week to two teams through `roster.Tree`, reads both
+lineups, fetches the week's stats **once**, and scores both columns from that one snapshot — the
+two columns must not come from different readings of the week.
+
+Like `internal/api` it declares its own `StatsSource` and never imports `internal/sleeper`, so its
+tests build a `score.WeekStats` with `NewWeekStats` rather than standing up an `httptest` server.
+That is also what makes the coming TTL cache a wrapping `StatsSource` wired in `main` with nothing
+here edited.
+
+`embed` and `html/template` are the imports that mark it: `matchup.html` lives beside the handler
+and is parsed once at package initialisation, so a broken template stops the process at startup
+rather than the first request. The handler renders into a `bytes.Buffer` and writes only on
+success, since executing straight into the `ResponseWriter` would commit a `200` and half a page
+before it could fail.
 
 ## What the shape tells you
 
-- **`score` and `roster` do not know about each other.** A roster is a list of player IDs; scoring
-  takes player IDs. Neither needs the other's types. The place they meet is a caller — today
-  `cmd/server`, tomorrow whatever renders the page.
-- **The natural next edge is a third thing, not an edge between these two.** When the served page
-  arrives, expect a handler or view package that imports both, rather than `roster` importing
-  `score` (which would drag `net/http` into a pure domain package) or the reverse.
+- **`score` and `roster` still do not know about each other.** A roster is a list of player IDs;
+  scoring takes player IDs. Neither needs the other's types. They meet in callers — `cmd/server`
+  and `internal/web`.
+- **The next edge was a third thing, as expected.** The served page arrived as `internal/web`,
+  importing both, rather than `roster` importing `score` (which would drag a transport concern into
+  a pure domain package) or the reverse. Expect the same of the next consumer: a season-long view
+  or a lineup submitter is another package beside `web`, not a new edge between the two domains.
 - **Growth pressure lands on the adapters, not the domain.** `internal/sleeper` carries the network
-  dependency and `internal/api` the HTTP surface; `internal/score` has neither, and a change to
-  either of the outer two cannot reach it without an import that is not there.
+  dependency, `internal/api` the JSON surface, and `internal/web` the HTML one; `internal/score`
+  has none of them, and a change to any of the outer three cannot reach it without an import that
+  is not there.
 - **Test imports add no first-party edges the map does not show.** Every test is in-package, and the
-  only first-party import any of them adds is `internal/score` from the two packages that already
-  import it — no hidden test-only coupling, and no third-party dependencies anywhere in `go.mod`.
-  `roster`'s matchup tests build their fixtures in `t.TempDir()`, so the suite never reads the real
+  only first-party imports any of them add are ones the package already has — no hidden test-only
+  coupling, and no third-party dependencies anywhere in `go.mod`. Both `roster`'s matchup tests and
+  `web`'s page tests build their fixtures in `t.TempDir()`, so the suite never reads the real
   `scripts/lineups` tree.
 
 ## Keeping this current
