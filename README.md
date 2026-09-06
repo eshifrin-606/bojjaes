@@ -16,28 +16,21 @@ go run ./cmd/server
 
 It logs `listening on :8080` and stays in the foreground (Ctrl-C to stop).
 
-Hit the endpoint:
+Hit the endpoint. `POST /scores` takes a season, a week, and up to a roster's
+worth of player IDs — the equivalent of the old `GET /score` smoke test is
+Nacua's settled 2025 week 14:
 
 ```bash
-curl -s localhost:8080/score | jq
+curl -s localhost:8080/scores -d '{
+  "season": 2025, "week": 14, "player_ids": ["9493"]
+}' | jq
 ```
 
-```json
-{
-  "stats": {
-    "player_id": "9493", "season": 2025, "week": 14,
-    "pass_yd": 0, "rush_yd": 0, "rec_yd": 167,
-    "pass_td": 0, "rush_td": 0, "rec_td": 2, "def_td": 0, "return_td": 0,
-    "td_40_plus": 0, "two_pt": 0,
-    "pass_int": 0, "int_caught": 0, "fum_lost": 0, "fum_rec_turnover": 0,
-    "sack": 0, "fg_made": 0, "xp_made": 0, "fg_50_plus": 0
-  },
-  "points": 19
-}
-```
+It is the only endpoint, and it is interim: it exists so `scripts/scores.sh` and
+`scripts/fantasycast.sh` can run, and it retires with them when the matchup page
+replaces them.
 
-`GET /score` is a fixed smoke test: Puka Nacua's 2025 week 14, a settled result
-that should never change. Score any players with `POST /scores`:
+Score a whole lineup the same way:
 
 ```bash
 curl -s localhost:8080/scores -d '{
