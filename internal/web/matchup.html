@@ -61,3 +61,24 @@
   </section>
   {{end}}
 </main>
+<script>
+  // How often a page left open during a game re-fetches its scores.
+  var refreshInterval = 5 * 60 * 1000;
+  var loadedAt = Date.now();
+
+  // Checked when the timer fires rather than by stopping and restarting it:
+  // a tab left open in the background must not turn into Sleeper volume.
+  setInterval(function () {
+    if (document.visibilityState === "visible") {
+      location.reload();
+    }
+  }, refreshInterval);
+
+  // A glance away and back must not cost a fetch; only a page already older
+  // than the interval is worth reloading on return.
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && Date.now() - loadedAt >= refreshInterval) {
+      location.reload();
+    }
+  });
+</script>

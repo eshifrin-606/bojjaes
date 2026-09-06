@@ -507,3 +507,134 @@ func TestThePageIsServedAsHTML(t *testing.T) {
 		t.Errorf("Content-Type = %q, want an HTML type", got)
 	}
 }
+
+// The script element's contents. Every assertion about the refresh goes
+// through here, so a test looking for "visible" cannot be satisfied by the
+// word appearing somewhere else in the document.
+var scriptPattern = regexp.MustCompile(`(?s)<script[^>]*>(.*?)</script>`)
+
+func renderedScript(t *testing.T, body string) string {
+	t.Helper()
+
+	found := scriptPattern.FindAllStringSubmatch(body, -1)
+	if len(found) != 1 {
+		t.Fatalf("page has %d script elements, want exactly 1", len(found))
+	}
+	return found[0][1]
+}
+
+func TestThePageCarriesARefreshScript(t *testing.T) {
+	rec := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	if script := renderedScript(t, rec.Body.String()); strings.TrimSpace(script) == "" {
+		t.Error("the page's script element is empty")
+	}
+}
+
+func TestTheRefreshIntervalIsFiveMinutes(t *testing.T) {
+	rec := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	script := renderedScript(t, rec.Body.String())
+	if !strings.Contains(script, "5 * 60 * 1000") {
+		t.Errorf("script does not refresh on a five-minute interval:\n%s", script)
+	}
+}
+
+// A hidden tab must cost nothing upstream, so the reload is conditioned on the
+// tab being visible at the moment the timer fires.
+func TestTheRefreshIsGuardedByTabVisibility(t *testing.T) {
+	rec := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	script := renderedScript(t, rec.Body.String())
+	for _, want := range []string{"document.visibilityState", `"visible"`} {
+		if !strings.Contains(script, want) {
+			t.Errorf("script does not consult %s:\n%s", want, script)
+		}
+	}
+}
+
+func TestTheScriptListensForTheTabComingBack(t *testing.T) {
+	rec := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	script := renderedScript(t, rec.Body.String())
+	if !strings.Contains(script, "visibilitychange") {
+		t.Errorf("script registers no visibilitychange listener:\n%s", script)
+	}
+}
+
+// Returning to the tab reloads only when the page is already older than the
+// interval, so a glance away costs nothing.
+func TestReturningToTheTabRefreshesOnlyWhenStale(t *testing.T) {
+	rec := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	script := renderedScript(t, rec.Body.String())
+	if !strings.Contains(script, "Date.now()") {
+		t.Errorf("script captures no load time from the client clock:\n%s", script)
+	}
+
+	_, listener, found := strings.Cut(script, "visibilitychange")
+	if !found {
+		t.Fatalf("script registers no visibilitychange listener:\n%s", script)
+	}
+	if !strings.Contains(listener, "refreshInterval") {
+		t.Errorf("the return path does not compare elapsed time against the refresh interval:\n%s", listener)
+	}
+}
+
+// Team and player names reach the page from file names and hand-edited CSV.
+// Keeping them out of the script keeps every one of them in the HTML text
+// contexts the escaping requirement already covers.
+func TestNoRosterTextReachesTheScript(t *testing.T) {
+	rec := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	script := renderedScript(t, rec.Body.String())
+	names := []string{"bojjaes", "wood"}
+	for _, line := range renderedStarters(rec.Body.String()) {
+		names = append(names, strings.Split(line, "=")[0])
+	}
+	for _, name := range names {
+		if strings.Contains(script, name) {
+			t.Errorf("%q appears inside the script:\n%s", name, script)
+		}
+	}
+}
+
+// The strongest form of the no-interpolation rule: nothing about the week can
+// change the script, so an interpolation added later shows up here.
+func TestTheScriptIsIdenticalAcrossWeeks(t *testing.T) {
+	first := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	otherRoot := writeWeek(t, 2024, 3, map[string]string{
+		"bojjaes": "31,Ja'Marr Chase\n",
+		"aroma":   "32,Travis Kelce\n",
+	})
+	otherStats := score.NewWeekStats(2024, 3, map[string]score.StatLine{
+		"31": {PlayerID: "31", RecTD: 3},
+		"32": {PlayerID: "32", RecTD: 1},
+	})
+	second := serve(Handler(roster.New(otherRoot), &fakeSource{weekStats: otherStats}), http.MethodGet, "/2024/3")
+
+	if a, b := renderedScript(t, first.Body.String()), renderedScript(t, second.Body.String()); a != b {
+		t.Errorf("the script differs between weeks:\n%s\n---\n%s", a, b)
+	}
+}
+
+// The no-winner rule binds the script too: a refresh must not become the route
+// by which the page starts marking which total moved.
+func TestTheScriptImpliesNoWinner(t *testing.T) {
+	rec := serve(Handler(roster.New(fixtureWeek(t)), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	script := strings.ToLower(renderedScript(t, rec.Body.String()))
+	for _, word := range []string{"win", "lead", "los", "ahead", "behind", "trail", "margin", "diff", "total", "score"} {
+		if strings.Contains(script, word) {
+			t.Errorf("the script carries a leader vocabulary (%q):\n%s", word, script)
+		}
+	}
+	// Nothing survives a reload, so there is nothing to compare a new total
+	// against — and no storage in which to keep one.
+	for _, api := range []string{"localStorage", "sessionStorage", "document.cookie"} {
+		if strings.Contains(script, strings.ToLower(api)) {
+			t.Errorf("the script stashes state across loads via %s:\n%s", api, script)
+		}
+	}
+}
