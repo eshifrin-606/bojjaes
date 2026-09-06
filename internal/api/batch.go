@@ -20,17 +20,11 @@ type StatsSource interface {
 	WeekStats(ctx context.Context, season, week int) (score.WeekStats, error)
 }
 
-// Request bounds. The roster cap is the league's maximum roster size, which
-// comfortably exceeds two full starting lineups; it is a sanity bound, not a
-// cost control, since the upstream request is the same size either way.
-const (
-	maxPlayerIDs = 26
-
-	minSeason = 2009 // Sleeper's stats do not reach further back.
-	maxSeason = 2099
-	minWeek   = 1
-	maxWeek   = 18
-)
+// The roster cap is the league's maximum roster size, which comfortably
+// exceeds two full starting lineups; it is a sanity bound, not a cost control,
+// since the upstream request is the same size either way. The season and week
+// bounds live in score, shared with the page's URL parsing.
+const maxPlayerIDs = 26
 
 // BatchHandler scores many players for one season and week from a single fetch
 // of the weekly aggregate.
@@ -84,11 +78,8 @@ func BatchHandler(source StatsSource) http.Handler {
 }
 
 func (r BatchRequest) validate() error {
-	if r.Season < minSeason || r.Season > maxSeason {
-		return fmt.Errorf("season %d outside %d-%d", r.Season, minSeason, maxSeason)
-	}
-	if r.Week < minWeek || r.Week > maxWeek {
-		return fmt.Errorf("week %d outside %d-%d", r.Week, minWeek, maxWeek)
+	if err := score.ValidateSeasonWeek(r.Season, r.Week); err != nil {
+		return err
 	}
 	if len(r.PlayerIDs) == 0 {
 		return fmt.Errorf("player_ids is empty")

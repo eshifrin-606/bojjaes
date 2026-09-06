@@ -22,7 +22,7 @@ One line each, roughly in dependency order. Not sized, not scheduled.
 - [x] Split `internal/score` into `internal/score` (domain), `internal/sleeper` (adapter), and
   `internal/api` (JSON), with `cmd/server` the only package naming a provider, so that a second
   consumer can score a roster from one fetch without going through HTTP.
-- [ ] Add `GET /{season}/{week}` rendering two equal columns of scored starters plus their two totals with `html/template`.
+- [x] Add `GET /{season}/{week}` rendering two equal columns of scored starters plus their two totals with `html/template`.
 - [ ] Keep the page honest: as-of timestamp visible, and no margin, win probability, progress bar, or leader highlight anywhere in the markup or CSS.
 - [ ] Stamp the as-of from our own Sleeper fetch time for now, labelled as such, and watch on a live Sunday how far it drifts from when the stats actually moved.
 - [ ] Add the ~5 minute client refresh in a few lines of vanilla JS, and only while the tab is visible.

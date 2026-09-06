@@ -1,0 +1,63 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Season}} week {{.Week}}</title>
+<style>
+  body {
+    font: 16px/1.5 system-ui, sans-serif;
+    margin: 0 auto;
+    max-width: 48rem;
+    padding: 1rem;
+  }
+
+  /* Two tracks of 1fr: both columns are the same width whatever they hold, so
+     neither column's contents can change the other's. */
+  .matchup {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* One class for both columns. There is deliberately no rule keyed on which
+     total is larger: no leader highlight, no bar, no colour that could tell
+     the reader a game in progress is a game decided. */
+  .column {
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+  }
+
+  .column ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .column li {
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+  }
+
+  .points {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .total {
+    border-top: 1px solid #ccc;
+    font-weight: 600;
+    padding-top: 0.5rem;
+    text-align: right;
+  }
+</style>
+<main class="matchup">
+  {{range .Columns}}
+  <section class="column">
+    <h2>{{.Team}}</h2>
+    <ol>
+      {{range .Starters}}<li><span class="player">{{.Name}}</span><span class="points">{{.Points}}</span></li>{{end}}
+    </ol>
+    <p class="total">{{.Total}}</p>
+  </section>
+  {{end}}
+</main>
