@@ -23,8 +23,9 @@ One line each, roughly in dependency order. Not sized, not scheduled.
   `internal/api` (JSON), with `cmd/server` the only package naming a provider, so that a second
   consumer can score a roster from one fetch without going through HTTP.
 - [x] Add `GET /{season}/{week}` rendering two equal columns of scored starters plus their two totals with `html/template`.
-- [ ] Keep the page honest: as-of timestamp visible, and no margin, win probability, progress bar, or leader highlight anywhere in the markup or CSS.
-- [ ] Stamp the as-of from our own Sleeper fetch time for now, labelled as such, and watch on a live Sunday how far it drifts from when the stats actually moved.
+- [x] Keep the page honest: as-of timestamp visible, and no margin, win probability, progress bar, or leader highlight anywhere in the markup or CSS.
+- [x] Stamp the as-of from our own Sleeper fetch time for now, labelled as such. Done in `stamp-as-of-timestamp`: the page renders `Sleeper stats fetched <time datetime="…">…</time>` in Central, and a cache hit dates to the fetch, not the request.
+  - [ ] Watch on a live Sunday how far the fetch instant drifts from when the stats actually moved upstream. Deferred observation — procedure in `openspec/changes/stamp-as-of-timestamp/notes.md`; feeds the Sleeper rate-limit / TTL probe below.
 - [x] Add the ~5 minute client refresh in a few lines of vanilla JS, and only while the tab is visible.
   The rendered contract is tested; the browser behaviours are still unobserved (see
   `openspec/changes/refresh-page-while-visible/notes.md`).
