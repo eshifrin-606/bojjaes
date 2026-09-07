@@ -61,6 +61,7 @@
   </section>
   {{end}}
 </main>
+<p class="as-of">Sleeper stats fetched <time datetime="{{.FetchedAtRFC3339}}">{{.FetchedAtText}}</time></p>
 <script>
   // How often a page left open during a game re-fetches its scores.
   var refreshInterval = 5 * 60 * 1000;

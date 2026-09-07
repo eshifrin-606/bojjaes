@@ -85,8 +85,20 @@ type Cache struct {
 	entries map[key]*entry
 }
 
-func New(source StatsSource, ttl time.Duration) *Cache {
-	return &Cache{
+// Option adjusts a Cache at construction. Options exist for tests — main
+// constructs a Cache with none, so the clock and the fetch timeout stay
+// unexported seams rather than configuration.
+type Option func(*Cache)
+
+// WithClock replaces the wall clock the Cache reads fetch instants and expiry
+// from. A test in another package that needs to move time or pin a fetch
+// instant against a known value passes one.
+func WithClock(now func() time.Time) Option {
+	return func(c *Cache) { c.now = now }
+}
+
+func New(source StatsSource, ttl time.Duration, opts ...Option) *Cache {
+	c := &Cache{
 		source:       source,
 		ttl:          ttl,
 		fetchTimeout: defaultFetchTimeout,
@@ -94,9 +106,27 @@ func New(source StatsSource, ttl time.Duration) *Cache {
 		logf:         log.Printf,
 		entries:      make(map[key]*entry),
 	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
 }
 
+// WeekStats returns a week's stats, discarding the fetch instant. It is the
+// path for callers that do not report freshness (internal/api); it must stay a
+// thin delegate so single-flight, TTL, and error handling cannot diverge from
+// WeekStatsAsOf.
 func (c *Cache) WeekStats(ctx context.Context, season, week int) (score.WeekStats, error) {
+	stats, _, err := c.WeekStatsAsOf(ctx, season, week)
+	return stats, err
+}
+
+// WeekStatsAsOf returns a week's stats together with the instant the fetch that
+// produced them completed. Every caller served from one entry — the caller who
+// drove the fetch, a cache hit, a released waiter — gets that entry's recorded
+// fetchedAt, so a page served from cache can date its data to the fetch rather
+// than to the request.
+func (c *Cache) WeekStatsAsOf(ctx context.Context, season, week int) (score.WeekStats, time.Time, error) {
 	k := key{season: season, week: week}
 
 	c.mu.Lock()
@@ -105,16 +135,19 @@ func (c *Cache) WeekStats(ctx context.Context, season, week int) (score.WeekStat
 		c.mu.Unlock()
 		select {
 		case <-cached.done:
-			return cached.stats, cached.err
+			// fetchedAt is written under c.mu before close(done) on the success
+			// path, so a released waiter reads a stable value; on the failure
+			// path it stays zero and err is non-nil.
+			return cached.stats, cached.fetchedAt, cached.err
 		case <-ctx.Done():
 			// A waiter leaving takes only itself: the flight runs on, and the
 			// other waiters are still served by it.
-			return score.WeekStats{}, ctx.Err()
+			return score.WeekStats{}, time.Time{}, ctx.Err()
 		}
 	}
 	if ok && !c.expired(cached) {
 		c.mu.Unlock()
-		return cached.stats, nil
+		return cached.stats, cached.fetchedAt, nil
 	}
 	flight := &entry{done: make(chan struct{})}
 	c.entries[k] = flight
@@ -151,7 +184,7 @@ func (c *Cache) WeekStats(ctx context.Context, season, week int) (score.WeekStat
 	c.mu.Unlock()
 	close(flight.done)
 
-	return flight.stats, flight.err
+	return flight.stats, flight.fetchedAt, flight.err
 }
 
 func (c *Cache) logMiss(season, week int, elapsed time.Duration, err error) {

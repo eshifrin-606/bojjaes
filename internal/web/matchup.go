@@ -12,6 +12,10 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
+	// The binary carries its own zone database, so America/Chicago loads the
+	// same whether or not the deploy image ships /usr/share/zoneinfo.
+	_ "time/tzdata"
 
 	"github.com/eshifrin/bojjaes/internal/roster"
 	"github.com/eshifrin/bojjaes/internal/score"
@@ -27,12 +31,38 @@ var templateFS embed.FS
 // process at startup rather than the first request.
 var page = template.Must(template.ParseFS(templateFS, "matchup.html"))
 
+// chicagoLoc is the league's timezone; the as-of line's wall-clock rendering is
+// in it. Loaded once here, like the template parse, so a missing zone database
+// is a boot failure with a clear message rather than a per-request 500.
+var chicagoLoc = mustLoadLocation("America/Chicago")
+
+func mustLoadLocation(name string) *time.Location {
+	loc, err := time.LoadLocation(name)
+	if err != nil {
+		panic("web: loading timezone " + name + ": " + err.Error())
+	}
+	return loc
+}
+
 // matchup is what the template renders: two columns and nothing that compares
-// them.
+// them, plus the instant the stats were fetched — stated once, outside both
+// columns.
 type matchup struct {
 	Season, Week int
 	Columns      [2]column
+
+	// FetchedAtRFC3339 is the fetch instant as a machine-readable RFC 3339
+	// string; it is the original instant, not shifted into Chicago, so the
+	// offset it carries is unambiguous. FetchedAtText is the same instant as a
+	// Chicago wall-clock time for a reader.
+	FetchedAtRFC3339 string
+	FetchedAtText    string
 }
+
+// fetchedAtLayout renders the fetch instant with weekday, date, 12-hour time,
+// and zone abbreviation, so a reader can tell which clock it is and check it
+// against their own.
+const fetchedAtLayout = "Mon, Jan 2 2006 3:04 PM MST"
 
 type column struct {
 	Team     string
@@ -47,11 +77,14 @@ type starter struct {
 	Points string
 }
 
-// StatsSource supplies one season and week's stats. It is declared here, by the
-// consumer, so no provider package is named on this side of the boundary; main
-// supplies the implementation.
+// StatsSource supplies one season and week's stats along with the instant they
+// were fetched from the provider. It is declared here, by the consumer, so no
+// provider package is named on this side of the boundary; main supplies the
+// implementation. The page states when its stats were fetched, so an un-cached
+// source — which has no honest fetch instant — would not satisfy this by
+// design.
 type StatsSource interface {
-	WeekStats(ctx context.Context, season, week int) (score.WeekStats, error)
+	WeekStatsAsOf(ctx context.Context, season, week int) (score.WeekStats, time.Time, error)
 }
 
 // Handler renders the matchup page for the season and week in the request path.
@@ -109,7 +142,7 @@ func Handler(tree *roster.Tree, source StatsSource) http.Handler {
 
 		// Fetched once, and both columns scored from it: the two lineups must
 		// not be read from different snapshots of the week.
-		weekStats, err := source.WeekStats(r.Context(), season, week)
+		weekStats, fetchedAt, err := source.WeekStatsAsOf(r.Context(), season, week)
 		if err != nil {
 			log.Printf("fetching stats for %d week %d: %v", season, week, err)
 
@@ -119,7 +152,12 @@ func Handler(tree *roster.Tree, source StatsSource) http.Handler {
 			return
 		}
 
-		view := matchup{Season: season, Week: week}
+		view := matchup{
+			Season:           season,
+			Week:             week,
+			FetchedAtRFC3339: fetchedAt.Format(time.RFC3339),
+			FetchedAtText:    fetchedAt.In(chicagoLoc).Format(fetchedAtLayout),
+		}
 		for i, team := range teams {
 			view.Columns[i] = scoreColumn(team, lineups[i], weekStats)
 		}

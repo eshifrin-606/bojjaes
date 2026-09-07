@@ -22,6 +22,15 @@ var (
 	_ web.StatsSource = (*Cache)(nil)
 )
 
+// timedStatsSource is a local copy of internal/web's freshness-reporting
+// interface shape. Asserting it here keeps the cache's substitutability for the
+// web transport checked in this package rather than discovered in main.
+type timedStatsSource interface {
+	WeekStatsAsOf(ctx context.Context, season, week int) (score.WeekStats, time.Time, error)
+}
+
+var _ timedStatsSource = (*Cache)(nil)
+
 // testTTL stands in for the production TTL; expiry tests move the clock
 // relative to it rather than depending on its value.
 const testTTL = 5 * time.Minute
@@ -319,6 +328,119 @@ func TestEntryRecordsItsFetchTimeNotItsReadTime(t *testing.T) {
 	}
 	if got := fetchedAt(t, cache, 2025, 15); !got.Equal(fetchTime) {
 		t.Errorf("a cache hit moved the recorded time to %v, want the fetch time %v", got, fetchTime)
+	}
+}
+
+func TestWeekStatsAsOfOnAMissReturnsTheFetchInstant(t *testing.T) {
+	source := &fakeSource{}
+	cache, clock := newTestCache(source, testTTL)
+
+	fetchTime := clock.now()
+	_, asOf, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	if err != nil {
+		t.Fatalf("WeekStatsAsOf: %v", err)
+	}
+
+	if asOf.IsZero() {
+		t.Fatalf("as-of is the zero instant; want the fetch time %v", fetchTime)
+	}
+	if !asOf.Equal(fetchTime) {
+		t.Errorf("as-of = %v, want the fetch time %v", asOf, fetchTime)
+	}
+}
+
+func TestWeekStatsAsOfOnAHitReturnsTheOriginalFetchInstant(t *testing.T) {
+	source := &fakeSource{}
+	cache, clock := newTestCache(source, testTTL)
+
+	_, first, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	if err != nil {
+		t.Fatalf("first WeekStatsAsOf: %v", err)
+	}
+
+	clock.advance(3 * time.Minute)
+
+	_, second, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	if err != nil {
+		t.Fatalf("second WeekStatsAsOf: %v", err)
+	}
+	if got := source.callCount(); got != 1 {
+		t.Fatalf("upstream called %d times, want 1 (the second read is a hit)", got)
+	}
+	if !second.Equal(first) {
+		t.Errorf("a hit reported %v; want the original fetch instant %v", second, first)
+	}
+}
+
+func TestWeekStatsAsOfGivesEveryWaiterTheSameFetchInstant(t *testing.T) {
+	const callers = 10
+
+	source := &fakeSource{}
+	source.block(15)
+	cache, clock := newTestCache(source, testTTL)
+
+	fetchTime := clock.now()
+
+	var started, done sync.WaitGroup
+	started.Add(callers)
+	done.Add(callers)
+	stats := make([]score.WeekStats, callers)
+	asOf := make([]time.Time, callers)
+	errs := make([]error, callers)
+
+	for i := range callers {
+		go func() {
+			defer done.Done()
+			started.Done()
+			stats[i], asOf[i], errs[i] = cache.WeekStatsAsOf(context.Background(), 2025, 15)
+		}()
+	}
+
+	started.Wait()
+	waitForCalls(t, source, 1)
+	source.release(15)
+	done.Wait()
+
+	for i := range callers {
+		if errs[i] != nil {
+			t.Fatalf("caller %d: %v", i, errs[i])
+		}
+		if asOf[i].IsZero() {
+			t.Errorf("caller %d got the zero instant", i)
+		}
+		if !asOf[i].Equal(fetchTime) {
+			t.Errorf("caller %d got as-of %v, want the fetch instant %v", i, asOf[i], fetchTime)
+		}
+		if fetchOrdinal(t, stats[i]) != 1 {
+			t.Errorf("caller %d was served fetch %d, want fetch 1", i, fetchOrdinal(t, stats[i]))
+		}
+	}
+}
+
+// WeekStats is a thin delegate to WeekStatsAsOf. This pins that the delegation
+// did not change what the stats-only path does: two reads within the TTL still
+// cost one upstream call and return the same fetch's stats with a nil error.
+func TestWeekStatsStillDelegatesWithoutChangingCaching(t *testing.T) {
+	source := &fakeSource{}
+	cache, clock := newTestCache(source, testTTL)
+
+	first, err := cache.WeekStats(context.Background(), 2025, 15)
+	if err != nil {
+		t.Fatalf("first WeekStats: %v", err)
+	}
+
+	clock.advance(time.Minute)
+
+	second, err := cache.WeekStats(context.Background(), 2025, 15)
+	if err != nil {
+		t.Fatalf("second WeekStats: %v", err)
+	}
+
+	if got := source.callCount(); got != 1 {
+		t.Errorf("upstream called %d times for two reads within the TTL, want 1", got)
+	}
+	if got, want := fetchOrdinal(t, second), fetchOrdinal(t, first); got != want {
+		t.Errorf("second read served fetch %d, want fetch %d", got, want)
 	}
 }
 

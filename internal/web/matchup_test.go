@@ -12,36 +12,50 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/eshifrin/bojjaes/internal/roster"
 	"github.com/eshifrin/bojjaes/internal/score"
+	"github.com/eshifrin/bojjaes/internal/statscache"
 )
 
 // unusedSource fails the test if the page ever reaches the provider.
 type unusedSource struct{ t *testing.T }
 
-func (u unusedSource) WeekStats(context.Context, int, int) (score.WeekStats, error) {
+func (u unusedSource) WeekStatsAsOf(context.Context, int, int) (score.WeekStats, time.Time, error) {
 	u.t.Helper()
 	u.t.Error("provider was called for a request that should never have reached it")
-	return score.WeekStats{}, nil
+	return score.WeekStats{}, time.Time{}, nil
 }
 
 // fakeSource stands in for the provider: a WeekStats built here rather than
-// fetched, and a count of how many times the page asked for one.
+// fetched, the fetch instant the page will stamp, and a count of how many times
+// the page asked for one.
 type fakeSource struct {
 	weekStats score.WeekStats
+	fetchedAt time.Time
 	err       error
 
 	calls int
 }
 
-func (f *fakeSource) WeekStats(context.Context, int, int) (score.WeekStats, error) {
+func (f *fakeSource) WeekStatsAsOf(context.Context, int, int) (score.WeekStats, time.Time, error) {
 	f.calls++
 	if f.err != nil {
-		return score.WeekStats{}, f.err
+		return score.WeekStats{}, time.Time{}, f.err
 	}
-	return f.weekStats, nil
+	return f.weekStats, f.fetchedAt, nil
+}
+
+func TestChicagoLocationLoadsAtInit(t *testing.T) {
+	if chicagoLoc == nil {
+		t.Fatal("chicagoLoc is nil; America/Chicago did not load")
+	}
+	if got := chicagoLoc.String(); got != "America/Chicago" {
+		t.Errorf("chicagoLoc = %q, want %q", got, "America/Chicago")
+	}
 }
 
 // writeWeek lays out one week of a lineup tree and returns its root. Each entry
@@ -159,6 +173,32 @@ func renderedStarters(body string) []string {
 }
 
 var classPattern = regexp.MustCompile(`class="([^"]*)"`)
+
+// timePattern pulls each <time> element's datetime attribute and visible text.
+var timePattern = regexp.MustCompile(`(?s)<time datetime="([^"]*)">(.*?)</time>`)
+
+func renderedTimes(body string) [][2]string {
+	var out [][2]string
+	for _, m := range timePattern.FindAllStringSubmatch(body, -1) {
+		out = append(out, [2]string{m[1], m[2]})
+	}
+	return out
+}
+
+// asOfInstant is a fixed, non-zero fetch instant tests stamp on the fake so the
+// rendered timestamp is a known value. 18:24 UTC on 2026-09-07 is 1:24 PM in
+// Chicago, in CDT — a summer instant, so the zone abbreviation is unambiguous.
+var asOfInstant = time.Date(2026, time.September, 7, 18, 24, 0, 0, time.UTC)
+
+// asOfChicagoText is asOfInstant as the Chicago wall-clock string the page
+// shows a reader.
+const asOfChicagoText = "Mon, Sep 7 2026 1:24 PM CDT"
+
+var tagPattern = regexp.MustCompile(`<[^>]*>`)
+
+func visibleText(body string) string {
+	return tagPattern.ReplaceAllString(body, " ")
+}
 
 // renderedTotals pulls the two column totals out of the page.
 var totalPattern = regexp.MustCompile(`class="total">(.*?)</`)
@@ -505,6 +545,187 @@ func TestThePageIsServedAsHTML(t *testing.T) {
 
 	if got := rec.Header().Get("Content-Type"); got != "text/html; charset=utf-8" {
 		t.Errorf("Content-Type = %q, want an HTML type", got)
+	}
+}
+
+func TestThePageStampsTheFetchInstantAsRFC3339(t *testing.T) {
+	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
+	rec := serve(Handler(roster.New(fixtureWeek(t)), source), http.MethodGet, "/2025/15")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body)
+	}
+
+	times := renderedTimes(rec.Body.String())
+	if len(times) != 1 {
+		t.Fatalf("page has %d <time> elements, want exactly 1", len(times))
+	}
+	if got, want := times[0][0], asOfInstant.Format(time.RFC3339); got != want {
+		t.Errorf("datetime attribute = %q, want %q", got, want)
+	}
+}
+
+// The datetime attribute is a machine instant: it must parse back to the same
+// moment, which pins that the handler keeps the offset rather than rendering a
+// bare Chicago wall-clock string.
+func TestTheDatetimeAttributeIsAnUnambiguousInstant(t *testing.T) {
+	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
+	rec := serve(Handler(roster.New(fixtureWeek(t)), source), http.MethodGet, "/2025/15")
+
+	times := renderedTimes(rec.Body.String())
+	if len(times) != 1 {
+		t.Fatalf("page has %d <time> elements, want exactly 1", len(times))
+	}
+
+	parsed, err := time.Parse(time.RFC3339, times[0][0])
+	if err != nil {
+		t.Fatalf("datetime %q does not parse as RFC 3339: %v", times[0][0], err)
+	}
+	if !parsed.Equal(asOfInstant) {
+		t.Errorf("datetime %q denotes %v, want the fetch instant %v", times[0][0], parsed.UTC(), asOfInstant)
+	}
+}
+
+func TestThePageShowsTheFetchInstantInChicagoTime(t *testing.T) {
+	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
+	rec := serve(Handler(roster.New(fixtureWeek(t)), source), http.MethodGet, "/2025/15")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body)
+	}
+
+	if got := visibleText(rec.Body.String()); !strings.Contains(got, asOfChicagoText) {
+		t.Errorf("visible text does not contain the Chicago wall-clock time %q:\n%s", asOfChicagoText, got)
+	}
+}
+
+func TestTheAsOfLineIsLabelledAsFetchedAndDoesNotOverclaimCurrency(t *testing.T) {
+	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
+	rec := serve(Handler(roster.New(fixtureWeek(t)), source), http.MethodGet, "/2025/15")
+
+	body := rec.Body.String()
+	text := visibleText(body)
+
+	label, _, found := strings.Cut(text, asOfChicagoText)
+	if !found {
+		t.Fatalf("Chicago wall-clock time not in visible text:\n%s", text)
+	}
+	if !strings.Contains(strings.ToLower(label), "fetched") {
+		t.Errorf("the text before the timestamp does not say it was fetched: %q", label)
+	}
+
+	lower := strings.ToLower(body)
+	for _, overclaim := range []string{"live", "current"} {
+		if strings.Contains(lower, overclaim) {
+			t.Errorf("the page contains %q, which overclaims how current it is", overclaim)
+		}
+	}
+}
+
+var asOfLinePattern = regexp.MustCompile(`(?s)<p class="as-of">(.*?)</p>`)
+
+// The as-of line states a fetch time and nothing about the game: the no-winner
+// rule that governs the two columns governs this element too.
+func TestTheAsOfLineImpliesNoWinner(t *testing.T) {
+	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
+	rec := serve(Handler(roster.New(fixtureWeek(t)), source), http.MethodGet, "/2025/15")
+	body := rec.Body.String()
+
+	if got := renderedTotals(body); !slices.Equal(got, []string{"56", "42"}) {
+		t.Fatalf("totals = %q, want [56 42]", got)
+	}
+
+	m := asOfLinePattern.FindStringSubmatch(body)
+	if m == nil {
+		t.Fatalf("no <p class=\"as-of\"> element:\n%s", body)
+	}
+	lineText := visibleText(m[1])
+	for _, forbidden := range []string{"56", "42", "14", "-"} {
+		if strings.Contains(lineText, forbidden) {
+			t.Errorf("the as-of line's text %q contains %q — it must not reference either total or a margin", lineText, forbidden)
+		}
+	}
+
+	// The element is a sibling of <main>, not a descendant of a column.
+	if strings.Index(body, `<p class="as-of">`) < strings.Index(body, "</main>") {
+		t.Errorf("the as-of line is inside <main>; it must sit outside both columns")
+	}
+	afterMain := body[strings.Index(body, "</main>"):]
+	if strings.Contains(asOfLinePattern.FindString(afterMain), `class="column"`) {
+		t.Errorf("the as-of line is nested in a column section")
+	}
+}
+
+// countingStatsSource is the plain StatsSource the real cache wraps: a fixed
+// payload and a count of upstream calls.
+type countingStatsSource struct {
+	mu        sync.Mutex
+	calls     int
+	weekStats score.WeekStats
+}
+
+func (c *countingStatsSource) WeekStats(context.Context, int, int) (score.WeekStats, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.calls++
+	return c.weekStats, nil
+}
+
+func (c *countingStatsSource) callCount() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.calls
+}
+
+type webFakeClock struct {
+	mu sync.Mutex
+	t  time.Time
+}
+
+func (c *webFakeClock) now() time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.t
+}
+
+func (c *webFakeClock) advance(d time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.t = c.t.Add(d)
+}
+
+// End to end over a real statscache.Cache: a page served from a cache hit dates
+// its stats to the fetch, not to the request it answered, and does not spend a
+// second upstream call to do it.
+func TestAServedCacheHitDatesStatsToTheFetchNotTheRequest(t *testing.T) {
+	upstream := &countingStatsSource{weekStats: fixtureStats()}
+	clock := &webFakeClock{t: asOfInstant}
+	cache := statscache.New(upstream, 5*time.Minute, statscache.WithClock(clock.now))
+	h := Handler(roster.New(fixtureWeek(t)), cache)
+
+	first := serve(h, http.MethodGet, "/2025/15")
+	if first.Code != http.StatusOK {
+		t.Fatalf("first request status = %d, want 200 (body: %s)", first.Code, first.Body)
+	}
+
+	clock.advance(3 * time.Minute)
+
+	second := serve(h, http.MethodGet, "/2025/15")
+	if second.Code != http.StatusOK {
+		t.Fatalf("second request status = %d, want 200 (body: %s)", second.Code, second.Body)
+	}
+
+	firstTimes, secondTimes := renderedTimes(first.Body.String()), renderedTimes(second.Body.String())
+	if len(firstTimes) != 1 || len(secondTimes) != 1 {
+		t.Fatalf("want one <time> element per page, got %d and %d", len(firstTimes), len(secondTimes))
+	}
+	if firstTimes[0][0] != secondTimes[0][0] {
+		t.Errorf("second page dated to %q, first to %q — a cache hit must report the fetch instant", secondTimes[0][0], firstTimes[0][0])
+	}
+	if want := asOfInstant.Format(time.RFC3339); secondTimes[0][0] != want {
+		t.Errorf("served instant = %q, want the fetch instant %q", secondTimes[0][0], want)
+	}
+
+	if got := upstream.callCount(); got != 1 {
+		t.Errorf("upstream called %d times; the as-of path must not bypass the cache", got)
 	}
 }
 
