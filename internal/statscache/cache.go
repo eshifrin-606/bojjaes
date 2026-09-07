@@ -9,6 +9,7 @@ package statscache
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
 
@@ -76,6 +77,10 @@ type Cache struct {
 	// a test, and a boundary is worth asserting on both sides of.
 	now func() time.Time
 
+	// logf records each miss — one upstream call spent against the Sleeper
+	// budget. A test swaps it to read the lines back.
+	logf func(format string, args ...any)
+
 	mu      sync.Mutex
 	entries map[key]*entry
 }
@@ -86,6 +91,7 @@ func New(source StatsSource, ttl time.Duration) *Cache {
 		ttl:          ttl,
 		fetchTimeout: defaultFetchTimeout,
 		now:          time.Now,
+		logf:         log.Printf,
 		entries:      make(map[key]*entry),
 	}
 }
@@ -123,8 +129,14 @@ func (c *Cache) WeekStats(ctx context.Context, season, week int) (score.WeekStat
 	// single-flight works. The leader is the one caller that cannot walk away,
 	// so its exposure is bounded by the cache's own timeout instead.
 	fetchCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), c.fetchTimeout)
+	start := c.now()
 	flight.stats, flight.err = c.source.WeekStats(fetchCtx, season, week)
 	cancel()
+
+	// One line per miss: a miss is one upstream call spent, and misses arrive
+	// about once per week per TTL, so the log stays a readable record of the
+	// Sleeper budget. Hits are not logged — every reader's refresh is one.
+	c.logMiss(season, week, c.now().Sub(start), flight.err)
 
 	// A failure is never stored. Remembering one would turn a momentary
 	// upstream blip into a whole TTL of errors on a page that refreshes
@@ -140,6 +152,14 @@ func (c *Cache) WeekStats(ctx context.Context, season, week int) (score.WeekStat
 	close(flight.done)
 
 	return flight.stats, flight.err
+}
+
+func (c *Cache) logMiss(season, week int, elapsed time.Duration, err error) {
+	if err != nil {
+		c.logf("statscache miss: %d week %d failed after %s: %v", season, week, elapsed, err)
+		return
+	}
+	c.logf("statscache miss: %d week %d fetched in %s", season, week, elapsed)
 }
 
 // expired is checked on read; nothing sweeps. The key space is a handful of
