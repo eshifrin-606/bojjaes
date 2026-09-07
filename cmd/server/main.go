@@ -18,6 +18,7 @@ import (
 	"github.com/eshifrin/bojjaes/internal/api"
 	"github.com/eshifrin/bojjaes/internal/roster"
 	"github.com/eshifrin/bojjaes/internal/sleeper"
+	"github.com/eshifrin/bojjaes/internal/statscache"
 	"github.com/eshifrin/bojjaes/internal/web"
 )
 
@@ -29,7 +30,10 @@ const addr = ":8080"
 const lineupRoot = "scripts/lineups"
 
 func main() {
-	stats := sleeper.Client{BaseURL: sleeper.BaseURL}
+	// Wrapped once, here, and handed to both handlers: the cache bounds
+	// upstream volume only if everything that reads a week reads through the
+	// same one. A cache per handler would be two budgets for one league.
+	stats := statscache.New(sleeper.Client{BaseURL: sleeper.BaseURL}, statscache.TTL)
 
 	// Method-qualified pattern, so anything but POST on this path gets a 405
 	// from the mux rather than reaching a handler.
