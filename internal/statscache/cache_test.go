@@ -3,6 +3,8 @@ package statscache
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -452,6 +454,103 @@ func TestARequestAfterTheFlightCompletesIsAHit(t *testing.T) {
 	}
 	if got := fetchOrdinal(t, late); got != 1 {
 		t.Errorf("the late caller was served fetch %d, want fetch 1", got)
+	}
+}
+
+// recordLogs redirects the cache's miss log to a slice the test can read back.
+func recordLogs(cache *Cache) *[]string {
+	var mu sync.Mutex
+	var lines []string
+	cache.logf = func(format string, args ...any) {
+		mu.Lock()
+		defer mu.Unlock()
+		lines = append(lines, fmt.Sprintf(format, args...))
+	}
+	return &lines
+}
+
+func TestAMissIsLogged(t *testing.T) {
+	source := &fakeSource{}
+	cache, _ := newTestCache(source, testTTL)
+	logs := recordLogs(cache)
+
+	if _, err := cache.WeekStats(context.Background(), 2025, 15); err != nil {
+		t.Fatalf("WeekStats: %v", err)
+	}
+
+	if len(*logs) != 1 {
+		t.Fatalf("miss logged %d lines, want 1: %q", len(*logs), *logs)
+	}
+	line := (*logs)[0]
+	for _, want := range []string{"2025", "15"} {
+		if !strings.Contains(line, want) {
+			t.Errorf("miss log %q does not mention %q", line, want)
+		}
+	}
+}
+
+func TestAHitIsNotLogged(t *testing.T) {
+	source := &fakeSource{}
+	cache, clock := newTestCache(source, testTTL)
+	logs := recordLogs(cache)
+
+	if _, err := cache.WeekStats(context.Background(), 2025, 15); err != nil {
+		t.Fatalf("first WeekStats: %v", err)
+	}
+	clock.advance(time.Minute)
+	if _, err := cache.WeekStats(context.Background(), 2025, 15); err != nil {
+		t.Fatalf("second WeekStats: %v", err)
+	}
+
+	if len(*logs) != 1 {
+		t.Errorf("a hit added a log line: %q", *logs)
+	}
+}
+
+func TestTheMissLogReportsHowLongTheFetchTook(t *testing.T) {
+	source := &fakeSource{}
+	source.block(15)
+	cache, clock := newTestCache(source, testTTL)
+	logs := recordLogs(cache)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		if _, err := cache.WeekStats(context.Background(), 2025, 15); err != nil {
+			t.Errorf("WeekStats: %v", err)
+		}
+	}()
+
+	waitForCalls(t, source, 1)
+	clock.advance(2 * time.Second)
+	source.release(15)
+	<-done
+
+	if len(*logs) != 1 {
+		t.Fatalf("miss logged %d lines, want 1: %q", len(*logs), *logs)
+	}
+	if !strings.Contains((*logs)[0], "2s") {
+		t.Errorf("miss log %q does not report the 2s the fetch took", (*logs)[0])
+	}
+}
+
+func TestAFailedMissIsLoggedWithItsError(t *testing.T) {
+	source := &fakeSource{}
+	source.fail(errUpstream)
+	cache, _ := newTestCache(source, testTTL)
+	logs := recordLogs(cache)
+
+	if _, err := cache.WeekStats(context.Background(), 2025, 15); !errors.Is(err, errUpstream) {
+		t.Fatalf("WeekStats returned %v, want %v", err, errUpstream)
+	}
+
+	if len(*logs) != 1 {
+		t.Fatalf("failed miss logged %d lines, want 1: %q", len(*logs), *logs)
+	}
+	for _, want := range []string{"2025", "15", errUpstream.Error()} {
+		if !strings.Contains((*logs)[0], want) {
+			t.Errorf("failed-miss log %q does not mention %q", (*logs)[0], want)
+		}
 	}
 }
 
