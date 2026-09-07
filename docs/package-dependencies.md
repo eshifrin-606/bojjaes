@@ -20,6 +20,7 @@ graph TD
     end
     subgraph adapters["internal — adapters + transport"]
         sleeperpkg["internal/sleeper"]
+        statscache["internal/statscache"]
         api["internal/api"]
         web["internal/web"]
     end
@@ -30,6 +31,7 @@ graph TD
 
     main --> api
     main --> web
+    main --> statscache
     main --> sleeperpkg
     main --> roster
     api --> score
@@ -37,6 +39,8 @@ graph TD
     web --> roster
     sleeperpkg --> score
     sleeperpkg --> sleeper
+    statscache --> score
+    statscache -. wraps at runtime .-> sleeperpkg
     roster --> files
 ```
 
@@ -58,9 +62,10 @@ serialization decision. Read the direction of the arrows, not the length of the 
 
 | Package | Role | Imports (first-party) | Imports (stdlib) | Imported by |
 | --- | --- | --- | --- | --- |
-| `cmd/server` | Process entrypoint and composition root. Constructs the provider and the lineup tree, registers routes, owns the listen address. | `internal/api`, `internal/roster`, `internal/sleeper`, `internal/web` | `log`, `net/http` | — |
+| `cmd/server` | Process entrypoint and composition root. Constructs the provider, wraps it in the cache, constructs the lineup tree, registers routes, owns the listen address. | `internal/api`, `internal/roster`, `internal/sleeper`, `internal/statscache`, `internal/web` | `log`, `net/http` | — |
 | `internal/score` | The scoring domain: `StatLine`, `Points`, `WeekStats`, and the season/week bounds. | none | `fmt` | `internal/api`, `internal/sleeper`, `internal/web` |
 | `internal/sleeper` | The Sleeper adapter: the HTTP client, the base URL, the stat-key transform. | `internal/score` | `context`, `encoding/json`, `fmt`, `net/http`, `time` | `cmd/server` |
+| `internal/statscache` | A caching decorator over a weekly stat fetch: TTL expiry, single-flight, the `TTL` constant. | `internal/score` | `context`, `sync`, `time` | `cmd/server` |
 | `internal/api` | The JSON transport: `POST /scores`, its DTOs, its validation. | `internal/score` | `context`, `encoding/json`, `fmt`, `log`, `net/http` | `cmd/server` |
 | `internal/web` | The HTML transport: `GET /{season}/{week}`, its view model, its template. | `internal/roster`, `internal/score` | `bytes`, `context`, `embed`, `errors`, `html/template`, `log`, `net/http`, `strconv` | `cmd/server` |
 | `internal/roster` | Roster/lineup knowledge: file format, tree layout, matchup resolution, starters/bench split. | none | `bufio`, `errors`, `fmt`, `io`, `os`, `path/filepath`, `strings` | `cmd/server`, `internal/web` |
@@ -75,8 +80,10 @@ contents for the service.
 The lineup-tree root is a constant here (`scripts/lineups`, relative to the working directory),
 which is knowingly interim: it becomes an embedded filesystem when the tree moves inside a package.
 
-Because the wiring is here, a TTL cache over the weekly fetch is additive: a caching `StatsSource`
-that wraps another one, constructed in `main`, with no consumer edited.
+Because the wiring is here, the TTL cache landed as pure addition: `statscache.New` wraps the
+`sleeper.Client` in this file and the wrapped value goes to both handlers, with no consumer edited
+and no handler file touched. Wrapping once matters — a cache per handler would be two upstream
+budgets for one league — and it is the kind of thing only a composition root can guarantee.
 
 ### `internal/score`
 
@@ -136,6 +143,26 @@ else.
 bash parsing on purpose rather than gaining a CLI shim that would be deleted later, so nothing else
 imports it.
 
+### `internal/statscache`
+
+A decorator, not a layer: it declares the same one-method `StatsSource` the two transports declare,
+so it names no provider and is itself a `StatsSource`. Installing it is `main` wrapping one value in
+another; removing it is deleting that wrap.
+
+It holds one entry per `(season, week)` — a fetch returns the whole league, so there is no partial
+hit — and it does two things to bound upstream volume. The TTL caps how often a week is refetched;
+single-flight collapses concurrent misses for the same week into one call, which is what a page
+that refreshes itself on a timer actually needs. Neither is optional now that a browser, not a
+person, decides how often the fetch happens.
+
+Three rules are worth knowing before changing it: failures are never stored (a blip would otherwise
+become a whole TTL of errors); the fetch runs on `context.WithoutCancel` under the cache's own
+timeout, so the reader who happened to start it cannot cancel it out from under the others; and the
+mutex is never held across the fetch, so a slow week cannot block a different one. The reasoning
+is in comments at each site and in the change's notes.
+
+`now` and `fetchTimeout` are unexported seams for tests, not configuration — `main` names neither.
+
 ### `internal/web`
 
 The HTML edge, and the third thing this map used to predict: it imports both domain packages so
@@ -145,8 +172,8 @@ two columns must not come from different readings of the week.
 
 Like `internal/api` it declares its own `StatsSource` and never imports `internal/sleeper`, so its
 tests build a `score.WeekStats` with `NewWeekStats` rather than standing up an `httptest` server.
-That is also what makes the coming TTL cache a wrapping `StatsSource` wired in `main` with nothing
-here edited.
+That is what let the TTL cache arrive as a wrapping `StatsSource` wired in `main` with nothing here
+edited.
 
 `embed` and `html/template` are the imports that mark it: `matchup.html` lives beside the handler
 and is parsed once at package initialisation, so a broken template stops the process at startup
@@ -167,9 +194,12 @@ before it could fail.
   dependency, `internal/api` the JSON surface, and `internal/web` the HTML one; `internal/score`
   has none of them, and a change to any of the outer three cannot reach it without an import that
   is not there.
-- **Test imports add no first-party edges the map does not show.** Every test is in-package, and the
-  only first-party imports any of them add are ones the package already has — no hidden test-only
-  coupling, and no third-party dependencies anywhere in `go.mod`. Both `roster`'s matchup tests and
+- **One test adds a first-party edge the map does not show.** Every test is in-package, and there
+  are still no third-party dependencies anywhere in `go.mod`. But `internal/statscache`'s tests
+  import `internal/api` and `internal/web` to assert at compile time that `*Cache` satisfies both
+  transports' `StatsSource`. That edge is deliberate and test-only: the substitutability is the
+  whole point of the decorator, so it is better checked in the package's own tests than discovered
+  in `main`. It is also the one place the "read the arrows" advice needs the second `go list`. Both `roster`'s matchup tests and
   `web`'s page tests build their fixtures in `t.TempDir()`, so the suite never reads the real
   `scripts/lineups` tree.
 

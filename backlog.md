@@ -33,8 +33,11 @@ One line each, roughly in dependency order. Not sized, not scheduled.
 
 ## Not hammering Sleeper
 
-- [ ] Put a ~5 minute TTL cache over the weekly fetch, with single-flight so concurrent misses collapse into one upstream call.
+- [x] Put a ~5 minute TTL cache over the weekly fetch, with single-flight so concurrent misses collapse into one upstream call. `internal/statscache`, wrapped once in `main` so both handlers share one budget.
 - [ ] Probe Sleeper's rate-limit tolerance at the cadence we're actually going to deploy at.
+- [ ] Log cache misses in `internal/statscache` — season, week, and elapsed — so `fly logs` shows the
+  actual Sleeper budget. Log the miss, not the hit: a miss is ~one line per week per TTL and stays
+  readable, while hits arrive with every reader's refresh and would bury it.
 
 ## Making the binary deployable
 
