@@ -11,7 +11,7 @@ graph LR
     reader(["📱 reader"]) -->|"GET /2025/15"| server
     subgraph box["one Go process (laptop today, one container later)"]
         server["cmd/server<br/><i>net/http, no background jobs</i>"]
-        tree[("scripts/lineups/<br/>2025/15/*.csv")]
+        tree[("internal/lineup/data/<br/>2025/15/*.csv<br/><i>embedded in the binary</i>")]
         server --- tree
     end
     server -->|"one fetch per request"| sleeper(["Sleeper REST API"])
@@ -85,7 +85,7 @@ One page load = one Sleeper call. Every time.
 sequenceDiagram
     participant B as browser
     participant W as internal/web
-    participant R as internal/roster
+    participant R as internal/lineup
     participant S as internal/sleeper
     participant X as Sleeper API
 
@@ -94,7 +94,7 @@ sequenceDiagram
     Note right of W: a typo in a URL<br/>never reaches Sleeper
     W->>R: Matchup(2025, 15) → two teams
     W->>R: Read() ×2 → both lineups
-    Note right of R: rosters read first —<br/>no point fetching a<br/>week we can't render
+    Note right of R: lineups read first —<br/>no point fetching a<br/>week we can't render
     W->>S: WeekStats(2025, 15)
     S->>X: GET /v1/stats/nfl/regular/2025/15
     X-->>S: ~0.5MB, every player in the league

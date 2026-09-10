@@ -8,7 +8,7 @@ nine starters with points, and that lineup's total.
 
 This capability governs the served page — its URL, how a season and week resolve to two columns,
 what each column contains, and how a week that is not a matchup is refused. The two teams are
-resolved as `roster-source` resolves them and the points are `player-week-score`'s; nothing here
+resolved as `lineup-source` resolves them and the points are `player-week-score`'s; nothing here
 parses a roster file or scores a stat line. `matchup-report` governs the terminal report that
 answers the same question on one machine, and the two exist side by side until the page replaces
 it.
@@ -47,7 +47,7 @@ stat provider.
 ### Requirement: The page shows the week's matchup, the Bojjaes on the left
 
 The page SHALL show exactly two columns: the two teams of that week directory, resolved as the
-`roster-source` capability resolves them. The Bojjaes SHALL hold the left column and their opponent
+`lineup-source` capability resolves them. The Bojjaes SHALL hold the left column and their opponent
 the right, regardless of file name order in the directory.
 
 #### Scenario: The Bojjaes hold the left column
@@ -63,7 +63,7 @@ the right, regardless of file name order in the directory.
 ### Requirement: Each column is a team, its starters, and one total
 
 Each column SHALL show the team name, that team's starting lineup in file order, and the total of
-the starters' points. Starters are the roster's first nine records per `roster-source`; bench
+the starters' points. Starters are the roster's first nine records per `lineup-source`; bench
 players SHALL NOT appear on the page.
 
 Each starter line SHALL show the player's name from the roster file and that player's points for

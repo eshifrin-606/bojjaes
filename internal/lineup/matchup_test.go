@@ -1,45 +1,43 @@
-package roster
+package lineup
 
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
+	"io/fs"
 	"strings"
 	"testing"
+	"testing/fstest"
 )
 
-func TestWeekDirResolvesUnderRoot(t *testing.T) {
-	tree := New("scripts/lineups")
+func TestWeekDirIsRelativeToTheTree(t *testing.T) {
+	tree := New(fstest.MapFS{})
 
 	got := tree.weekDir(2025, 14)
 
-	want := "scripts/lineups/2025/14"
+	want := "2025/14"
 	if got != want {
 		t.Errorf("weekDir() = %q, want %q", got, want)
 	}
 }
 
-// seedWeek creates a week directory under a temp root and writes each named
-// file into it. Contents are empty: resolution must never open them.
-func seedWeek(t *testing.T, season, week int, names ...string) *Tree {
-	t.Helper()
-
-	root := t.TempDir()
-	dir := filepath.Join(root, fmt.Sprint(season), fmt.Sprint(week))
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatalf("MkdirAll: %v", err)
-	}
+// weekFS is one week of a lineup tree, holding each named entry with empty
+// contents: resolution must never open them. The week itself is an explicit
+// directory entry, so a week with no files in it is still a week.
+func weekFS(season, week int, names ...string) fstest.MapFS {
+	dir := fmt.Sprintf("%d/%d", season, week)
+	fsys := fstest.MapFS{dir: &fstest.MapFile{Mode: fs.ModeDir}}
 	for _, name := range names {
-		if err := os.WriteFile(filepath.Join(dir, name), nil, 0o644); err != nil {
-			t.Fatalf("WriteFile %s: %v", name, err)
-		}
+		fsys[dir+"/"+name] = &fstest.MapFile{}
 	}
-
-	return New(root)
+	return fsys
 }
 
-func TestMatchupResolvesTwoRosters(t *testing.T) {
+func seedWeek(t *testing.T, season, week int, names ...string) *Tree {
+	t.Helper()
+	return New(weekFS(season, week, names...))
+}
+
+func TestMatchupResolvesTwoLineups(t *testing.T) {
 	tree := seedWeek(t, 2025, 14, "bojjaes.csv", "wood.csv")
 
 	ours, theirs, err := tree.Matchup(2025, 14)
@@ -67,16 +65,14 @@ func TestMatchupReturnsOursFirstWhenOpponentSortsBefore(t *testing.T) {
 	}
 }
 
-// Regression: resolution is a fact about the directory, so a roster that
+// Regression: resolution is a fact about the directory, so a lineup that
 // parse would reject must not affect it. Passes without a code change; it is
 // here to pin that Matchup never opens the files.
-func TestMatchupIgnoresUnparseableRoster(t *testing.T) {
-	tree := seedWeek(t, 2025, 14, "bojjaes.csv", "wood.csv")
+func TestMatchupIgnoresUnparseableLineup(t *testing.T) {
+	fsys := weekFS(2025, 14, "bojjaes.csv")
+	fsys["2025/14/wood.csv"] = &fstest.MapFile{Data: []byte(",Alpha\n")}
+	tree := New(fsys)
 
-	bad := filepath.Join(tree.weekDir(2025, 14), "wood.csv")
-	if err := os.WriteFile(bad, []byte(",Alpha\n"), 0o644); err != nil {
-		t.Fatalf("WriteFile: %v", err)
-	}
 	if _, err := tree.Read(2025, 14, "wood"); err == nil {
 		t.Fatalf("Read() = nil error, want the fixture to be unparseable")
 	}
@@ -90,7 +86,7 @@ func TestMatchupIgnoresUnparseableRoster(t *testing.T) {
 	}
 }
 
-func TestMatchupRefusesThreeRosters(t *testing.T) {
+func TestMatchupRefusesThreeLineups(t *testing.T) {
 	tree := seedWeek(t, 2025, 14, "aroma.csv", "bojjaes.csv", "wood.csv")
 
 	ours, theirs, err := tree.Matchup(2025, 14)
@@ -109,7 +105,7 @@ func TestMatchupRefusesThreeRosters(t *testing.T) {
 	}
 }
 
-func TestMatchupRefusesLoneRoster(t *testing.T) {
+func TestMatchupRefusesLoneLineup(t *testing.T) {
 	tree := seedWeek(t, 2025, 14, "bojjaes.csv")
 
 	ours, theirs, err := tree.Matchup(2025, 14)
@@ -125,8 +121,8 @@ func TestMatchupRefusesEmptyWeek(t *testing.T) {
 	tree := seedWeek(t, 2025, 14)
 
 	_, _, err := tree.Matchup(2025, 14)
-	if !errors.Is(err, ErrTooFewRosters) {
-		t.Fatalf("Matchup() err = %v, want ErrTooFewRosters", err)
+	if !errors.Is(err, ErrTooFewLineups) {
+		t.Fatalf("Matchup() err = %v, want ErrTooFewLineups", err)
 	}
 	if !strings.Contains(err.Error(), tree.weekDir(2025, 14)) {
 		t.Errorf("error %q does not name the week directory", err)
@@ -136,7 +132,7 @@ func TestMatchupRefusesEmptyWeek(t *testing.T) {
 // The caller asked about a week, not a path, so a missing directory is
 // reported as an unstaged week rather than a bare ENOENT.
 func TestMatchupRefusesMissingWeek(t *testing.T) {
-	tree := New(t.TempDir())
+	tree := New(fstest.MapFS{})
 
 	_, _, err := tree.Matchup(2025, 99)
 	if err == nil {
@@ -174,17 +170,17 @@ func TestMatchupRefusalsAreDistinguishable(t *testing.T) {
 		stage bool
 		want  error
 	}{
-		{name: "too many", files: []string{"aroma.csv", "bojjaes.csv", "wood.csv"}, stage: true, want: ErrTooManyRosters},
-		{name: "too few", files: []string{"bojjaes.csv"}, stage: true, want: ErrTooFewRosters},
+		{name: "too many", files: []string{"aroma.csv", "bojjaes.csv", "wood.csv"}, stage: true, want: ErrTooManyLineups},
+		{name: "too few", files: []string{"bojjaes.csv"}, stage: true, want: ErrTooFewLineups},
 		{name: "no bojjaes", files: []string{"aroma.csv", "fuego.csv"}, stage: true, want: ErrNotOurMatchup},
 		{name: "missing directory", want: ErrNoWeek},
 	}
 
-	others := []error{ErrTooManyRosters, ErrTooFewRosters, ErrNotOurMatchup, ErrNoWeek}
+	others := []error{ErrTooManyLineups, ErrTooFewLineups, ErrNotOurMatchup, ErrNoWeek}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tree := New(t.TempDir())
+			tree := New(fstest.MapFS{})
 			if tt.stage {
 				tree = seedWeek(t, 2025, 14, tt.files...)
 			}
@@ -241,12 +237,11 @@ func TestMatchupIgnoresDotfileCSVs(t *testing.T) {
 }
 
 func TestMatchupIgnoresSubdirectories(t *testing.T) {
-	tree := seedWeek(t, 2025, 14, "bojjaes.csv", "wood.csv")
+	fsys := weekFS(2025, 14, "bojjaes.csv", "wood.csv")
 	for _, name := range []string{"archive", "aroma.csv"} {
-		if err := os.Mkdir(filepath.Join(tree.weekDir(2025, 14), name), 0o755); err != nil {
-			t.Fatalf("Mkdir %s: %v", name, err)
-		}
+		fsys["2025/14/"+name] = &fstest.MapFile{Mode: fs.ModeDir}
 	}
+	tree := New(fsys)
 
 	ours, theirs, err := tree.Matchup(2025, 14)
 	if err != nil {
@@ -258,16 +253,16 @@ func TestMatchupIgnoresSubdirectories(t *testing.T) {
 }
 
 // Pins the filter and the count against each other: skipping junk must not
-// weaken the refusal of a genuine third roster.
-func TestMatchupRefusesThirdRosterAmongJunk(t *testing.T) {
+// weaken the refusal of a genuine third lineup.
+func TestMatchupRefusesThirdLineupAmongJunk(t *testing.T) {
 	tree := seedWeek(t, 2025, 14, ".DS_Store", "aroma.csv", "bojjaes.csv", "notes.md", "wood.csv")
 
 	_, _, err := tree.Matchup(2025, 14)
-	if !errors.Is(err, ErrTooManyRosters) {
-		t.Fatalf("Matchup() err = %v, want ErrTooManyRosters", err)
+	if !errors.Is(err, ErrTooManyLineups) {
+		t.Fatalf("Matchup() err = %v, want ErrTooManyLineups", err)
 	}
 	if strings.Contains(err.Error(), ".DS_Store") || strings.Contains(err.Error(), "notes.md") {
-		t.Errorf("error %q names entries that are not rosters", err)
+		t.Errorf("error %q names entries that are not lineups", err)
 	}
 }
 
@@ -283,12 +278,26 @@ func TestMatchupRefusesMixedCaseBojjaes(t *testing.T) {
 	}
 }
 
-// The spec's scenario as written: every kind of non-roster entry at once.
-func TestMatchupIgnoresEveryNonRosterEntry(t *testing.T) {
-	tree := seedWeek(t, 2025, 14, ".DS_Store", "bojjaes.csv", "notes.md", "wood.csv")
-	if err := os.Mkdir(filepath.Join(tree.weekDir(2025, 14), "archive"), 0o755); err != nil {
-		t.Fatalf("Mkdir: %v", err)
+// The spec's scenario as written: every kind of non-lineup entry at once.
+func TestMatchupIgnoresEveryNonLineupEntry(t *testing.T) {
+	fsys := weekFS(2025, 14, ".DS_Store", "bojjaes.csv", "notes.md", "wood.csv")
+	fsys["2025/14/archive"] = &fstest.MapFile{Mode: fs.ModeDir}
+	tree := New(fsys)
+
+	ours, theirs, err := tree.Matchup(2025, 14)
+	if err != nil {
+		t.Fatalf("Matchup: %v", err)
 	}
+	if ours != "bojjaes" || theirs != "wood" {
+		t.Errorf("Matchup() = %q, %q, want %q, %q", ours, theirs, "bojjaes", "wood")
+	}
+}
+
+func TestMatchupListsThroughTheSuppliedFilesystem(t *testing.T) {
+	tree := New(fstest.MapFS{
+		"2025/14/bojjaes.csv": &fstest.MapFile{},
+		"2025/14/wood.csv":    &fstest.MapFile{},
+	})
 
 	ours, theirs, err := tree.Matchup(2025, 14)
 	if err != nil {

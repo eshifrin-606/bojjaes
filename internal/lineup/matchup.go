@@ -1,14 +1,14 @@
-package roster
+package lineup
 
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
+	"io/fs"
+	"path"
 	"strings"
 )
 
-// ourTeam is the Bojjaes' roster file name, without the extension. This repo
+// ourTeam is the Bojjaes' lineup file name, without the extension. This repo
 // is a tool for one team, so the name lives here rather than in every caller.
 const ourTeam = "bojjaes"
 
@@ -17,31 +17,31 @@ const ourTeam = "bojjaes"
 // and a caller that renders one needs to tell them apart.
 var (
 	ErrNoWeek         = errors.New("no week directory")
-	ErrTooFewRosters  = errors.New("fewer than two rosters")
-	ErrTooManyRosters = errors.New("more than two rosters")
-	ErrNotOurMatchup  = errors.New("no bojjaes roster")
+	ErrTooFewLineups  = errors.New("fewer than two lineups")
+	ErrTooManyLineups = errors.New("more than two lineups")
+	ErrNotOurMatchup  = errors.New("no bojjaes lineup")
 )
 
 func found(names []string) string {
 	if len(names) == 0 {
-		return "no roster files"
+		return "no lineup files"
 	}
 	return strings.Join(names, ", ")
 }
 
-// weekDir is where Path gets the directory it puts a roster file in, so the
+// weekDir is where Path gets the directory it puts a lineup file in, so the
 // week and the files inside it cannot disagree about where the tree is.
 func (t *Tree) weekDir(season, week int) string {
-	return filepath.Join(t.root, fmt.Sprint(season), fmt.Sprint(week))
+	return path.Join(fmt.Sprint(season), fmt.Sprint(week))
 }
 
 // Matchup resolves a season and week to that week's two team names, ours
-// first. It never opens either roster: whether a roster is usable is a fact
+// first. It never opens either lineup: whether a lineup is usable is a fact
 // about the file, reported by Read.
 func (t *Tree) Matchup(season, week int) (ours, theirs string, err error) {
 	dir := t.weekDir(season, week)
 
-	entries, err := os.ReadDir(dir)
+	entries, err := fs.ReadDir(t.fsys, dir)
 	if err != nil {
 		return "", "", fmt.Errorf("%s: %w", dir, ErrNoWeek)
 	}
@@ -58,19 +58,19 @@ func (t *Tree) Matchup(season, week int) (ours, theirs string, err error) {
 		teams = append(teams, strings.TrimSuffix(e.Name(), ".csv"))
 	}
 
-	// No rule picks two of three rosters as the matchup, and a guess would
+	// No rule picks two of three lineups as the matchup, and a guess would
 	// render a full, plausible page for a game nobody is playing.
 	if len(teams) > 2 {
-		return "", "", fmt.Errorf("%s: %w: found %s", dir, ErrTooManyRosters, found(names))
+		return "", "", fmt.Errorf("%s: %w: found %s", dir, ErrTooManyLineups, found(names))
 	}
 
 	if len(teams) < 2 {
-		return "", "", fmt.Errorf("%s: %w: found %s", dir, ErrTooFewRosters, found(names))
+		return "", "", fmt.Errorf("%s: %w: found %s", dir, ErrTooFewLineups, found(names))
 	}
 
 	// This resolver answers who the Bojjaes are playing, which a directory of
 	// two other teams cannot. The opponent is then found by elimination — it
-	// is the roster that is not ours, never inferred from its name, size, or
+	// is the lineup that is not ours, never inferred from its name, size, or
 	// position in the listing.
 	switch ourTeam {
 	case teams[0]:

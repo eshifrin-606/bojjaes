@@ -47,14 +47,15 @@ hosted on Fly.io.
    environment API base URL. `scripts/scores.sh` and `scripts/fantasycast.sh` keep working
    unchanged against the same server.
 
-3. **Assets embedded.** Templates, CSS, and `scripts/lineups/**` are pulled into the binary with
-   `//go:embed`. A deploy is therefore also the lineup update, which is what we want while lineups
-   remain hand-edited files in git.
+3. **Assets embedded.** Templates, CSS, and the lineup tree at `internal/lineup/data/**` are
+   pulled into the binary with `//go:embed`. A deploy is therefore also the lineup update, which is
+   what we want while lineups remain hand-edited files in git.
 
 4. **URL: `/{season}/{week}`,** e.g. `/2025/15`. The week directory
-   `scripts/lineups/<season>/<week>/` holds exactly two rosters — `bojjaes.csv` and the opponent's
-   — and the opponent is resolved as "the file that is not `bojjaes.csv`". The Bojjaes are always
-   the left column. A directory that does not hold exactly two rosters is an error, not a guess.
+   `internal/lineup/data/<season>/<week>/` holds exactly two lineups — `bojjaes.csv` and the
+   opponent's — and the opponent is resolved as "the file that is not `bojjaes.csv`". The Bojjaes
+   are always the left column. A directory that does not hold exactly two lineups is an error, not
+   a guess.
 
 5. **Freshness: client polls, server caches.** The page re-fetches roughly every 5 minutes, and
    only while the tab is visible. The server holds a short TTL cache (~5 min) over the Sleeper
@@ -78,7 +79,7 @@ hosted on Fly.io.
 
    **What actually keeps a stranger's traffic off Sleeper is handler ordering, not obscurity.** The
    matchup handler validates both path segments, then resolves the week directory, then reads both
-   rosters, and only then calls the provider. Every way a guessed URL can be wrong — a non-numeric
+   lineups, and only then calls the provider. Every way a guessed URL can be wrong — a non-numeric
    segment, a season or week outside `score.ValidateSeasonWeek`'s bounds, a week directory we do not
    have — terminates in a 400 or a 404 before the provider is named. The only URLs that can reach
    upstream are the weeks that exist in the lineup tree, and those are bounded again by decision 5's
@@ -99,7 +100,7 @@ hosted on Fly.io.
    page must not show a margin, a win probability, a progress bar, a leader highlight, or any
    winner-implying styling.
 
-9. **Lineup files gain display fields.** The roster CSV format grows position and team alongside
+9. **Lineup files gain display fields.** The lineup CSV format grows position and team alongside
    the existing id and name. These are **local labels only** — the Sleeper player ID remains the
    sole identity key, exactly as in `scripts/scores.sh`. They are rendered; they are never used to
    resolve a player.
@@ -107,7 +108,7 @@ hosted on Fly.io.
    **Position is the player's listed position, not the lineup slot** (settled 2026-09-09). It
    answers "what is this guy" — the reader wants to know a name is a tight end — and it is how the
    league has always read a roster on the spreadsheet. Slot stays where it already is: implied by
-   file order, which `scripts/scores.sh` and `internal/roster` both already depend on. A label that
+   file order, which `scripts/scores.sh` and `internal/lineup` both already depend on. A label that
    named the slot would duplicate that ordering in a second place and could contradict it; a listed
    position cannot, because it says nothing about where the player is playing.
 
@@ -154,7 +155,7 @@ hosted on Fly.io.
   wider audience than one terminal.
 
 - **The week directory convention becomes load-bearing.** `/{season}/{week}` resolving the opponent
-  by "the other file" means adding a third roster to a week directory breaks that week's page. The
+  by "the other file" means adding a third lineup to a week directory breaks that week's page. The
   convention is currently followed by every week in the tree; it is now enforced rather than
   incidental.
 
@@ -183,8 +184,8 @@ hosted on Fly.io.
 
 ## Follow-ups
 
-- Decide the exact roster CSV field order. The meaning of the position field is settled in
-  decision 9; the column order is not, and both `scripts/scores.sh` and the roster parser have to
+- Decide the exact lineup CSV field order. The meaning of the position field is settled in
+  decision 9; the column order is not, and both `scripts/scores.sh` and the lineup parser have to
   agree on it.
 - Watch the fetch-time as-of on a live Sunday and see how far it drifts from when stats actually
   move. If the gap is big enough to mislead, the fix is the GraphQL shape's `updated_at`.

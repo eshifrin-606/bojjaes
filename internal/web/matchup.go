@@ -1,5 +1,5 @@
 // Package web serves the HTML matchup page. It joins the lineup tree in
-// internal/roster to the scoring in internal/score, and owns the template that
+// internal/lineup to the scoring in internal/score, and owns the template that
 // renders the result; neither of those packages learns about HTML.
 package web
 
@@ -17,7 +17,7 @@ import (
 	// same whether or not the deploy image ships /usr/share/zoneinfo.
 	_ "time/tzdata"
 
-	"github.com/eshifrin/bojjaes/internal/roster"
+	"github.com/eshifrin/bojjaes/internal/lineup"
 	"github.com/eshifrin/bojjaes/internal/score"
 )
 
@@ -88,7 +88,7 @@ type StatsSource interface {
 }
 
 // Handler renders the matchup page for the season and week in the request path.
-func Handler(tree *roster.Tree, source StatsSource) http.Handler {
+func Handler(tree *lineup.Tree, source StatsSource) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Both segments are validated before the lineup tree is opened and
 		// before the provider is called: a typo in a URL must not reach
@@ -117,7 +117,7 @@ func Handler(tree *roster.Tree, source StatsSource) http.Handler {
 			// does not exist. A week directory that exists but is not a
 			// matchup is our lineup tree being wrong about a well-formed
 			// request, which is ours to fix, not theirs.
-			if errors.Is(err, roster.ErrNoWeek) {
+			if errors.Is(err, lineup.ErrNoWeek) {
 				http.Error(w, "no such week", http.StatusNotFound)
 				return
 			}
@@ -125,19 +125,19 @@ func Handler(tree *roster.Tree, source StatsSource) http.Handler {
 			return
 		}
 
-		// Both rosters are read before the provider is called: a week our
+		// Both lineups are read before the provider is called: a week our
 		// lineup tree is wrong about is our mistake to fix, and there is no
 		// reason to fetch a week we cannot render.
 		teams := [2]string{ours, theirs}
-		var lineups [2]roster.Roster
+		var lineups [2]lineup.Lineup
 		for i, team := range teams {
-			lineup, err := tree.Read(season, week, team)
+			l, err := tree.Read(season, week, team)
 			if err != nil {
-				log.Printf("reading %s roster for %d week %d: %v", team, season, week, err)
-				http.Error(w, "that week's rosters could not be read", http.StatusInternalServerError)
+				log.Printf("reading %s lineup for %d week %d: %v", team, season, week, err)
+				http.Error(w, "that week's lineups could not be read", http.StatusInternalServerError)
 				return
 			}
-			lineups[i] = lineup
+			lineups[i] = l
 		}
 
 		// Fetched once, and both columns scored from it: the two lineups must
@@ -185,11 +185,11 @@ func formatPoints(pts float64) string {
 }
 
 // scoreColumn scores one lineup's starters out of the week's stats.
-func scoreColumn(team string, lineup roster.Roster, weekStats score.WeekStats) column {
+func scoreColumn(team string, l lineup.Lineup, weekStats score.WeekStats) column {
 	col := column{Team: team}
 
 	var total float64
-	for _, rec := range lineup.Starters() {
+	for _, rec := range l.Starters() {
 		stats, played := weekStats.Player(rec.ID)
 		if !played {
 			// Absence and a scoreless week are different facts, and Player's

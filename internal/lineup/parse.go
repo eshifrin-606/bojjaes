@@ -1,4 +1,4 @@
-package roster
+package lineup
 
 import (
 	"bufio"
@@ -9,7 +9,7 @@ import (
 
 type Record struct {
 	ID string
-	// Name is display text only. Nothing outside the roster looks a player up
+	// Name is display text only. Nothing outside the lineup looks a player up
 	// by name, so a wrong name pairs silently with the right stats.
 	Name string
 }

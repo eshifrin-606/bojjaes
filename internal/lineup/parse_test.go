@@ -1,4 +1,4 @@
-package roster
+package lineup
 
 import (
 	"strings"
@@ -106,10 +106,10 @@ func TestParseRefusesAllBlankFields(t *testing.T) {
 	}
 }
 
-func TestParseRefusesEmptyRoster(t *testing.T) {
-	_, err := parse(strings.NewReader("# roster\n\n  \n"))
+func TestParseRefusesEmptyLineup(t *testing.T) {
+	_, err := parse(strings.NewReader("# lineup\n\n  \n"))
 	if err == nil {
-		t.Fatal("parse() = nil error, want an error for a roster with no records")
+		t.Fatal("parse() = nil error, want an error for a lineup with no records")
 	}
 }
 
@@ -135,7 +135,7 @@ func TestParseAllowsRepeatedName(t *testing.T) {
 }
 
 func TestParseSkipsCommentsAndBlankLines(t *testing.T) {
-	input := "# roster\n1,A\n\n  # indented comment\n2,B\n3,C\n"
+	input := "# lineup\n1,A\n\n  # indented comment\n2,B\n3,C\n"
 	got, err := parse(strings.NewReader(input))
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -151,7 +151,7 @@ func TestParseSkipsCommentsAndBlankLines(t *testing.T) {
 	}
 }
 
-// The roster is the only thing that ever reads a name, so nothing can notice
+// The lineup is the only thing that ever reads a name, so nothing can notice
 // that this one belongs to a different player than the id does.
 func TestParseDoesNotValidateName(t *testing.T) {
 	got, err := parse(strings.NewReader("4984,Patrick Mahomes\n"))

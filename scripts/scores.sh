@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Score a roster for one season and week against a locally running server.
+# Score a lineup for one season and week against a locally running server.
 #
 #   go run ./cmd/server
 #   scripts/scores.sh 2025 14
@@ -13,13 +13,13 @@
 set -euo pipefail
 
 # Starters are the first records in the file, in file order. Nothing validates
-# that they form a legal lineup — the file carries no positions, so the roster
+# that they form a legal lineup — the file carries no positions, so the lineup
 # file is the lineup card and reordering two lines changes the total.
 lineup_size=9
 
 usage() {
 	echo "usage: $(basename "$0") <season> <week> [team|players-file]" >&2
-	echo "  a bare team name reads lineups/<season>/<week>/<team>.csv" >&2
+	echo "  a bare team name reads internal/lineup/data/<season>/<week>/<team>.csv" >&2
 	echo "  defaults to that week's bojjaes.csv" >&2
 	echo "  env: SERVER (default http://localhost:8080)" >&2
 	exit 2
@@ -31,7 +31,7 @@ season=$1
 week=$2
 # The lineup tree is keyed by the same season and week the score is asked for,
 # so neither the default nor a shorthand name can drift onto another week.
-lineups=$(dirname "$0")/lineups/$season/$week
+lineups=$(dirname "$0")/../internal/lineup/data/$season/$week
 case ${3:-} in
 "") players_file=$lineups/bojjaes.csv ;;
 */* | *.csv) players_file=$3 ;;

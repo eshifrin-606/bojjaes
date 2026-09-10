@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 #
-# Show two rosters side by side for one season and week, against a locally
+# Show two lineups side by side for one season and week, against a locally
 # running server.
 #
 #   go run ./cmd/server
 #   scripts/fantasycast.sh 2025 14 wood        # bojjaes vs wood
 #   scripts/fantasycast.sh 2025 15 aroma bojjaes
 #
-# Each column is a full scripts/scores.sh report, so roster resolution, scoring,
+# Each column is a full scripts/scores.sh report, so lineup resolution, scoring,
 # and the report itself live in exactly one place. Each team is scored in its
 # own request, which is also why the server's per-request player cap applies per
-# roster rather than per matchup.
+# lineup rather than per matchup.
 #
 # Nothing computes a margin: a starter whose game has not kicked off is
 # indistinguishable from one who was inactive, so a difference printed on Sunday

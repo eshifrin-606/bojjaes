@@ -1,4 +1,4 @@
-package roster
+package lineup
 
 import (
 	"strings"
@@ -13,7 +13,7 @@ func recordsN(n int) []Record {
 	return records
 }
 
-func TestRosterSplit(t *testing.T) {
+func TestLineupSplit(t *testing.T) {
 	tests := []struct {
 		name         string
 		records      []Record
@@ -27,7 +27,7 @@ func TestRosterSplit(t *testing.T) {
 			wantBench:    3,
 		},
 		{
-			name:         "roster shorter than a lineup is all starters",
+			name:         "lineup shorter than the starting nine is all starters",
 			records:      recordsN(5),
 			wantStarters: 5,
 			wantBench:    0,
@@ -35,7 +35,7 @@ func TestRosterSplit(t *testing.T) {
 		{
 			// Boundary case: kept even though it passed on the first run,
 			// since the split's edge is exactly where an off-by-one hides.
-			name:         "roster of exactly nine has an empty bench",
+			name:         "lineup of exactly nine has an empty bench",
 			records:      recordsN(9),
 			wantStarters: 9,
 			wantBench:    0,
@@ -44,7 +44,7 @@ func TestRosterSplit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := Roster{records: tt.records}
+			r := Lineup{records: tt.records}
 			starters, bench := r.Starters(), r.Bench()
 
 			if len(starters) != tt.wantStarters {
@@ -70,10 +70,10 @@ func TestRosterSplit(t *testing.T) {
 	}
 }
 
-// TestRosterSplitAfterParse pins parsing and splitting together: comment and
+// TestLineupSplitAfterParse pins parsing and splitting together: comment and
 // blank lines must not consume a starter slot, which only shows up once the
 // split runs against parser output rather than a hand-built []Record.
-func TestRosterSplitAfterParse(t *testing.T) {
+func TestLineupSplitAfterParse(t *testing.T) {
 	input := `# starting nine
 
 1,Alpha
@@ -93,7 +93,7 @@ func TestRosterSplitAfterParse(t *testing.T) {
 		t.Fatalf("parse: %v", err)
 	}
 
-	r := Roster{records: records}
+	r := Lineup{records: records}
 	if got := len(r.Starters()); got != 9 {
 		t.Errorf("len(Starters()) = %d, want 9", got)
 	}
@@ -102,17 +102,17 @@ func TestRosterSplitAfterParse(t *testing.T) {
 	}
 }
 
-// TestRosterSplitReordered documents that moving the tenth record above the
+// TestLineupSplitReordered documents that moving the tenth record above the
 // ninth promotes it and demotes the record it displaced: intended behaviour
 // of a hand-maintained lineup card, not an accident of the split.
-func TestRosterSplitReordered(t *testing.T) {
+func TestLineupSplitReordered(t *testing.T) {
 	base := recordsN(10)
 	reordered := make([]Record, len(base))
 	copy(reordered, base)
 	// Swap the tenth record (index 9) above the ninth (index 8).
 	reordered[8], reordered[9] = reordered[9], reordered[8]
 
-	r := Roster{records: reordered}
+	r := Lineup{records: reordered}
 	starters, bench := r.Starters(), r.Bench()
 
 	if got, want := starters[8], base[9]; got != want {

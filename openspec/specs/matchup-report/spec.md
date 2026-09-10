@@ -7,7 +7,7 @@ side by side, each column a complete single-roster report.
 
 This capability governs only selection and arrangement — which two teams are shown, which holds the
 left column, and how the two reports are aligned. The content of each column is the
-`roster-score-report` capability's, unchanged; the points within it are the server's
+`lineup-score-report` capability's, unchanged; the points within it are the server's
 `player-week-score`. Nothing here scores, groups, or judges: there is deliberately no margin and no
 winner, because a starter whose game has not kicked off is indistinguishable from one who was
 inactive.

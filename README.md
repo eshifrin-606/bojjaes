@@ -26,10 +26,15 @@ lineup's total. The Bojjaes always hold the left column.
 open http://localhost:8080/2025/15
 ```
 
-No team appears in the URL — the week directory under `scripts/lineups` names
-both. A week that is not exactly one Bojjaes matchup is refused rather than
-guessed at: a week we never played is a `404`, a malformed week directory is a
+No team appears in the URL — the week directory in the lineup tree names both.
+A week that is not exactly one Bojjaes matchup is refused rather than guessed
+at: a week we never played is a `404`, a malformed week directory is a
 `500`, and a failed upstream fetch is a `502` rather than a page of zeros.
+
+Lineups are hand-edited at `internal/lineup/data/<season>/<week>/<team>.csv`.
+The tree is compiled into the binary with `//go:embed`, so the server reads no
+file off the working directory — and an edited lineup reaches the page only
+after a rebuild.
 
 The page shows both totals and nowhere shows their difference. A starter whose
 game has not kicked off is indistinguishable from one who was inactive, so it
@@ -105,7 +110,7 @@ treating `scores` as a complete lineup.
 The server calls the live Sleeper API, so it needs network access. A fetch
 failure returns 502 rather than a misleading `0.0`.
 
-## Scoring a roster
+## Scoring a lineup
 
 `scripts/scores.sh` scores a saved list of players against a running server, so
 you read names instead of Sleeper IDs. Needs `curl` and `jq`.
@@ -135,13 +140,13 @@ BENCH
 scripts/scores.sh <season> <week> [team|players-file]
 ```
 
-Lineups live under `scripts/lineups/<season>/<week>/`, and the third argument is
-read against that directory. It defaults to `bojjaes.csv` there — so
+Lineups live under `internal/lineup/data/<season>/<week>/`, and the third
+argument is read against that directory. It defaults to `bojjaes.csv` there — so
 `scripts/scores.sh 2025 15` reads the week 15 lineup without being told to — and
 a bare team name picks another file from the same week:
 
 ```bash
-scripts/scores.sh 2025 14 wood   # scripts/lineups/2025/14/wood.csv
+scripts/scores.sh 2025 14 wood   # internal/lineup/data/2025/14/wood.csv
 ```
 
 An argument containing a `/` or ending in `.csv` is used as a path instead, so
@@ -164,7 +169,7 @@ The **first nine records are the starters** and the rest are the bench. That is
 positional only: the file carries no position column, so nothing checks that
 rows 1-9 form a legal lineup, and reordering two lines changes who starts. The
 file *is* the lineup card. The `BENCH` heading prints even when nothing follows
-the ninth record, as it does for every roster file in this repo today.
+the ninth record, as it does for every lineup file in this repo today.
 
 `TOTAL` sums the starters only. Bench players are scored and printed — useful
 for "should I have started him" — but never totalled, since bench points count
@@ -175,7 +180,7 @@ as a real `0` — see the `no_stats` caveat above for why the difference matters
 Such a starter contributes nothing to `TOTAL`, and `TOTAL` carries no marker
 saying so: the `no stats` line sits directly above it. In the example above,
 `72.5` is eight players, not nine. Server errors exit non-zero with the
-server's message rather than printing a partial roster.
+server's message rather than printing a partial lineup.
 
 The report carries no season or week heading of its own — the season and week
 are your own arguments — and points sit in a fixed-width column so a report can
@@ -183,7 +188,7 @@ be set beside another one without ragging. That is what the matchup report does.
 
 ## A matchup, side by side
 
-`scripts/fantasycast.sh` prints two rosters as columns, each column a full
+`scripts/fantasycast.sh` prints two lineups as columns, each column a full
 `scores.sh` report, with the season and week stated once above both.
 
 ```bash
@@ -227,14 +232,14 @@ inactive, so a difference printed on Sunday morning would read as a settled
 deficit when it is nothing of the kind. Read the two totals and the `no stats`
 lines above them together.
 
-Columns are independent lists, not a positional matchup — the roster file has no
+Columns are independent lists, not a positional matchup — the lineup file has no
 position column, so row *n* on the left does not face row *n* on the right. When
-one roster is longer, its extra lines simply print with nothing to their right;
+one lineup is longer, its extra lines simply print with nothing to their right;
 neither column is padded or truncated to make the `BENCH` headings line up.
 
 **Each team is scored in its own request**, one `POST /scores` per column. So the
-server's per-request player cap applies per roster rather than per matchup, and
-two full rosters work where a merged request would not. Both reports are
+server's per-request player cap applies per lineup rather than per matchup, and
+two full lineups work where a merged request would not. Both reports are
 captured before anything prints, so a bad team name or a server error exits
 non-zero with that message and no half-drawn matchup.
 
