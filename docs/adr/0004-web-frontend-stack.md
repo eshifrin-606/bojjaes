@@ -70,12 +70,25 @@ hosted on Fly.io.
    the bare `/{season}/{week}`. **Reads are public and writes do not exist.**
 
    The prefix was in this decision as originally accepted and was dropped 2026-09-09, before it was
-   ever built. Nothing depended on it: reads carry nothing sensitive, upstream volume is bounded by
-   the TTL cache of decision 5 rather than by who can find the URL, and the eventual write path is
+   ever built. Nothing depended on it: reads carry nothing sensitive, and the eventual write path is
    gated by a shared passphrase per the rationale below. What it did cost was real — a permanent
    discipline tax to keep a secret out of logs, commits, and screenshots, in exchange for hiding a
    path whose host is in Certificate Transparency logs regardless. Unlike hosting, this is
    reversible in an afternoon, so it is deferred rather than decided early.
+
+   **What actually keeps a stranger's traffic off Sleeper is handler ordering, not obscurity.** The
+   matchup handler validates both path segments, then resolves the week directory, then reads both
+   rosters, and only then calls the provider. Every way a guessed URL can be wrong — a non-numeric
+   segment, a season or week outside `score.ValidateSeasonWeek`'s bounds, a week directory we do not
+   have — terminates in a 400 or a 404 before the provider is named. The only URLs that can reach
+   upstream are the weeks that exist in the lineup tree, and those are bounded again by decision 5's
+   TTL cache and single-flight.
+
+   This ordering is therefore a load-bearing security property, not an efficiency detail, and it is
+   the reason this decision can be "no access control" without qualification. Anything that later
+   moves the fetch earlier — a prefetch, a warm-up, a provider call folded into a middleware —
+   silently converts URL enumeration into upstream request volume and must be treated as reopening
+   this decision.
 
 8. **Presentation carries the honesty constraint.** The page shows two equal columns of scored
    starters and their two totals, plus a visible **as-of timestamp**. The timestamp is **our
