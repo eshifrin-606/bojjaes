@@ -1,52 +1,55 @@
 # Backlog
 
-Coarse requirements to get from "scoring engine + shell scripts" to the web scoreboard in
-[docs/adr/0004-web-frontend-stack.md](docs/adr/0004-web-frontend-stack.md).
+What's left to get the web scoreboard of
+[docs/adr/0004-web-frontend-stack.md](docs/adr/0004-web-frontend-stack.md) from "runs on my laptop"
+to "a URL three people open on Sunday". Completed work has been dropped; the archived changes under
+`openspec/changes/archive/` are the record of it.
+
+The page itself is done — `GET /{season}/{week}` renders both columns, the totals, the as-of
+timestamp, and the visibility-gated refresh, all behind a single-flight TTL cache. Everything below
+is either a prerequisite of running it somewhere else or a thing we can only learn once it's there.
+
 One line each, roughly in dependency order. Not sized, not scheduled.
 
-## Decide first
+## Blocking the first deploy
 
-- [ ] Decide whether the roster CSV's new position field means lineup slot or the player's listed position, since a slot label that disagrees with file order is worse than no label at all.
+- [ ] Embed templates and the lineup tree with `//go:embed`, which means moving `scripts/lineups/**`
+  somewhere a package can reach: embed won't cross `..` or follow symlinks. The templates and CSS
+  are already embedded from `internal/web`; the lineup tree is still read off the working directory
+  via `lineupRoot` in `cmd/server/main.go`, and that assumption dies in a container.
+- [ ] Keep `scripts/scores.sh` and `scripts/fantasycast.sh` working against the moved lineup tree —
+  they read the same files by path, and the ADR's promise is that the interim UI keeps working.
+- [ ] Teach `main.go` to read `PORT`, serve from its own `http.Server` with read/write/idle timeouts
+  instead of the package-level `DefaultServeMux`, and shut down gracefully on `SIGTERM` — which is
+  how Fly stops a machine.
+- [ ] Dockerfile: static build, scratch or distroless final stage, no working-directory assumptions
+  left once the lineups are embedded.
+- [ ] `fly.toml`: one region, one machine, auto-stop on, and a health check the platform can hit
+  that doesn't cost a Sleeper fetch.
 
-## Roster domain in Go
+## Getting it in front of people
 
-- [x] Move roster/lineup knowledge out of `scripts/scores.sh` and into a Go package: parse the CSV,
-  know where the lineup tree lives, know that the first nine records are the starters. Done as
-  `internal/roster`. The bash parsing in `scores.sh` deliberately stays until the served page
-  replaces the scripts.
-- [x] Resolve a matchup from a week directory: exactly two rosters, opponent is the file that isn't `bojjaes.csv`, three files is an error rather than a guess.
-- [ ] Grow the roster CSV to carry position and team as display-only labels, and update `scores.sh` so the scripts and the page agree on the format.
+- [ ] Decide what `/` and an unknown or malformed `/{season}/{week}` do. Today a week directory that
+  isn't exactly two rosters is an error; deployed, that error is what a reader sees, so it needs to
+  read as a page rather than a stack trace.
+- [ ] First deploy, then open it on a phone: this is the first time the page is read on the device
+  it was designed for.
+- [ ] Work through the browser observations the refresh change deferred —
+  `openspec/changes/refresh-page-while-visible/tasks.md` §5, which are exactly the six checks that
+  need a real browser and a server whose log you can watch.
 
-## Serving the page
+## Once it's up
 
-- [x] Split `internal/score` into `internal/score` (domain), `internal/sleeper` (adapter), and
-  `internal/api` (JSON), with `cmd/server` the only package naming a provider, so that a second
-  consumer can score a roster from one fetch without going through HTTP.
-- [x] Add `GET /{season}/{week}` rendering two equal columns of scored starters plus their two totals with `html/template`.
-- [x] Keep the page honest: as-of timestamp visible, and no margin, win probability, progress bar, or leader highlight anywhere in the markup or CSS.
-- [x] Stamp the as-of from our own Sleeper fetch time for now, labelled as such. Done in `stamp-as-of-timestamp`: the page renders `Sleeper stats fetched <time datetime="…">…</time>` in Central, and a cache hit dates to the fetch, not the request.
-  - [ ] Watch on a live Sunday how far the fetch instant drifts from when the stats actually moved upstream. Deferred observation — procedure in `openspec/changes/stamp-as-of-timestamp/notes.md`; feeds the Sleeper rate-limit / TTL probe below.
-- [x] Add the ~5 minute client refresh in a few lines of vanilla JS, and only while the tab is visible.
-  The rendered contract is tested; the browser behaviours are still unobserved (see
-  `openspec/changes/refresh-page-while-visible/notes.md`).
-- [ ] Embed templates, CSS, and the lineup tree with `//go:embed` — which means the lineup files have to move somewhere a package can reach, since embed won't cross `..` or follow symlinks.
-- [ ] Pick the unguessable path prefix and decide where it lives so it doesn't end up in logs or a public README.
-
-## Not hammering Sleeper
-
-- [x] Put a ~5 minute TTL cache over the weekly fetch, with single-flight so concurrent misses collapse into one upstream call. `internal/statscache`, wrapped once in `main` so both handlers share one budget.
-- [ ] Probe Sleeper's rate-limit tolerance at the cadence we're actually going to deploy at.
-- [x] Log cache misses in `internal/statscache` — season, week, and elapsed — so `fly logs` shows the
-  actual Sleeper budget. Log the miss, not the hit: a miss is ~one line per week per TTL and stays
-  readable, while hits arrive with every reader's refresh and would bury it.
-
-## Making the binary deployable
-
-- [ ] Teach `main.go` to read `PORT`, use its own `http.Server` with timeouts instead of `DefaultServeMux`, and shut down gracefully.
-- [x] Drop the walking-skeleton `fmt.Printf` out of the `/score` handler. Done by deleting
-  `GET /score` outright in the package split: the fixed player and week it proved is now a test in
-  `internal/sleeper`, and `POST /scores` covers what the endpoint did.
-- [ ] Dockerfile and `fly.toml`, one region, one machine.
+- [ ] Probe Sleeper's rate-limit tolerance at the cadence we're actually deployed at, now that
+  "our cadence" is a real number rather than a guess. Still open from ADR 0003.
+- [ ] Watch on a live Sunday how far our fetch instant drifts from when the stats actually moved
+  upstream — procedure in `openspec/changes/archive/2026-09-07-stamp-as-of-timestamp/notes.md`. If the gap misleads,
+  the fix is the GraphQL shape's `updated_at`.
+- [ ] Grow the roster CSV to carry position and team as display-only labels, and update `scores.sh`
+  so the scripts and the page agree on the format. Position is the player's listed position, not
+  the lineup slot (ADR 0004 decision 9) — slot stays implied by file order. Field order is the one
+  piece still open, and it has to be settled in one place because the parser and the script both
+  read it. Not deploy-blocking; the page is honest without these labels.
 
 ## Later, deliberately
 

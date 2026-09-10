@@ -66,8 +66,16 @@ hosted on Fly.io.
 
 6. **Hosting: Fly.io.** One binary, one Dockerfile, one region.
 
-7. **Access: none.** No auth, no accounts. The scoreboard is served under an unguessable path
-   prefix and is otherwise open. **Reads are public and writes do not exist.**
+7. **Access: none.** No auth, no accounts, and no unguessable path prefix — the page is served at
+   the bare `/{season}/{week}`. **Reads are public and writes do not exist.**
+
+   The prefix was in this decision as originally accepted and was dropped 2026-09-09, before it was
+   ever built. Nothing depended on it: reads carry nothing sensitive, upstream volume is bounded by
+   the TTL cache of decision 5 rather than by who can find the URL, and the eventual write path is
+   gated by a shared passphrase per the rationale below. What it did cost was real — a permanent
+   discipline tax to keep a secret out of logs, commits, and screenshots, in exchange for hiding a
+   path whose host is in Certificate Transparency logs regardless. Unlike hosting, this is
+   reversible in an afternoon, so it is deferred rather than decided early.
 
 8. **Presentation carries the honesty constraint.** The page shows two equal columns of scored
    starters and their two totals, plus a visible **as-of timestamp**. The timestamp is **our
@@ -82,6 +90,13 @@ hosted on Fly.io.
    the existing id and name. These are **local labels only** — the Sleeper player ID remains the
    sole identity key, exactly as in `scripts/scores.sh`. They are rendered; they are never used to
    resolve a player.
+
+   **Position is the player's listed position, not the lineup slot** (settled 2026-09-09). It
+   answers "what is this guy" — the reader wants to know a name is a tight end — and it is how the
+   league has always read a roster on the spreadsheet. Slot stays where it already is: implied by
+   file order, which `scripts/scores.sh` and `internal/roster` both already depend on. A label that
+   named the slot would duplicate that ordering in a second place and could contradict it; a listed
+   position cannot, because it says nothing about where the player is playing.
 
 ## Rationale
 
@@ -155,12 +170,12 @@ hosted on Fly.io.
 
 ## Follow-ups
 
-- Decide the exact roster CSV field order and whether position denotes a **lineup slot** or the
-  player's listed position — `scripts/scores.sh` currently derives the starting lineup from file
-  order alone, and a rendered slot label that disagrees with file order would be worse than none.
+- Decide the exact roster CSV field order. The meaning of the position field is settled in
+  decision 9; the column order is not, and both `scripts/scores.sh` and the roster parser have to
+  agree on it.
 - Watch the fetch-time as-of on a live Sunday and see how far it drifts from when stats actually
   move. If the gap is big enough to mislead, the fix is the GraphQL shape's `updated_at`.
 - Probe Sleeper rate-limit tolerance at the deployed polling cadence (still open from ADR 0003).
 - Revisit the margin once per-player game state lands; it is a presentation flip, not a redesign.
-- Choose the unguessable path prefix and record where it lives, so it is not accidentally logged or
-  committed into a public README.
+- Reconsider an unguessable path prefix only if something actually motivates it — the likeliest
+  trigger is the write path, and a shared passphrase answers that better than obscurity does.
