@@ -16,10 +16,14 @@ One line each, roughly in dependency order. Not sized, not scheduled.
 - [ ] Teach `main.go` to read `PORT`, serve from its own `http.Server` with read/write/idle timeouts
   instead of the package-level `DefaultServeMux`, and shut down gracefully on `SIGTERM` — which is
   how Fly stops a machine.
-- [ ] Dockerfile: static build, scratch or distroless final stage, now that the lineups are
-  embedded and nothing is read off the working directory.
-- [ ] `fly.toml`: one region, one machine, auto-stop on, and a health check the platform can hit
-  that doesn't cost a Sleeper fetch.
+- [ ] Correct the `fly launch`-generated `Dockerfile`: build `./cmd/server`, not `.` (the generated
+  `go build .` fails — there is no main package at the repo root); `CGO_ENABLED=0` for a static
+  binary; scratch or distroless final stage in place of `debian:bookworm`; copy `go.sum` alongside
+  `go.mod` so the build stays correct once there is a dependency. The lineups are embedded, so
+  nothing is read off the working directory.
+- [ ] `fly.toml` is generated and mostly right — `ord`, `auto_stop_machines = 'stop'`,
+  `min_machines_running = 0`, 256mb. What is missing is an `[[http_service.checks]]` the platform
+  can hit that doesn't cost a Sleeper fetch.
 
 ## Getting it in front of people
 
