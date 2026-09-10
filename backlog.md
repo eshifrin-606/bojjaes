@@ -13,9 +13,6 @@ One line each, roughly in dependency order. Not sized, not scheduled.
 
 ## Blocking the first deploy
 
-- [ ] Teach `main.go` to read `PORT`, serve from its own `http.Server` with read/write/idle timeouts
-  instead of the package-level `DefaultServeMux`, and shut down gracefully on `SIGTERM` — which is
-  how Fly stops a machine.
 - [ ] Correct the `fly launch`-generated `Dockerfile`: build `./cmd/server`, not `.` (the generated
   `go build .` fails — there is no main package at the repo root); `CGO_ENABLED=0` for a static
   binary; scratch or distroless final stage in place of `debian:bookworm`; copy `go.sum` alongside
