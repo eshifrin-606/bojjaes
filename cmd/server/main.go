@@ -13,16 +13,20 @@ package main
 
 import (
 	"log"
-	"net/http"
+	"net"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"github.com/eshifrin/bojjaes/internal/api"
 	"github.com/eshifrin/bojjaes/internal/lineup"
 	"github.com/eshifrin/bojjaes/internal/sleeper"
 	"github.com/eshifrin/bojjaes/internal/statscache"
-	"github.com/eshifrin/bojjaes/internal/web"
 )
 
-const addr = ":8080"
+// Comfortably above WriteTimeout minus a typical request, and below Fly's own
+// kill timeout, so we exit on our terms rather than being SIGKILLed.
+const shutdownGrace = 15 * time.Second
 
 func main() {
 	// Wrapped once, here, and handed to both handlers: the cache bounds
@@ -30,11 +34,16 @@ func main() {
 	// same one. A cache per handler would be two budgets for one league.
 	stats := statscache.New(sleeper.Client{BaseURL: sleeper.BaseURL}, statscache.TTL)
 
-	// Method-qualified pattern, so anything but POST on this path gets a 405
-	// from the mux rather than reaching a handler.
-	http.Handle("POST /scores", api.BatchHandler(stats))
-	http.Handle("GET /{season}/{week}", web.Handler(lineup.New(lineup.Embedded), stats))
+	addr := resolveAddr(os.Getenv)
+	srv := newServer(addr, newMux(stats, lineup.New(lineup.Embedded)))
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
 	log.Printf("listening on %s; GET http://localhost%s/2025/15 and POST http://localhost%s/scores", addr, addr, addr)
-	log.Fatal(http.ListenAndServe(addr, nil))
+	listen := func() (net.Listener, error) { return net.Listen("tcp", addr) }
+	if err := run(srv, listen, stop, shutdownGrace); err != nil {
+		log.Printf("server stopped: %v", err)
+		os.Exit(1)
+	}
 }
