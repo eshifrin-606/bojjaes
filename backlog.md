@@ -13,24 +13,18 @@ One line each, roughly in dependency order. Not sized, not scheduled.
 
 ## Blocking the first deploy
 
-- [ ] Embed templates and the lineup tree with `//go:embed`, which means moving `scripts/lineups/**`
-  somewhere a package can reach: embed won't cross `..` or follow symlinks. The templates and CSS
-  are already embedded from `internal/web`; the lineup tree is still read off the working directory
-  via `lineupRoot` in `cmd/server/main.go`, and that assumption dies in a container.
-- [ ] Keep `scripts/scores.sh` and `scripts/fantasycast.sh` working against the moved lineup tree —
-  they read the same files by path, and the ADR's promise is that the interim UI keeps working.
 - [ ] Teach `main.go` to read `PORT`, serve from its own `http.Server` with read/write/idle timeouts
   instead of the package-level `DefaultServeMux`, and shut down gracefully on `SIGTERM` — which is
   how Fly stops a machine.
-- [ ] Dockerfile: static build, scratch or distroless final stage, no working-directory assumptions
-  left once the lineups are embedded.
+- [ ] Dockerfile: static build, scratch or distroless final stage, now that the lineups are
+  embedded and nothing is read off the working directory.
 - [ ] `fly.toml`: one region, one machine, auto-stop on, and a health check the platform can hit
   that doesn't cost a Sleeper fetch.
 
 ## Getting it in front of people
 
 - [ ] Decide what `/` and an unknown or malformed `/{season}/{week}` do. Today a week directory that
-  isn't exactly two rosters is an error; deployed, that error is what a reader sees, so it needs to
+  isn't exactly two lineups is an error; deployed, that error is what a reader sees, so it needs to
   read as a page rather than a stack trace.
 - [ ] First deploy, then open it on a phone: this is the first time the page is read on the device
   it was designed for.
@@ -45,7 +39,7 @@ One line each, roughly in dependency order. Not sized, not scheduled.
 - [ ] Watch on a live Sunday how far our fetch instant drifts from when the stats actually moved
   upstream — procedure in `openspec/changes/archive/2026-09-07-stamp-as-of-timestamp/notes.md`. If the gap misleads,
   the fix is the GraphQL shape's `updated_at`.
-- [ ] Grow the roster CSV to carry position and team as display-only labels, and update `scores.sh`
+- [ ] Grow the lineup CSV to carry position and team as display-only labels, and update `scores.sh`
   so the scripts and the page agree on the format. Position is the player's listed position, not
   the lineup slot (ADR 0004 decision 9) — slot stays implied by file order. Field order is the one
   piece still open, and it has to be settled in one place because the parser and the script both
