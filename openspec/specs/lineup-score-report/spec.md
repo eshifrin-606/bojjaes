@@ -1,4 +1,4 @@
-# roster-score-report
+# lineup-score-report
 
 ## Purpose
 
