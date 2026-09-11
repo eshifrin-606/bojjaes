@@ -12,6 +12,9 @@ type Record struct {
 	// Name is display text only. Nothing outside the lineup looks a player up
 	// by name, so a wrong name pairs silently with the right stats.
 	Name string
+	// ShortName is Name narrowed for tight layouts, and is display text on
+	// the same terms: nothing identifies a player by it.
+	ShortName string
 }
 
 func parse(r io.Reader) ([]Record, error) {
