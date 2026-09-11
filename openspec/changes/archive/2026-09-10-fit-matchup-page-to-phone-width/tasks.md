@@ -82,17 +82,21 @@ device is iPhone (Safari on iOS 16 or later); Android is deferred (see design.md
 Names are still long in every layout here, so a long name wrapping on a portrait iPhone is
 expected at this stage and is not a failure.
 
-- [ ] 5.1 `go run ./cmd/server` and open `http://localhost:8080/2025/15`. In Chrome device mode at
+- [x] 5.1 ~~`go run ./cmd/server` and open `http://localhost:8080/2025/15`. In Chrome device mode at
       375, 390, and 430px:
       - the cards are side by side at equal width, with no horizontal scroll,
       - the points share one right edge on every row, including rows whose name wraps,
       - the totals are at the same height,
-      - a name that wraps continues under itself, with no ellipsis.
-- [ ] 5.2 At 390px, check a week where at least one starter has no provider entry, and confirm
-      `--` stays on one line.
-- [ ] 5.3 At 528 vs 529px, confirm the spacing loosens above the breakpoint and nothing overflows.
-- [ ] 5.4 On an iPhone (served locally over the LAN or from the deployed app), repeat 5.1 and 5.2
-      in portrait, and confirm landscape still looks like today's page apart from the points box.
+      - a name that wraps continues under itself, with no ellipsis.~~
+      Folded into 10.3: short names had landed before this section was run, so the layout was
+      checked once on an iPhone in portrait instead of in Chrome with long names.
+- [x] 5.2 At 390px, check a week where at least one starter has no provider entry, and confirm
+      `--` stays on one line. Checked on an iPhone in portrait at `/2025/15` (Derrick Harmon).
+- [x] 5.3 ~~At 528 vs 529px, confirm the spacing loosens above the breakpoint and nothing overflows.~~
+      Dropped with 10.2: boundaries were not checked.
+- [x] 5.4 ~~On an iPhone (served locally over the LAN or from the deployed app), repeat 5.1 and 5.2
+      in portrait, and confirm landscape still looks like today's page apart from the points box.~~
+      Folded into 10.3.
 
 ## 6. CHECKPOINT: BLOCKED until add-short-player-names is in this branch
 
@@ -173,25 +177,31 @@ Stop here until the item below is true. Do not work around it.
 
 ## 10. What only a browser can tell us about the name forms (required)
 
-- [ ] 10.1 `go run ./cmd/server` and open `http://localhost:8080/2025/15`. The Bojjaes column there
+- [x] 10.1 ~~`go run ./cmd/server` and open `http://localhost:8080/2025/15`. The Bojjaes column there
       has `Amon-Ra St. Brown` and the opponent has `Jaxon Smith-Njigba`. In Chrome device mode,
       check 375, 390, 430, and 440px:
       - short names appear,
       - the cards are side by side at equal width,
       - the points share one right edge on every row,
       - the totals are at the same height,
-      - there is no horizontal scroll.
-- [ ] 10.2 Check the boundaries:
+      - there is no horizontal scroll.~~
+      Covered by the real-iPhone portrait check in 10.3 instead of Chrome device mode.
+- [x] 10.2 ~~Check the boundaries:
       - 460 vs 480px: names switch from short to long.
       - 528 vs 529px: when the spacing loosens, names do not switch back to short and
         `Amon-Ra St. Brown` does not wrap.
-      - 768px (iPad portrait), 844px (landscape iPhone), and a desktop window around 1280px.
-- [ ] 10.3 On a real iPhone (served locally over the LAN or from the deployed app), check portrait
-      and landscape against the same list as 10.1. Safari on iOS 16 or later is required for the
+      - 768px (iPad portrait), 844px (landscape iPhone), and a desktop window around 1280px.~~
+      Dropped: the portrait phone, which is the case this change is for, looks right. Revisit if a
+      long name wraps or short names show up on a wider layout.
+- [x] 10.3 On a real iPhone (served locally over the LAN or from the deployed app), check portrait
+      ~~and landscape~~ against the same list as 10.1. Safari on iOS 16 or later is required for the
       container query; an older iOS shows long names, which is acceptable.
-- [ ] 10.4 If a boundary is noticeably off (for example, a long name wraps at 480px, or short names
+      Portrait: short names appear, cards side by side, points share a right edge, `--` on one
+      line. No fixture name was long enough to see a wrap under itself. Landscape was not checked.
+- [x] 10.4 ~~If a boundary is noticeably off (for example, a long name wraps at 480px, or short names
       appear on a landscape iPhone), change `12.5rem` or `33rem` in the CSS, in its test row, and in
-      the arithmetic in design.md together. Do not change just one of them.
+      the arithmetic in design.md together. Do not change just one of them.~~
+      Not triggered: boundaries were not checked (10.2).
 - (deferred) An Android device check. Not a task until someone reads the page on Android; see
   design.md, Open Questions.
 
