@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -154,7 +155,7 @@ func fixtureWeek() fstest.MapFS {
 // renderedStarters pulls each rendered starter line out of the page as
 // "name=points". Reading the markup lives here alone, so a restyle touches one
 // helper rather than every assertion.
-var starterPattern = regexp.MustCompile(`(?s)<li>.*?class="player">(.*?)</span>.*?class="points">(.*?)</span>.*?</li>`)
+var starterPattern = regexp.MustCompile(`(?s)<li>.*?class="player"><span class="long">(.*?)</span>.*?class="points">(.*?)</span>.*?</li>`)
 
 func renderedStarters(body string) []string {
 	var lines []string
@@ -162,6 +163,49 @@ func renderedStarters(body string) []string {
 		lines = append(lines, m[1]+"="+m[2])
 	}
 	return lines
+}
+
+// fixtureShortNames is each fixture starter's short name in page order, as the
+// lineup package derives it; these tests never state what a name shortens to.
+func fixtureShortNames(t *testing.T) []string {
+	t.Helper()
+
+	tree := lineup.New(fixtureWeek())
+	var names []string
+	distinct := false
+	for _, team := range []string{"bojjaes", "wood"} {
+		l, err := tree.Read(2025, 15, team)
+		if err != nil {
+			t.Fatalf("reading the %s fixture lineup: %v", team, err)
+		}
+		for _, rec := range l.Starters() {
+			names = append(names, rec.ShortName)
+			distinct = distinct || rec.ShortName != rec.Name
+		}
+	}
+	// A template printing Name twice would otherwise pass.
+	if !distinct {
+		t.Fatalf("every fixture starter's short name equals its name, so the fixture cannot tell the forms apart")
+	}
+	return names
+}
+
+var (
+	rowPattern       = regexp.MustCompile(`(?s)<li>(.*?)</li>`)
+	shortNamePattern = regexp.MustCompile(`(?s)class="short">(.*?)</span>`)
+)
+
+// renderedShortNames reads the short name inside each row, so a short name
+// rendered outside its starter's <li> is not counted. The text is unescaped
+// because html/template writes entities html.EscapeString would not.
+func renderedShortNames(body string) []string {
+	var names []string
+	for _, row := range rowPattern.FindAllStringSubmatch(body, -1) {
+		if m := shortNamePattern.FindStringSubmatch(row[1]); m != nil {
+			names = append(names, html.UnescapeString(m[1]))
+		}
+	}
+	return names
 }
 
 var classPattern = regexp.MustCompile(`class="([^"]*)"`)
@@ -380,6 +424,27 @@ func TestStartersRenderWithTheirPoints(t *testing.T) {
 	}
 }
 
+func TestEachStarterRendersItsShortName(t *testing.T) {
+	tests := []struct {
+		name      string
+		weekStats score.WeekStats
+	}{
+		{name: "every starter played", weekStats: fixtureStats()},
+		{name: "a starter has no stats", weekStats: fixtureStats("7")},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: tt.weekStats}), http.MethodGet, "/2025/15")
+
+			want := fixtureShortNames(t)
+			if got := renderedShortNames(rec.Body.String()); !slices.Equal(got, want) {
+				t.Errorf("rendered short names:\n got %q\nwant %q", got, want)
+			}
+		})
+	}
+}
+
 func TestEachColumnTotalsItsStarters(t *testing.T) {
 	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
 
@@ -554,6 +619,33 @@ func TestLineupTextIsEscaped(t *testing.T) {
 	}
 	if !strings.Contains(body, "&lt;b&gt;Puka&lt;/b&gt; Nacua") {
 		t.Errorf("the name was not rendered as escaped text:\n%s", body)
+	}
+}
+
+func TestAShortNameIsEscaped(t *testing.T) {
+	weekTree := weekFS(2025, 15, map[string]string{
+		"bojjaes": "1,Puka <b>Nacua</b>\n",
+		"wood":    "11,Josh Allen\n",
+	})
+
+	ours, err := lineup.New(weekTree).Read(2025, 15, "bojjaes")
+	if err != nil {
+		t.Fatalf("reading the fixture lineup: %v", err)
+	}
+	shortName := ours.Starters()[0].ShortName
+	// Without markup in the short name this test would pass without checking anything.
+	if !strings.Contains(shortName, "<b>") {
+		t.Fatalf("fixture short name %q lost its <b>; pick a record whose short name keeps the markup", shortName)
+	}
+
+	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	body := rec.Body.String()
+	if strings.Contains(body, "<b>") {
+		t.Errorf("a short name was rendered as markup:\n%s", body)
+	}
+	if got := renderedShortNames(body); len(got) == 0 || got[0] != shortName {
+		t.Errorf("rendered short names = %q, want the first to be %q", got, shortName)
 	}
 }
 
@@ -761,6 +853,129 @@ func renderedScript(t *testing.T, body string) string {
 	return found[0][1]
 }
 
+var stylePattern = regexp.MustCompile(`(?s)<style[^>]*>(.*?)</style>`)
+
+func renderedStyle(t *testing.T, body string) string {
+	t.Helper()
+
+	found := stylePattern.FindAllStringSubmatch(body, -1)
+	if len(found) != 1 {
+		t.Fatalf("page has %d style elements, want exactly 1", len(found))
+	}
+	return found[0][1]
+}
+
+var cssCommentPattern = regexp.MustCompile(`(?s)/\*.*?\*/`)
+
+// cssBlock returns the body of the first top-level block in css whose prelude
+// is the given selector or at-rule, and whether there was one. Only the top
+// level is searched, so a rule of the same name nested in an at-rule is never
+// mistaken for the unconditional one; callers look inside an at-rule by calling
+// cssBlock again on its body.
+func cssBlock(css, prelude string) (string, bool) {
+	css = cssCommentPattern.ReplaceAllString(css, "")
+	want := strings.Join(strings.Fields(prelude), " ")
+
+	depth, preludeStart, bodyStart := 0, 0, 0
+	var current string
+	for i, c := range css {
+		switch c {
+		case '{':
+			if depth == 0 {
+				current = strings.Join(strings.Fields(css[preludeStart:i]), " ")
+				bodyStart = i + 1
+			}
+			depth++
+		case '}':
+			depth--
+			if depth == 0 {
+				if current == want {
+					return css[bodyStart:i], true
+				}
+				preludeStart = i + 1
+			}
+		}
+	}
+	return "", false
+}
+
+// declares reports whether a block carries the declaration, compared with its
+// whitespace normalized so formatting in the template cannot fail a test.
+func declares(block, declaration string) bool {
+	want := strings.Join(strings.Fields(declaration), " ")
+	for _, d := range strings.Split(block, ";") {
+		if strings.Join(strings.Fields(d), " ") == want {
+			return true
+		}
+	}
+	return false
+}
+
+// These pin that a layout rule is present, not how a browser lays the page out;
+// the rendering is checked by hand on a phone.
+func TestTheStyleSheetDeclares(t *testing.T) {
+	tests := []struct {
+		name        string
+		block       []string
+		declaration string
+	}{
+		{name: "points stay tabular", block: []string{".points"}, declaration: "font-variant-numeric: tabular-nums"},
+		{name: "points never shrink for a name", block: []string{".points"}, declaration: "flex: none"},
+		{name: "the placeholder never breaks at its hyphen", block: []string{".points"}, declaration: "white-space: nowrap"},
+		{name: "every row's points box is at least five characters", block: []string{".points"}, declaration: "min-width: 5ch"},
+		{name: "points share a right edge", block: []string{".points"}, declaration: "text-align: right"},
+		{name: "a name may be narrower than its longest word", block: []string{".player"}, declaration: "min-width: 0"},
+		{name: "an unbreakable name wraps instead of pushing the points out", block: []string{".player"}, declaration: "overflow-wrap: break-word"},
+		{name: "a card stacks its contents as a flex column", block: []string{".column"}, declaration: "display: flex"},
+		{name: "a card's flex direction is vertical", block: []string{".column"}, declaration: "flex-direction: column"},
+		{name: "each total sits at the bottom of its card", block: []string{".total"}, declaration: "margin-top: auto"},
+		{name: "a narrow viewport has less body padding", block: []string{"@media (max-width: 33rem)", "body"}, declaration: "padding: 0.5rem"},
+		{name: "a narrow viewport has a narrower gap between the cards", block: []string{"@media (max-width: 33rem)", ".matchup"}, declaration: "gap: 0.5rem"},
+		{name: "a narrow viewport has less card padding", block: []string{"@media (max-width: 33rem)", ".column"}, declaration: "padding: 0.5rem"},
+		{name: "a narrow viewport has a narrower gap between name and points", block: []string{"@media (max-width: 33rem)", ".column li"}, declaration: "gap: 0.5rem"},
+		{name: "a narrow viewport has smaller margins around the team name", block: []string{"@media (max-width: 33rem)", ".column h2"}, declaration: "margin: 0.25rem 0"},
+		{name: "a wide viewport keeps its body padding", block: []string{"body"}, declaration: "padding: 1rem"},
+		{name: "a wide viewport keeps its gap between the cards", block: []string{".matchup"}, declaration: "gap: 1rem"},
+		{name: "a wide viewport keeps its card padding", block: []string{".column"}, declaration: "padding: 0.5rem 1rem"},
+		{name: "a wide viewport keeps its gap between name and points", block: []string{".column li"}, declaration: "gap: 1rem"},
+		{name: "a card hides the short name by default", block: []string{".player .short"}, declaration: "display: none"},
+		{name: "a card is a container its name form can be chosen by", block: []string{".column"}, declaration: "container-type: inline-size"},
+		{name: "a narrow card hides the long name", block: []string{"@container (max-width: 12.5rem)", ".player .long"}, declaration: "display: none"},
+		{name: "a narrow card shows the short name", block: []string{"@container (max-width: 12.5rem)", ".player .short"}, declaration: "display: inline"},
+	}
+
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	style := renderedStyle(t, rec.Body.String())
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			block := style
+			for _, prelude := range tt.block {
+				var found bool
+				if block, found = cssBlock(block, prelude); !found {
+					t.Fatalf("no %q block in %q; style:\n%s", prelude, tt.block, style)
+				}
+			}
+			if !declares(block, tt.declaration) {
+				t.Errorf("%q does not declare %q:\n%s", tt.block, tt.declaration, block)
+			}
+		})
+	}
+}
+
+// A name too long for its row wraps; a starter's name is never shortened by the
+// browser into something the roster does not say.
+func TestNoNameIsCutOffWithAnEllipsis(t *testing.T) {
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	style := renderedStyle(t, rec.Body.String())
+	for _, forbidden := range []string{"text-overflow", "ellipsis"} {
+		if strings.Contains(style, forbidden) {
+			t.Errorf("the style sheet contains %q:\n%s", forbidden, style)
+		}
+	}
+}
+
 func TestThePageCarriesARefreshScript(t *testing.T) {
 	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
 
@@ -825,11 +1040,13 @@ func TestReturningToTheTabRefreshesOnlyWhenStale(t *testing.T) {
 func TestNoLineupTextReachesTheScript(t *testing.T) {
 	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
 
-	script := renderedScript(t, rec.Body.String())
+	body := rec.Body.String()
+	script := renderedScript(t, body)
 	names := []string{"bojjaes", "wood"}
-	for _, line := range renderedStarters(rec.Body.String()) {
+	for _, line := range renderedStarters(body) {
 		names = append(names, strings.Split(line, "=")[0])
 	}
+	names = append(names, renderedShortNames(body)...)
 	for _, name := range names {
 		if strings.Contains(script, name) {
 			t.Errorf("%q appears inside the script:\n%s", name, script)
