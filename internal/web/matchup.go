@@ -22,7 +22,7 @@ import (
 )
 
 // noStats stands in for a point value the provider has nothing to say about.
-const noStats = "no stats"
+const noStats = "--"
 
 //go:embed matchup.html
 var templateFS embed.FS
@@ -193,8 +193,7 @@ func scoreColumn(team string, l lineup.Lineup, weekStats score.WeekStats) column
 		stats, played := weekStats.Player(rec.ID)
 		if !played {
 			// Absence and a scoreless week are different facts, and Player's
-			// second return is the only thing that tells them apart. The
-			// wording matches scripts/scores.sh while both UIs exist.
+			// second return is the only thing that tells them apart.
 			col.Starters = append(col.Starters, starter{Name: rec.Name, Points: noStats})
 			continue
 		}
