@@ -439,11 +439,15 @@ func TestAMissingStarterIsNotZero(t *testing.T) {
 	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats("7")}), http.MethodGet, "/2025/15")
 
 	body := rec.Body.String()
-	if !slices.Contains(renderedStarters(body), "Brandon Aubrey=no stats") {
+	if !slices.Contains(renderedStarters(body), "Brandon Aubrey=--") {
 		t.Errorf("absent starter did not render the placeholder; got %q", renderedStarters(body))
 	}
 	if slices.Contains(renderedStarters(body), "Brandon Aubrey=0") {
 		t.Error("absent starter rendered as 0, which claims he played and scored nothing")
+	}
+	// The terminal report still says "no stats"; the page must not.
+	if strings.Contains(body, "no stats") {
+		t.Errorf("the page still renders the old placeholder wording:\n%s", body)
 	}
 }
 
@@ -453,6 +457,26 @@ func TestAnAbsentStarterContributesNothingToTheTotal(t *testing.T) {
 	// 56 less Aubrey's 15: the other eight starters, and nothing for him.
 	if got := renderedTotals(rec.Body.String()); !slices.Equal(got, []string{"41", "42"}) {
 		t.Errorf("totals = %q, want [41 42]", got)
+	}
+}
+
+// A total is always a number: a column with nothing to add up totals 0, not the
+// placeholder its starter lines carry.
+func TestAColumnWithNoStatsAtAllTotalsZero(t *testing.T) {
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats("11", "12", "13", "14", "15", "16", "17", "18", "19")}), http.MethodGet, "/2025/15")
+	body := rec.Body.String()
+
+	starters := renderedStarters(body)
+	if len(starters) != 18 {
+		t.Fatalf("rendered %d starters, want 18: %q", len(starters), starters)
+	}
+	for _, line := range starters[9:] {
+		if !strings.HasSuffix(line, "=--") {
+			t.Errorf("starter with no stats rendered %q, want the placeholder", line)
+		}
+	}
+	if got := renderedTotals(body); !slices.Equal(got, []string{"56", "0"}) {
+		t.Errorf("totals = %q, want [56 0]", got)
 	}
 }
 
