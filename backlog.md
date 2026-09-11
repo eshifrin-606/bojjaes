@@ -13,11 +13,6 @@ One line each, roughly in dependency order. Not sized, not scheduled.
 
 ## Blocking the first deploy
 
-- [ ] Correct the `fly launch`-generated `Dockerfile`: build `./cmd/server`, not `.` (the generated
-  `go build .` fails — there is no main package at the repo root); `CGO_ENABLED=0` for a static
-  binary; scratch or distroless final stage in place of `debian:bookworm`; copy `go.sum` alongside
-  `go.mod` so the build stays correct once there is a dependency. The lineups are embedded, so
-  nothing is read off the working directory.
 - [ ] `fly.toml` is generated and mostly right — `ord`, `auto_stop_machines = 'stop'`,
   `min_machines_running = 0`, 256mb. What is missing is an `[[http_service.checks]]` the platform
   can hit that doesn't cost a Sleeper fetch.
@@ -27,8 +22,8 @@ One line each, roughly in dependency order. Not sized, not scheduled.
 - [ ] Decide what `/` and an unknown or malformed `/{season}/{week}` do. Today a week directory that
   isn't exactly two lineups is an error; deployed, that error is what a reader sees, so it needs to
   read as a page rather than a stack trace.
-- [ ] First deploy, then open it on a phone: this is the first time the page is read on the device
-  it was designed for.
+- [ ] Open it on a phone: this is the first time the page is read on the device it was designed
+  for.
 - [ ] Work through the browser observations the refresh change deferred —
   `openspec/changes/refresh-page-while-visible/tasks.md` §5, which are exactly the six checks that
   need a real browser and a server whose log you can watch.
@@ -45,6 +40,11 @@ One line each, roughly in dependency order. Not sized, not scheduled.
   the lineup slot (ADR 0004 decision 9) — slot stays implied by file order. Field order is the one
   piece still open, and it has to be settled in one place because the parser and the script both
   read it. Not deploy-blocking; the page is honest without these labels.
+- [ ] Add `paths-ignore` to `.github/workflows/fly-deploy.yml` for `docs/**`, `openspec/**`, and
+  root `*.md`. Today every push to `main` deploys, so a backlog edit rebuilds the image and
+  replaces the machine with the same binary, dropping the in-memory stats cache along the way.
+  Nothing under those paths is compiled into the binary. A push that also touches code still
+  deploys.
 
 ## Later, deliberately
 
