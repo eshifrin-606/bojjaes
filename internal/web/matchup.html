@@ -24,6 +24,9 @@
   .column {
     border: 1px solid #ccc;
     border-radius: 6px;
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
     padding: 0.5rem 1rem;
   }
 
@@ -39,15 +42,77 @@
     justify-content: space-between;
   }
 
-  .points {
-    font-variant-numeric: tabular-nums;
+  /* A flex item is otherwise at least as wide as its longest word, and would
+     push the points box out of the card. A name that does not fit wraps under
+     itself rather than being cut off with an ellipsis. */
+  .player {
+    min-width: 0;
+    overflow-wrap: break-word;
   }
 
+  .player .short {
+    display: none;
+  }
+
+  /* A box that never gives way to a name, so every row's name gets the same
+     width and the points share one right edge. 5ch holds 112.5, the widest
+     realistic value, and a negative like -2.5; it is a minimum, so a rarer
+     -12.5 widens the box instead of overflowing it. */
+  .points {
+    flex: none;
+    font-variant-numeric: tabular-nums;
+    min-width: 5ch;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* The grid already stretches both cards to the same height; pushing each
+     total to the bottom of its card lines the two up however many lines the
+     names above them wrap onto. */
   .total {
     border-top: 1px solid #ccc;
     font-weight: 600;
+    margin-top: auto;
     padding-top: 0.5rem;
     text-align: right;
+  }
+
+  /* 33rem is where the normal spacing stops leaving room for the longest long
+     name; above it the page keeps its roomier spacing. */
+  @media (max-width: 33rem) {
+    body {
+      padding: 0.5rem;
+    }
+
+    .matchup {
+      gap: 0.5rem;
+    }
+
+    .column {
+      padding: 0.5rem;
+    }
+
+    .column li {
+      gap: 0.5rem;
+    }
+
+    .column h2 {
+      margin: 0.25rem 0;
+    }
+  }
+
+  /* The longest long name, with the row gap and the points box beside it,
+     needs about 193px of card content; 12.5rem leaves a little slack for font
+     differences. The arithmetic is in the fit-matchup-page-to-phone-width
+     design.md, decision 3. */
+  @container (max-width: 12.5rem) {
+    .player .long {
+      display: none;
+    }
+
+    .player .short {
+      display: inline;
+    }
   }
 </style>
 <main class="matchup">
@@ -55,7 +120,7 @@
   <section class="column">
     <h2>{{.Team}}</h2>
     <ol>
-      {{range .Starters}}<li><span class="player">{{.Name}}</span><span class="points">{{.Points}}</span></li>{{end}}
+      {{range .Starters}}<li><span class="player"><span class="long">{{.Name}}</span><span class="short">{{.ShortName}}</span></span><span class="points">{{.Points}}</span></li>{{end}}
     </ol>
     <p class="total">{{.Total}}</p>
   </section>
