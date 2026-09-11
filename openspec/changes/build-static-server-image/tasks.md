@@ -92,11 +92,16 @@ has to hold before the merge, not after.
 
 ## 8. After merge
 
-- [ ] 8.1 `gh run watch` the Fly Deploy run for the merge commit and confirm it succeeds. Every
-      earlier run of this workflow failed at `go build .`.
-- [ ] 8.2 `curl -i https://bojjaes.fly.dev/2025/15` returns 200 with both lineups and their point
+- [x] 8.1 `gh run watch` the Fly Deploy run for the merge commit and confirm it succeeds. Every
+      earlier run of this workflow failed at `go build .`. Observed: run `34549042608` for
+      `d4451e5` succeeded. The deploy created two machines in `ord`, Fly's default for an app's
+      first deploy.
+- [x] 8.2 `curl -i https://bojjaes.fly.dev/2025/15` returns 200 with both lineups and their point
       totals, and `fly logs` shows the server listening on `:8080` and no certificate verification
-      error.
-- [ ] 8.3 Leave the app idle until `auto_stop_machines` stops the machine. Confirm in `fly logs` and
-      `fly machine status <id>` that it stopped with exit code 0 rather than being killed: the
-      server is PID 1 on Fly as well as locally.
+      error. Observed: bojjaes 68, aroma 41.5. Both machines log `Preparing to run: /server as
+      nonroot` and `listening on :8080`, and the Sleeper fetch succeeds.
+- [x] 8.3 ~~Leave the app idle until `auto_stop_machines` stops the machine. Confirm in `fly logs`
+      and `fly machine status <id>` that it stopped with exit code 0 rather than being killed.~~
+      Dropped: not worth holding the change open for an idle window. 5.2 already shows the server
+      is PID 1 and exits 0 on `SIGTERM` locally, and Fly runs the same image. Revisit if stopped
+      machines ever look killed rather than drained.
