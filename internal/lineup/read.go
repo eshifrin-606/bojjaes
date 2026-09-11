@@ -20,5 +20,5 @@ func (t *Tree) Read(season int, week int, team string) (Lineup, error) {
 		return Lineup{}, fmt.Errorf("%s: %w", path, err)
 	}
 
-	return Lineup{records: records}, nil
+	return newLineup(records), nil
 }

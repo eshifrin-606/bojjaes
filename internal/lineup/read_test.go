@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -34,9 +35,9 @@ func TestTreeReadReturnsParsedRecords(t *testing.T) {
 	}
 
 	want := []Record{
-		{ID: "101", Name: "Alpha One"},
-		{ID: "102", Name: "Bravo Two"},
-		{ID: "103", Name: "Charlie Three"},
+		{ID: "101", Name: "Alpha One", ShortName: "A One"},
+		{ID: "102", Name: "Bravo Two", ShortName: "B Two"},
+		{ID: "103", Name: "Charlie Three", ShortName: "C Three"},
 	}
 	if len(got.records) != len(want) {
 		t.Fatalf("Read() records = %v, want %v", got.records, want)
@@ -90,7 +91,10 @@ func TestTreeReadReadsThroughTheSuppliedFilesystem(t *testing.T) {
 		t.Fatalf("Read: %v", err)
 	}
 
-	want := []Record{{ID: "101", Name: "Alpha One"}, {ID: "102", Name: "Bravo Two"}}
+	want := []Record{
+		{ID: "101", Name: "Alpha One", ShortName: "A One"},
+		{ID: "102", Name: "Bravo Two", ShortName: "B Two"},
+	}
 	if len(got.records) != len(want) {
 		t.Fatalf("Read() records = %v, want %v", got.records, want)
 	}
@@ -117,6 +121,124 @@ func TestTreeReadIsConfinedToItsOwnFilesystem(t *testing.T) {
 		}
 		if len(got.records) != 1 || got.records[0].Name != want {
 			t.Errorf("Read() records = %v, want the single record %q", got.records, want)
+		}
+	}
+}
+
+// Collisions are resolved within starters and bench separately, so the two
+// bench Allens leave the starting Josh Allen with his short name.
+func TestTreeReadResolvesShortNameCollisionsWithinEachGroup(t *testing.T) {
+	fsys := fstest.MapFS{}
+	seedLineup(t, fsys, 2025, 14, "wood", "shortnames.csv")
+
+	got, err := New(fsys).Read(2025, 14, "wood")
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+
+	wantBench := []string{"Jaylen Allen", "Jordan Allen", "D Prescott"}
+	if len(got.Starters()) != starterCount || len(got.Bench()) != len(wantBench) {
+		t.Fatalf("Read() split = %d starters, %d bench, want %d starters, %d bench",
+			len(got.Starters()), len(got.Bench()), starterCount, len(wantBench))
+	}
+
+	wantStarters := map[int]string{
+		0: "Jameson Williams",
+		1: "J Allen",
+		2: "Javonte Williams",
+		3: "C Williams",
+		4: "W McDonald",
+		5: "A.J. Brown",
+		6: "KC Concepcion",
+	}
+	for i, want := range wantStarters {
+		if short := got.Starters()[i].ShortName; short != want {
+			t.Errorf("Starters()[%d].ShortName = %q, want %q", i, short, want)
+		}
+	}
+	if name := got.Starters()[4].Name; name != "Will McDonald IV" {
+		t.Errorf("Starters()[4].Name = %q, want %q", name, "Will McDonald IV")
+	}
+
+	for i, want := range wantBench {
+		if short := got.Bench()[i].ShortName; short != want {
+			t.Errorf("Bench()[%d].ShortName = %q, want %q", i, short, want)
+		}
+	}
+}
+
+// Moving a colliding player across the ninth line changes whether the
+// collision counts, because only players in the same group collide.
+func TestTreeReadShortNameCollisionFollowsTheStarterSplit(t *testing.T) {
+	tests := []struct {
+		name       string
+		jaylenLine int
+		wantJosh   string
+		wantJaylen string
+	}{
+		{name: "Jaylen Allen on the bench", jaylenLine: 10, wantJosh: "J Allen", wantJaylen: "J Allen"},
+		{name: "Jaylen Allen starting", jaylenLine: 9, wantJosh: "Josh Allen", wantJaylen: "Jaylen Allen"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			names := []string{"Puka Nacua", "Josh Allen", "Bijan Robinson", "Dak Prescott",
+				"A.J. Brown", "KC Concepcion", "Caleb Williams", "Will McDonald IV", "Jameson Williams"}
+			names = slices.Insert(names, tt.jaylenLine-1, "Jaylen Allen")
+			var csv strings.Builder
+			for i, name := range names {
+				fmt.Fprintf(&csv, "%d,%s\n", 300+i, name)
+			}
+			tree := New(fstest.MapFS{"2025/14/wood.csv": &fstest.MapFile{Data: []byte(csv.String())}})
+
+			got, err := tree.Read(2025, 14, "wood")
+			if err != nil {
+				t.Fatalf("Read: %v", err)
+			}
+
+			if short := got.records[1].ShortName; short != tt.wantJosh {
+				t.Errorf("Josh Allen ShortName = %q, want %q", short, tt.wantJosh)
+			}
+			if short := got.records[tt.jaylenLine-1].ShortName; short != tt.wantJaylen {
+				t.Errorf("Jaylen Allen ShortName = %q, want %q", short, tt.wantJaylen)
+			}
+		})
+	}
+}
+
+func TestTreeReadDoesNotResolveShortNamesAcrossTeams(t *testing.T) {
+	tree := New(fstest.MapFS{
+		"2025/14/wood.csv":  &fstest.MapFile{Data: []byte("401,Josh Allen\n")},
+		"2025/14/bojja.csv": &fstest.MapFile{Data: []byte("402,Jaylen Allen\n")},
+	})
+
+	for _, team := range []string{"wood", "bojja"} {
+		got, err := tree.Read(2025, 14, team)
+		if err != nil {
+			t.Fatalf("Read %s: %v", team, err)
+		}
+		if short := got.Starters()[0].ShortName; short != "J Allen" {
+			t.Errorf("%s: ShortName = %q, want %q", team, short, "J Allen")
+		}
+	}
+}
+
+func TestTreeReadLeavesEmptyNamesWithEmptyShortNames(t *testing.T) {
+	tree := New(fstest.MapFS{
+		"2025/14/wood.csv": &fstest.MapFile{Data: []byte("4984,\n4985\n")},
+	})
+
+	got, err := tree.Read(2025, 14, "wood")
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+
+	want := []Record{{ID: "4984"}, {ID: "4985"}}
+	if len(got.records) != len(want) {
+		t.Fatalf("Read() records = %v, want %v", got.records, want)
+	}
+	for i := range want {
+		if got.records[i] != want[i] {
+			t.Errorf("record %d = %+v, want %+v", i, got.records[i], want[i])
 		}
 	}
 }
