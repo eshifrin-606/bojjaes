@@ -127,13 +127,19 @@ func TestTreeReadIsConfinedToItsOwnFilesystem(t *testing.T) {
 
 // Collisions are resolved within starters and bench separately, so the two
 // bench Allens leave the starting Josh Allen with his short name.
-func TestTreeReadResolvesShortNameCollisionsWithinStarters(t *testing.T) {
+func TestTreeReadResolvesShortNameCollisionsWithinEachGroup(t *testing.T) {
 	fsys := fstest.MapFS{}
 	seedLineup(t, fsys, 2025, 14, "wood", "shortnames.csv")
 
 	got, err := New(fsys).Read(2025, 14, "wood")
 	if err != nil {
 		t.Fatalf("Read: %v", err)
+	}
+
+	wantBench := []string{"Jaylen Allen", "Jordan Allen", "D Prescott"}
+	if len(got.Starters()) != starterCount || len(got.Bench()) != len(wantBench) {
+		t.Fatalf("Read() split = %d starters, %d bench, want %d starters, %d bench",
+			len(got.Starters()), len(got.Bench()), starterCount, len(wantBench))
 	}
 
 	wantStarters := map[int]string{
@@ -154,7 +160,6 @@ func TestTreeReadResolvesShortNameCollisionsWithinStarters(t *testing.T) {
 		t.Errorf("Starters()[4].Name = %q, want %q", name, "Will McDonald IV")
 	}
 
-	wantBench := []string{"Jaylen Allen", "Jordan Allen", "D Prescott"}
 	for i, want := range wantBench {
 		if short := got.Bench()[i].ShortName; short != want {
 			t.Errorf("Bench()[%d].ShortName = %q, want %q", i, short, want)
@@ -168,10 +173,11 @@ func TestTreeReadShortNameCollisionFollowsTheStarterSplit(t *testing.T) {
 	tests := []struct {
 		name       string
 		jaylenLine int
-		want       string
+		wantJosh   string
+		wantJaylen string
 	}{
-		{name: "Jaylen Allen on the bench", jaylenLine: 10, want: "J Allen"},
-		{name: "Jaylen Allen starting", jaylenLine: 9, want: "Josh Allen"},
+		{name: "Jaylen Allen on the bench", jaylenLine: 10, wantJosh: "J Allen", wantJaylen: "J Allen"},
+		{name: "Jaylen Allen starting", jaylenLine: 9, wantJosh: "Josh Allen", wantJaylen: "Jaylen Allen"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -189,8 +195,11 @@ func TestTreeReadShortNameCollisionFollowsTheStarterSplit(t *testing.T) {
 				t.Fatalf("Read: %v", err)
 			}
 
-			if short := got.Starters()[1].ShortName; short != tt.want {
-				t.Errorf("Josh Allen ShortName = %q, want %q", short, tt.want)
+			if short := got.records[1].ShortName; short != tt.wantJosh {
+				t.Errorf("Josh Allen ShortName = %q, want %q", short, tt.wantJosh)
+			}
+			if short := got.records[tt.jaylenLine-1].ShortName; short != tt.wantJaylen {
+				t.Errorf("Jaylen Allen ShortName = %q, want %q", short, tt.wantJaylen)
 			}
 		})
 	}

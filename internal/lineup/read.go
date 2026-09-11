@@ -20,10 +20,5 @@ func (t *Tree) Read(season int, week int, team string) (Lineup, error) {
 		return Lineup{}, fmt.Errorf("%s: %w", path, err)
 	}
 
-	l := Lineup{records: records}
-	// Starters and bench are resolved separately so a bench player sharing a
-	// short name never pushes a starter back to their full name.
-	fillShortNames(l.Starters())
-	fillShortNames(l.Bench())
-	return l, nil
+	return newLineup(records), nil
 }
