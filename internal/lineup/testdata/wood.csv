@@ -1,4 +1,5 @@
 # week 14 lineup
-101,Alpha One
-102,Bravo Two
-103,Charlie Three
+id,name,position,team
+101,Alpha One,QB,BUF
+102,Bravo Two,RB,KC
+103,Charlie Three,WR,SF

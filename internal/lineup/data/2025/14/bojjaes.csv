@@ -1,10 +1,11 @@
-# Sleeper player IDs. One "id,name" per line; blank lines and # comments ignored.
-7547,Amon-Ra St. Brown
-9493,Puka Nacua
-12519,Luther Burden III
-12517,Colston Loveland
-8228,Jaylen Warren
-4984,Josh Allen
-4227,Harrison Butker
-7626,Odafe Oweh
-12561,Derrick Harmon
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+7547,Amon-Ra St. Brown,WR,DET
+9493,Puka Nacua,WR,LAR
+12519,Luther Burden III,WR,CHI
+12517,Colston Loveland,TE,CHI
+8228,Jaylen Warren,RB,PIT
+4984,Josh Allen,QB,BUF
+4227,Harrison Butker,K,KC
+7626,Odafe Oweh,LB,WAS
+12561,Derrick Harmon,DL,PIT

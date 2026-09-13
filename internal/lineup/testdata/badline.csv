@@ -1,3 +1,4 @@
 # week 14 lineup
-101,Alpha One
-,Missing Id
+id,name,position,team
+101,Alpha One,QB,BUF
+,Missing Id,RB,KC

@@ -59,6 +59,8 @@ func TestChicagoLocationLoadsAtInit(t *testing.T) {
 	}
 }
 
+const lineupHeader = "id,name,position,team\n"
+
 // weekFS is one week of a lineup tree, held in memory. Each entry is a team
 // name mapped to that lineup file's contents.
 func weekFS(season, week int, lineups map[string]string) fstest.MapFS {
@@ -114,8 +116,9 @@ func lineupCSV(records []struct {
 	stats    score.StatLine
 }) string {
 	var b strings.Builder
+	b.WriteString(lineupHeader)
 	for _, r := range records {
-		fmt.Fprintf(&b, "%s,%s\n", r.id, r.name)
+		fmt.Fprintf(&b, "%s,%s,WR,FA\n", r.id, r.name)
 	}
 	return b.String()
 }
@@ -295,8 +298,8 @@ func TestPostIsNotAllowed(t *testing.T) {
 
 func TestBothTeamsAppearWithUsFirst(t *testing.T) {
 	weekTree := weekFS(2025, 15, map[string]string{
-		"bojjaes": "9493,Puka Nacua\n",
-		"wood":    "8138,Bijan Robinson\n",
+		"bojjaes": lineupHeader + "9493,Puka Nacua,WR,LAR\n",
+		"wood":    lineupHeader + "8138,Bijan Robinson,RB,ATL\n",
 	})
 
 	rec := serve(Handler(lineup.New(weekTree), &fakeSource{}), http.MethodGet, "/2025/15")
@@ -318,8 +321,8 @@ func TestBothTeamsAppearWithUsFirst(t *testing.T) {
 // never from the directory listing.
 func TestAlphabeticallyEarlierOpponentStaysOnTheRight(t *testing.T) {
 	weekTree := weekFS(2025, 15, map[string]string{
-		"bojjaes":   "9493,Puka Nacua\n",
-		"aardvarks": "8138,Bijan Robinson\n",
+		"bojjaes":   lineupHeader + "9493,Puka Nacua,WR,LAR\n",
+		"aardvarks": lineupHeader + "8138,Bijan Robinson,RB,ATL\n",
 	})
 
 	rec := serve(Handler(lineup.New(weekTree), &fakeSource{}), http.MethodGet, "/2025/15")
@@ -348,24 +351,24 @@ func TestWeekRefusals(t *testing.T) {
 		{
 			name: "three lineups",
 			lineups: map[string]string{
-				"bojjaes": "9493,Puka Nacua\n",
-				"wood":    "8138,Bijan Robinson\n",
-				"aroma":   "7591,Rachaad White\n",
+				"bojjaes": lineupHeader + "9493,Puka Nacua,WR,LAR\n",
+				"wood":    lineupHeader + "8138,Bijan Robinson,RB,ATL\n",
+				"aroma":   lineupHeader + "7591,Rachaad White,RB,TB\n",
 			},
 			week: 15,
 			want: http.StatusInternalServerError,
 		},
 		{
 			name:    "one lineup",
-			lineups: map[string]string{"bojjaes": "9493,Puka Nacua\n"},
+			lineups: map[string]string{"bojjaes": lineupHeader + "9493,Puka Nacua,WR,LAR\n"},
 			week:    15,
 			want:    http.StatusInternalServerError,
 		},
 		{
 			name: "a matchup we are not in",
 			lineups: map[string]string{
-				"wood":  "8138,Bijan Robinson\n",
-				"aroma": "7591,Rachaad White\n",
+				"wood":  lineupHeader + "8138,Bijan Robinson,RB,ATL\n",
+				"aroma": lineupHeader + "7591,Rachaad White,RB,TB\n",
 			},
 			week: 15,
 			want: http.StatusInternalServerError,
@@ -373,8 +376,8 @@ func TestWeekRefusals(t *testing.T) {
 		{
 			name: "a lineup line with no id",
 			lineups: map[string]string{
-				"bojjaes": "9493,Puka Nacua\n",
-				"wood":    "8138,Bijan Robinson\n,Rachaad White\n",
+				"bojjaes": lineupHeader + "9493,Puka Nacua,WR,LAR\n",
+				"wood":    lineupHeader + "8138,Bijan Robinson,RB,ATL\n,Rachaad White,RB,TB\n",
 			},
 			week: 15,
 			want: http.StatusInternalServerError,
@@ -455,7 +458,7 @@ func TestEachColumnTotalsItsStarters(t *testing.T) {
 }
 
 func TestBenchPlayersAreNotRendered(t *testing.T) {
-	bench := "20,First Bench\n21,Second Bench\n22,Third Bench\n"
+	bench := "20,First Bench,WR,FA\n21,Second Bench,RB,FA\n22,Third Bench,TE,FA\n"
 	weekTree := weekFS(2025, 15, map[string]string{
 		"bojjaes": lineupCSV(ourLine) + bench,
 		"wood":    lineupCSV(theirLine),
@@ -607,8 +610,8 @@ func TestTheTwoColumnsCarryTheSameMarkup(t *testing.T) {
 // escaping is the only thing between a typo and injected markup.
 func TestLineupTextIsEscaped(t *testing.T) {
 	weekTree := weekFS(2025, 15, map[string]string{
-		"bojjaes": "1,<b>Puka</b> Nacua\n",
-		"wood":    "11,Josh Allen\n",
+		"bojjaes": lineupHeader + "1,<b>Puka</b> Nacua,WR,LAR\n",
+		"wood":    lineupHeader + "11,Josh Allen,QB,BUF\n",
 	})
 
 	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
@@ -624,8 +627,8 @@ func TestLineupTextIsEscaped(t *testing.T) {
 
 func TestAShortNameIsEscaped(t *testing.T) {
 	weekTree := weekFS(2025, 15, map[string]string{
-		"bojjaes": "1,Puka <b>Nacua</b>\n",
-		"wood":    "11,Josh Allen\n",
+		"bojjaes": lineupHeader + "1,Puka <b>Nacua</b>,WR,LAR\n",
+		"wood":    lineupHeader + "11,Josh Allen,QB,BUF\n",
 	})
 
 	ours, err := lineup.New(weekTree).Read(2025, 15, "bojjaes")
@@ -1060,8 +1063,8 @@ func TestTheScriptIsIdenticalAcrossWeeks(t *testing.T) {
 	first := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
 
 	otherFS := weekFS(2024, 3, map[string]string{
-		"bojjaes": "31,Ja'Marr Chase\n",
-		"aroma":   "32,Travis Kelce\n",
+		"bojjaes": lineupHeader + "31,Ja'Marr Chase,WR,CIN\n",
+		"aroma":   lineupHeader + "32,Travis Kelce,TE,KC\n",
 	})
 	otherStats := score.NewWeekStats(2024, 3, map[string]score.StatLine{
 		"31": {PlayerID: "31", RecTD: 3},
