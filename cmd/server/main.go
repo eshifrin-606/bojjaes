@@ -5,9 +5,6 @@
 // teams of that week's lineup directory, their starters, and each lineup's
 // total.
 //
-// POST /scores takes a season, a week, and up to a lineup's worth of player IDs,
-// and answers with each player's stat line and point total.
-//
 // This is the composition root: it is the only package that names a provider.
 package main
 

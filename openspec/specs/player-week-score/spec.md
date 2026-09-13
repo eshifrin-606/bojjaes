@@ -3,16 +3,14 @@
 ## Purpose
 
 Score NFL players' single-week production under the HMFFL rules, from a provider stat feed through
-to an HTTP response. Covers the passing, rushing, receiving, two-point-conversion, kicking, and
+to a point total. Covers the passing, rushing, receiving, two-point-conversion, kicking, and
 defensive rules in `docs/scoring.md`.
 
 A score is therefore meaningful for every rostered player, kickers and defenders included. The rules
 that need play-by-play data — forced fumbles, safeties, and the 40+ yard bonus on defensive and
 return touchdowns — are absent from the calculation rather than rejected by it, so a defender's
 score is a number that may be low rather than an error.
-
 ## Requirements
-
 ### Requirement: Weekly stat line domain object
 
 The system SHALL represent a single player's single-week NFL production in a provider-neutral
@@ -573,96 +571,17 @@ requests.
   requests
 - **THEN** both reads yield the same result
 
-### Requirement: Multi-player score endpoint
+### Requirement: Weekly stats are regular-season stats
 
-The system SHALL expose an HTTP endpoint that accepts a season, a week, and a list of player IDs in
-the request body, and returns the stats and fantasy points for each of those players from a single
-fetch of the weekly stats aggregate.
+A season and week SHALL be interpreted as the regular season wherever stats are fetched for them.
+Preseason and postseason stats SHALL NOT be fetched. Nothing that asks for a week carries a season
+type.
 
-The season and week SHALL be interpreted as the regular season. The request carries no season type,
-and the endpoint SHALL NOT fetch preseason or postseason stats. Preseason is useful only for
-exercising the server against a live in-progress week during local manual testing; the league itself
-scores regular-season play, so selecting a season type is deferred rather than specified here.
+The league scores regular-season play. This rule used to be stated only on the removed multi-player
+endpoint, but the matchup page reads through the same fetch, so the rule belongs to the snapshot.
 
-The response SHALL separate scored players from absent ones. Fantasy points SHALL appear only
-alongside the stat line they were computed from, so that no absent player can carry a point total.
-Absent players SHALL be reported by player ID.
+#### Scenario: A week is fetched from the regular-season aggregate
 
-A request in which every player is absent SHALL succeed. An unplayed week is a legitimate answer,
-not a failure.
+- **WHEN** stats are fetched for a season and week
+- **THEN** the provider request names the regular season, never preseason or postseason
 
-#### Scenario: All requested players have stats
-
-- **WHEN** the endpoint is requested with player IDs that are all present in the weekly payload
-- **THEN** the server responds 200 with a scored entry for each requested player and an empty absent
-  list
-
-#### Scenario: Some requested players are absent
-
-- **WHEN** the endpoint is requested with a mix of players present in and absent from the weekly
-  payload
-- **THEN** the server responds 200 with the present players scored and the absent players named by
-  ID in the absent list
-
-#### Scenario: A scored player is distinguishable from an absent one
-
-- **WHEN** a requested player is present in the payload and their stats produce zero fantasy points
-- **THEN** the response reports them as scored with a point total of zero, not as absent
-
-#### Scenario: Every requested player is absent
-
-- **WHEN** the endpoint is requested for a week that has not been played
-- **THEN** the server responds 200 with no scored entries and every requested player ID in the
-  absent list
-
-#### Scenario: Every requested player is accounted for
-
-- **WHEN** the endpoint responds successfully
-- **THEN** the number of scored entries plus the number of absent player IDs equals the number of
-  player IDs requested
-
-#### Scenario: Repeated player IDs
-
-- **WHEN** the same player ID appears more than once in the request
-- **THEN** it appears once per occurrence in the response
-
-#### Scenario: Upstream failure
-
-- **WHEN** the Sleeper request fails, returns a non-200 status, or returns an undecodable body
-- **THEN** the server responds with a 5xx status and an error message rather than a partial or
-  zeroed result
-
-### Requirement: Multi-player request validation
-
-The system SHALL reject a malformed multi-player scoring request with a 4xx status and an error
-message, without contacting the stat provider. A request is malformed when its body is not valid
-JSON, when the season or week is missing or outside the range of a plausible NFL season and week,
-when the player ID list is empty, or when the player ID list holds more than 26 entries.
-
-The cap of 26 is the league's maximum roster size, which comfortably exceeds two full starting
-lineups.
-
-#### Scenario: Body is not valid JSON
-
-- **WHEN** the request body cannot be decoded as JSON
-- **THEN** the server responds 4xx and does not contact the stat provider
-
-#### Scenario: Season or week missing or out of range
-
-- **WHEN** the request omits the season or the week, or supplies a value outside the plausible range
-- **THEN** the server responds 4xx and does not contact the stat provider
-
-#### Scenario: Empty player list
-
-- **WHEN** the request supplies no player IDs
-- **THEN** the server responds 4xx and does not contact the stat provider
-
-#### Scenario: Too many player IDs
-
-- **WHEN** the request supplies more than 26 player IDs
-- **THEN** the server responds 4xx and does not contact the stat provider
-
-#### Scenario: Player ID count at the limit
-
-- **WHEN** the request supplies exactly 26 player IDs
-- **THEN** the request is accepted and scored
