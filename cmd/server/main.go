@@ -26,9 +26,8 @@ import (
 const shutdownGrace = 15 * time.Second
 
 func main() {
-	// Wrapped once, here, and handed to both handlers: the cache bounds
-	// upstream volume only if everything that reads a week reads through the
-	// same one. A cache per handler would be two budgets for one league.
+	// Wrapped once, here: the cache bounds upstream volume only if everything
+	// that reads a week reads through the same one.
 	stats := statscache.New(sleeper.Client{BaseURL: sleeper.BaseURL}, statscache.TTL)
 
 	addr := resolveAddr(os.Getenv)
@@ -37,7 +36,7 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
-	log.Printf("listening on %s; GET http://localhost%s/2025/15 and POST http://localhost%s/scores", addr, addr, addr)
+	log.Printf("listening on %s; GET http://localhost%s/2025/15", addr, addr)
 	listen := func() (net.Listener, error) { return net.Listen("tcp", addr) }
 	if err := run(srv, listen, stop, shutdownGrace); err != nil {
 		log.Printf("server stopped: %v", err)
