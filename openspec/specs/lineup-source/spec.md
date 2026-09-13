@@ -9,7 +9,7 @@ starting lineup.
 The roster file is a hand-maintained lineup card, so this capability governs reading it as written
 — file order is the lineup order, the id identifies the player and the name is only a label, and a
 file that cannot serve as a lineup card is refused rather than silently repaired. Scoring belongs
-to `player-week-score`; presenting a scored roster belongs to `lineup-score-report`.
+to `player-week-score`; presenting a scored roster belongs to `matchup-page`.
 ## Requirements
 ### Requirement: A roster file is an ordered list of records
 

@@ -112,15 +112,6 @@ func New(source StatsSource, ttl time.Duration, opts ...Option) *Cache {
 	return c
 }
 
-// WeekStats returns a week's stats, discarding the fetch instant. It is the
-// path for callers that do not report freshness (internal/api); it must stay a
-// thin delegate so single-flight, TTL, and error handling cannot diverge from
-// WeekStatsAsOf.
-func (c *Cache) WeekStats(ctx context.Context, season, week int) (score.WeekStats, error) {
-	stats, _, err := c.WeekStatsAsOf(ctx, season, week)
-	return stats, err
-}
-
 // WeekStatsAsOf returns a week's stats together with the instant the fetch that
 // produced them completed. Every caller served from one entry — the caller who
 // drove the fetch, a cache hit, a released waiter — gets that entry's recorded

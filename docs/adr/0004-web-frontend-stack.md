@@ -9,9 +9,9 @@ fetch, hardcoded scoring, static lineup config, Sleeper as sole provider — rem
 
 ## Context
 
-The scoreboard works, but only as a terminal artifact on one machine:
-`scripts/fantasycast.sh` pads two `scripts/scores.sh` reports into side-by-side columns against a
-server running on `localhost:8080`. Per the standing project convention, `scripts/*.sh` are an
+The scoreboard worked, but only as a terminal artifact on one machine:
+`scripts/fantasycast.sh` padded two `scripts/scores.sh` reports into side-by-side columns against a
+server running on `localhost:8080`. Per the standing project convention, `scripts/*.sh` were an
 interim UI, not the destination.
 
 What we want instead:
@@ -28,7 +28,7 @@ Two things constrain the design more than the numbers do:
 
 - **Sleeper is an undocumented API with unprobed rate limiting** (ADR 0003). Viewer-count and
   refresh-mashing must not translate into upstream request volume.
-- **`fantasycast.sh` deliberately computes no margin.** A starter whose game has not kicked off is
+- **The page must deliberately compute no margin.** A starter whose game has not kicked off is
   indistinguishable from one who was inactive, so a difference shown on Sunday morning would read
   as a settled result. Nothing in this change adds the per-player game state that would make a
   margin honest.
@@ -42,10 +42,8 @@ hosted on Fly.io.
    is a template; the small amount of client-side behaviour it needs (a refresh timer) is a few
    lines of vanilla JS.
 
-2. **Topology: one binary, one origin.** The same process serves the HTML page and the existing
-   JSON endpoints (`GET /score`, `POST /scores`). No separate static host, no CORS, no per-
-   environment API base URL. `scripts/scores.sh` and `scripts/fantasycast.sh` keep working
-   unchanged against the same server.
+2. **Topology: one binary, one origin.** The same process serves the HTML page. No separate static
+   host, no CORS, no per-environment API base URL.
 
 3. **Assets embedded.** Templates, CSS, and the lineup tree at `internal/lineup/data/**` are
    pulled into the binary with `//go:embed`. A deploy is therefore also the lineup update, which is
@@ -102,15 +100,14 @@ hosted on Fly.io.
 
 9. **Lineup files gain display fields.** The lineup CSV format grows position and team alongside
    the existing id and name. These are **local labels only** — the Sleeper player ID remains the
-   sole identity key, exactly as in `scripts/scores.sh`. They are rendered; they are never used to
-   resolve a player.
+   sole identity key. They are rendered; they are never used to resolve a player.
 
    **Position is the player's listed position, not the lineup slot** (settled 2026-09-09). It
    answers "what is this guy" — the reader wants to know a name is a tight end — and it is how the
    league has always read a roster on the spreadsheet. Slot stays where it already is: implied by
-   file order, which `scripts/scores.sh` and `internal/lineup` both already depend on. A label that
-   named the slot would duplicate that ordering in a second place and could contradict it; a listed
-   position cannot, because it says nothing about where the player is playing.
+   file order, which `internal/lineup` already depends on. A label that named the slot would
+   duplicate that ordering in a second place and could contradict it; a listed position cannot,
+   because it says nothing about where the player is playing.
 
 ## Rationale
 
@@ -140,12 +137,14 @@ hosted on Fly.io.
   scoreboard. Keeping the surface read-only means the eventual write path can be gated by a single
   shared passphrase when it arrives, rather than requiring an account system be designed today.
 
-- **The no-margin rule is a design constraint, not a preference.** It is the same reasoning
-  `fantasycast.sh` already encodes, and it is more load-bearing on the web than in a terminal: a
-  terminal report is obviously a snapshot the reader just produced, while a page left open on a
-  phone has no such anchor. The as-of timestamp is the substitute anchor — and a fetch time
-  serves that purpose, because what the reader is being warned about is a page that has gone
-  quiet, which "last asked at 1:07pm" tells them exactly as well as an upstream timestamp would.
+- **The no-margin rule is a design constraint, not a preference.** A starter whose game has not
+  kicked off is indistinguishable from one who was inactive, so any difference the page computed
+  would misrepresent an unsettled week as a settled one. It is more load-bearing on the web than
+  in a terminal: a terminal report is obviously a snapshot the reader just produced, while a page
+  left open on a phone has no such anchor. The as-of timestamp is the substitute anchor — and a
+  fetch time serves that purpose, because what the reader is being warned about is a page that has
+  gone quiet, which "last asked at 1:07pm" tells them exactly as well as an upstream timestamp
+  would.
 
 ## Consequences
 
@@ -175,18 +174,14 @@ hosted on Fly.io.
 - **No margin means the reader does the subtraction.** This is a real ergonomic cost on the feature
   people most want, accepted until per-player game state makes the number honest.
 
-- **The CSV format change touches `scripts/scores.sh`,** which currently parses `id,name`. The
-  scripts and the web page must agree on the format, or the interim UI breaks.
-
-- **Deploying makes the endpoint publicly reachable,** which turns our Sleeper usage from one
+- **Deploying makes the page publicly reachable,** which turns our Sleeper usage from one
   laptop into a hosted service. The TTL cache is what keeps that from being a change in upstream
   behaviour; it is a correctness requirement of going public, not an optimisation.
 
 ## Follow-ups
 
 - Decide the exact lineup CSV field order. The meaning of the position field is settled in
-  decision 9; the column order is not, and both `scripts/scores.sh` and the lineup parser have to
-  agree on it.
+  decision 9; the column order is not, and the lineup parser has to settle on it.
 - Watch the fetch-time as-of on a live Sunday and see how far it drifts from when stats actually
   move. If the gap is big enough to mislead, the fix is the GraphQL shape's `updated_at`.
 - Probe Sleeper rate-limit tolerance at the deployed polling cadence (still open from ADR 0003).

@@ -13,10 +13,6 @@ import (
 
 type stubStats struct{}
 
-func (stubStats) WeekStats(context.Context, int, int) (score.WeekStats, error) {
-	return score.WeekStats{}, nil
-}
-
 func (stubStats) WeekStatsAsOf(context.Context, int, int) (score.WeekStats, time.Time, error) {
 	return score.WeekStats{}, time.Now(), nil
 }
@@ -35,25 +31,27 @@ func TestMuxServesTheMatchupPage(t *testing.T) {
 	}
 }
 
-func TestMuxRejectsTheWrongMethodOnScores(t *testing.T) {
+// The route is method-qualified, so the 405 comes from the mux's routing table
+// rather than from the handler.
+func TestMuxRejectsTheWrongMethodOnTheMatchupRoute(t *testing.T) {
 	rec := httptest.NewRecorder()
 
-	testMux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/scores", nil))
+	testMux().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/2025/15", nil))
 
 	if rec.Code != http.StatusMethodNotAllowed {
-		t.Errorf("GET /scores = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+		t.Errorf("POST /2025/15 = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
 	}
 }
 
-// The Allow header is the mux's own, not a handler's: it is how a 405 is shown
-// to come from the routing table rather than from BatchHandler rejecting a body.
-func TestMuxAnswersTheWrongMethodItself(t *testing.T) {
+// /scores is no longer a route: it is one path segment with nothing registered
+// under it, so the mux answers 404 rather than reaching any handler.
+func TestMuxNoLongerAnswersScores(t *testing.T) {
 	rec := httptest.NewRecorder()
 
-	testMux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/scores", nil))
+	testMux().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/scores", nil))
 
-	if got := rec.Header().Get("Allow"); got != http.MethodPost {
-		t.Errorf("Allow = %q, want %q", got, http.MethodPost)
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("POST /scores = %d, want %d", rec.Code, http.StatusNotFound)
 	}
 }
 

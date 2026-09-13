@@ -9,9 +9,7 @@ nine starters with points, and that lineup's total.
 This capability governs the served page — its URL, how a season and week resolve to two columns,
 what each column contains, and how a week that is not a matchup is refused. The two teams are
 resolved as `lineup-source` resolves them and the points are `player-week-score`'s; nothing here
-parses a roster file or scores a stat line. `matchup-report` governs the terminal report that
-answers the same question on one machine, and the two exist side by side until the page replaces
-it.
+parses a roster file or scores a stat line.
 
 Nothing here compares the two columns. There is deliberately no margin, win probability, progress
 bar, or leader highlight, because a starter whose game has not kicked off is indistinguishable on
@@ -25,8 +23,8 @@ reading as a result.
 The server SHALL serve the matchup page at `GET /{season}/{week}`, where both segments are decimal
 integers, e.g. `/2025/15`. No team appears in the URL: the week directory names both teams.
 
-A segment that is not an integer, or a season or week outside the range the scoring endpoints
-already accept, SHALL be refused with `400 Bad Request` and SHALL NOT reach the lineup tree or the
+A segment that is not an integer, or a season or week outside the plausible range `internal/score`
+validates, SHALL be refused with `400 Bad Request` and SHALL NOT reach the lineup tree or the
 stat provider.
 
 #### Scenario: A season and week resolve to a page

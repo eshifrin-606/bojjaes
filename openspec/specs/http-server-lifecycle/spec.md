@@ -10,11 +10,9 @@ This capability exists because the process runs on a platform that decides these
 injects the listen port through `PORT` and stops a machine by sending `SIGTERM`, on a single-CPU
 256mb machine where an idle connection is a real cost. It governs only the lifecycle — the listen
 address, the mux the routes are registered on, the connection timeouts, and the drain — and nothing
-about what any route answers: the page is `matchup-page`'s and the scores are `player-week-score`'s,
-and both are unchanged by the server around them.
-
+about what any route answers: the page is `matchup-page`'s, and it is unchanged by the server around
+it.
 ## Requirements
-
 ### Requirement: The listen port comes from the environment, with a local default
 
 The address the server listens on SHALL be derived from the `PORT` environment variable. When `PORT`
@@ -52,9 +50,9 @@ test binary without a duplicate-pattern panic, and any linked package can add a 
 unnoticed. An owned mux makes the routing table a value that can be constructed and exercised
 directly.
 
-The mux SHALL serve the same routes as before this change: `POST /scores` for the batch scoring API
-and `GET /{season}/{week}` for the matchup page. Method-qualified patterns SHALL be kept, so a
-non-matching method is answered by the mux with 405 rather than reaching a handler.
+The mux SHALL serve exactly one route: `GET /{season}/{week}` for the matchup page. The pattern SHALL
+be method-qualified, so a non-matching method is answered by the mux with 405 rather than reaching
+the handler.
 
 Building the mux SHALL be a function of its dependencies and SHALL have no other effect — no
 listening, no logging, no reading of the environment — so a test can build one and drive it with
@@ -65,10 +63,15 @@ listening, no logging, no reading of the environment — so a test can build one
 - **WHEN** a `GET` for a season and week is served by a freshly built mux
 - **THEN** the matchup handler answers it, and `DefaultServeMux` has no route registered
 
-#### Scenario: The scores route rejects the wrong method
+#### Scenario: The matchup route rejects the wrong method
 
-- **WHEN** a `GET /scores` is served by a freshly built mux
-- **THEN** the mux answers 405 without invoking the batch handler
+- **WHEN** a `POST` for a season and week is served by a freshly built mux
+- **THEN** the mux answers 405 without invoking the matchup handler
+
+#### Scenario: The retired scores path is not served
+
+- **WHEN** a `POST /scores` is served by a freshly built mux
+- **THEN** the mux answers 404, because no route matches the path
 
 #### Scenario: Two muxes can be built in one process
 
@@ -139,3 +142,4 @@ disposition, so the drain can be exercised in a test without signalling the test
 
 - **WHEN** the server cannot bind its address because the port is already in use
 - **THEN** the run returns that error rather than blocking or reporting a clean stop
+

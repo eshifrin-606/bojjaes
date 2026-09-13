@@ -142,9 +142,3 @@ Worth revisiting after one live Sunday.
 
 Also live: Sleeper revises stats, so a total can go *down* across a refresh with nothing on the page
 explaining why. Pre-existing, but refreshing turns it into something the reader watches happen.
-
-## 5. The other endpoint
-
-`POST /scores` — season, week, player IDs → stat lines and totals as JSON. Same `internal/score`
-scoring, same `internal/sleeper` fetch, no HTML. It's what `scripts/scores.sh` and friends use
-while the shell scripts are still the interim UI. Unaffected by any of the above.
