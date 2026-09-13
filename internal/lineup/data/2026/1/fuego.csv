@@ -1,14 +1,15 @@
-# Sleeper player IDs. One "id,name" per line; blank lines and # comments ignored.
-2133,Davante Adams
-8148,Jameson Williams
-8137,George Pickens
-10236,Dalton Kincaid
-7588,Javonte Williams
-3294,Dak Prescott
-4195,Jake Elliott
-10883,Will McDonald IV
-11667,Dallas Turner
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+2133,Davante Adams,WR,LAR
+8148,Jameson Williams,WR,DET
+8137,George Pickens,WR,DAL
+10236,Dalton Kincaid,TE,BUF
+7588,Javonte Williams,RB,DAL
+3294,Dak Prescott,QB,DAL
+4195,Jake Elliott,K,PHI
+10883,Will McDonald IV,DE,NYJ
+11667,Dallas Turner,LB,MIN
 
 # bench
-13298,KC Concepcion
-11560,Caleb Williams
+13298,KC Concepcion,WR,CLE
+11560,Caleb Williams,QB,CHI

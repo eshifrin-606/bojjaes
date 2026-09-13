@@ -1,10 +1,11 @@
-# Sleeper player IDs. One "id,name" per line; blank lines and # comments ignored.
-7564,Ja'Marr Chase
-7553,Kyle Pitts
-12534,Kyle Monangai
-6813,Jonathan Taylor
-3198,Derrick Henry
-6904,Jalen Hurts
-11786,Cam Little
-12585,James Pearce
-10892,Will Anderson
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+7564,Ja'Marr Chase,WR,CIN
+7553,Kyle Pitts,TE,ATL
+12534,Kyle Monangai,RB,CHI
+6813,Jonathan Taylor,RB,IND
+3198,Derrick Henry,RB,BAL
+6904,Jalen Hurts,QB,PHI
+11786,Cam Little,K,JAX
+12585,James Pearce,DL,ATL
+10892,Will Anderson,DL,HOU

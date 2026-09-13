@@ -75,18 +75,19 @@ func TestLineupSplit(t *testing.T) {
 // split runs against parser output rather than a hand-built []Record.
 func TestLineupSplitAfterParse(t *testing.T) {
 	input := `# starting nine
+id,name,position,team
 
-1,Alpha
-2,Bravo
+1,Alpha,QB,BUF
+2,Bravo,RB,BUF
 # midway comment
-3,Charlie
-4,Delta
+3,Charlie,RB,BUF
+4,Delta,WR,BUF
 
-5,Echo
-6,Foxtrot
-7,Golf
-8,Hotel
-9,India
+5,Echo,WR,BUF
+6,Foxtrot,WR,BUF
+7,Golf,TE,BUF
+8,Hotel,K,BUF
+9,India,LB,BUF
 `
 	records, err := parse(strings.NewReader(input))
 	if err != nil {
@@ -99,6 +100,32 @@ func TestLineupSplitAfterParse(t *testing.T) {
 	}
 	if got := len(r.Bench()); got != 0 {
 		t.Errorf("len(Bench()) = %d, want 0", got)
+	}
+}
+
+// A position is the player's listed position, not the slot he fills, so an
+// illegal lineup still splits by file order alone.
+func TestLineupSplitIgnoresPosition(t *testing.T) {
+	input := header +
+		"1,Q1,QB,BUF\n2,Q2,QB,BUF\n3,Q3,QB,BUF\n4,Q4,QB,BUF\n5,Q5,QB,BUF\n" +
+		"6,Q6,QB,BUF\n7,Q7,QB,BUF\n8,Q8,QB,BUF\n9,Q9,QB,BUF\n10,Kicker,K,BUF\n"
+	records, err := parse(strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	r := Lineup{records: records}
+	starters, bench := r.Starters(), r.Bench()
+	if len(starters) != 9 {
+		t.Errorf("len(Starters()) = %d, want 9", len(starters))
+	}
+	for i, rec := range starters {
+		if rec.Position != "QB" {
+			t.Errorf("Starters()[%d].Position = %q, want QB", i, rec.Position)
+		}
+	}
+	if len(bench) != 1 || bench[0].Position != "K" {
+		t.Errorf("Bench() = %+v, want only the kicker", bench)
 	}
 }
 

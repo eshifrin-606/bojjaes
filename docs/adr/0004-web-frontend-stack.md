@@ -10,9 +10,9 @@ fetch, hardcoded scoring, static lineup config, Sleeper as sole provider — rem
 ## Context
 
 The scoreboard worked, but only as a terminal artifact on one machine:
-`scripts/fantasycast.sh` padded two `scripts/scores.sh` reports into side-by-side columns against a
-server running on `localhost:8080`. Per the standing project convention, `scripts/*.sh` were an
-interim UI, not the destination.
+a shell script padded two per-team score reports into side-by-side columns against a server running
+on `localhost:8080`. Per the standing project convention, those scripts were an interim UI, not the
+destination.
 
 What we want instead:
 
@@ -102,6 +102,25 @@ hosted on Fly.io.
    the existing id and name. These are **local labels only** — the Sleeper player ID remains the
    sole identity key. They are rendered; they are never used to resolve a player.
 
+   **Every file opens with a header row, `id,name,position,team`,** and fields are read by column
+   name, so column order is free. A missing, repeated, or unknown column refuses the file rather
+   than leaving every record without that field.
+
+   **Position and team are closed sets, spelled as Sleeper spells them** (settled 2026-09-13).
+   Position is one of `QB RB FB WR TE K DL DE DT NT LB OLB ILB DB CB S SS FS` — every Sleeper
+   `position` a scoring player can carry, and nothing that can't score. Sleeper is inconsistent
+   across defenders (`DL` for one lineman, `DE` for another); files carry that as written rather
+   than resolving it. Team is one of the 32 current codes or `FA`, meaning no NFL team when the
+   file was written. A value outside either set refuses the file.
+
+   **Values are looked up in Sleeper's players index when the file is written, never from memory.**
+   A closed set catches a typo but not a plausible stale value, so the lookup is the only guard
+   against that. Labels are frozen at write time; reading never updates them.
+
+   **A future column is either backfilled into every existing file in the same change, or made
+   explicitly optional** with a stated meaning for its absence. An optional column does not later
+   become required, since that would put a date-based branch in the format.
+
    **Position is the player's listed position, not the lineup slot** (settled 2026-09-09). It
    answers "what is this guy" — the reader wants to know a name is a tight end — and it is how the
    league has always read a roster on the spreadsheet. Slot stays where it already is: implied by
@@ -180,8 +199,6 @@ hosted on Fly.io.
 
 ## Follow-ups
 
-- Decide the exact lineup CSV field order. The meaning of the position field is settled in
-  decision 9; the column order is not, and the lineup parser has to settle on it.
 - Watch the fetch-time as-of on a live Sunday and see how far it drifts from when stats actually
   move. If the gap is big enough to mislead, the fix is the GraphQL shape's `updated_at`.
 - Probe Sleeper rate-limit tolerance at the deployed polling cadence (still open from ADR 0003).

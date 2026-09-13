@@ -35,10 +35,6 @@ One line each, roughly in dependency order. Not sized, not scheduled.
 - [ ] Watch on a live Sunday how far our fetch instant drifts from when the stats actually moved
   upstream — procedure in `openspec/changes/archive/2026-09-07-stamp-as-of-timestamp/notes.md`. If the gap misleads,
   the fix is the GraphQL shape's `updated_at`.
-- [ ] Grow the lineup CSV to carry position and team as display-only labels. Position is the
-  player's listed position, not the lineup slot (ADR 0004 decision 9) — slot stays implied by file
-  order. Field order is the one piece still open. Not deploy-blocking; the page is honest without
-  these labels.
 - [ ] Add `paths-ignore` to `.github/workflows/fly-deploy.yml` for `docs/**`, `openspec/**`, and
   root `*.md`. Today every push to `main` deploys, so a backlog edit rebuilds the image and
   replaces the machine with the same binary, dropping the in-memory stats cache along the way.
