@@ -11,14 +11,15 @@
   }
 
   /* Two tracks of 1fr: both columns are the same width whatever they hold, so
-     neither column's contents can change the other's. Row 9 is the league's
-     starter count (lineup.starterCount); a subgrid cannot create implicit
-     tracks, so the parent must declare one per starter. */
+     neither column's contents can change the other's. One row for the heading,
+     then one per starter: 9 is the league's starter count
+     (lineup.starterCount), and a subgrid cannot create implicit tracks, so the
+     parent must declare them all. */
   .matchup {
     column-gap: 1rem;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto repeat(9, auto) auto;
+    grid-template-rows: auto repeat(9, auto);
   }
 
   /* One class for both columns. There is deliberately no rule keyed on which
@@ -27,11 +28,37 @@
   .column {
     border: 1px solid #ccc;
     border-radius: 6px;
-    container-type: inline-size;
     display: grid;
     grid-row: 1 / -1;
     grid-template-rows: subgrid;
+    padding: 0 1rem 0.5rem;
+  }
+
+  /* The band's negative inline margin must equal the card's inline padding at
+     every width (1rem here, 0.5rem under 33rem), so it reaches the card border
+     while the card's padding stays the one inset for starter rows. Its corners
+     get the card's inner radius rather than the card using overflow: hidden,
+     which would also silently clip a long team name. */
+  .column header {
+    align-items: baseline;
+    background: #f3f3f3;
+    border-bottom: 1px solid #ccc;
+    border-radius: 5px 5px 0 0;
+    column-gap: 0.5rem;
+    container-type: inline-size;
+    display: grid;
+    grid-row: 1;
+    grid-template-columns: minmax(0, 1fr) auto;
+    margin-inline: -1rem;
     padding: 0.5rem 1rem;
+  }
+
+  .column h2 {
+    font-size: 1.125rem;
+    letter-spacing: 0.04em;
+    margin: 0;
+    overflow-wrap: break-word;
+    text-transform: uppercase;
   }
 
   .column ol {
@@ -45,6 +72,7 @@
 
   .column li {
     column-gap: 1rem;
+    container-type: inline-size;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     padding-block: 0.25rem;
@@ -83,14 +111,12 @@
     white-space: nowrap;
   }
 
-  /* The shared row tracks put the total in the same track in both cards,
-     however many lines the names above it wrap onto. */
   .total {
-    border-top: 1px solid #ccc;
-    font-weight: 600;
-    grid-row: -2 / -1;
-    padding-top: 0.5rem;
-    text-align: right;
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    margin: 0;
+    white-space: nowrap;
   }
 
   /* 33rem is where the normal spacing stops leaving room for the longest long
@@ -105,15 +131,16 @@
     }
 
     .column {
-      padding: 0.5rem;
+      padding: 0 0.5rem 0.5rem;
+    }
+
+    .column header {
+      margin-inline: -0.5rem;
+      padding-inline: 0.5rem;
     }
 
     .column li {
       column-gap: 0.5rem;
-    }
-
-    .column h2 {
-      margin: 0.25rem 0;
     }
   }
 
@@ -129,16 +156,22 @@
     .player .short {
       display: inline;
     }
+
+    .total {
+      font-size: 1.25rem;
+    }
   }
 </style>
 <main class="matchup">
   {{range .Columns}}
   <section class="column">
-    <h2>{{.Team}}</h2>
+    <header>
+      <h2>{{.Team}}</h2>
+      <p class="total">{{.Total}}</p>
+    </header>
     <ol>
       {{range .Starters}}<li><span class="player"><span class="long">{{.Name}}</span><span class="short">{{.ShortName}}</span></span><span class="points">{{.Points}}</span><span class="meta">{{.Position}} · {{.Team}}</span></li>{{end}}
     </ol>
-    <p class="total">{{.Total}}</p>
   </section>
   {{end}}
 </main>
