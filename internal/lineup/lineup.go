@@ -16,11 +16,9 @@ type Lineup struct {
 }
 
 func newLineup(records []Record) Lineup {
-	split := benchStart(records)
-	// Starters and bench are resolved separately so a bench player sharing a
-	// short name never pushes a starter back to their full name.
-	fillShortNames(records[:split])
-	fillShortNames(records[split:])
+	for i := range records {
+		records[i].ShortName = shortName(records[i].Name)
+	}
 	return Lineup{records: records}
 }
 

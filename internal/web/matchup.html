@@ -11,11 +11,14 @@
   }
 
   /* Two tracks of 1fr: both columns are the same width whatever they hold, so
-     neither column's contents can change the other's. */
+     neither column's contents can change the other's. Row 9 is the league's
+     starter count (lineup.starterCount); a subgrid cannot create implicit
+     tracks, so the parent must declare one per starter. */
   .matchup {
+    column-gap: 1rem;
     display: grid;
-    gap: 1rem;
     grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto repeat(9, auto) auto;
   }
 
   /* One class for both columns. There is deliberately no rule keyed on which
@@ -25,21 +28,30 @@
     border: 1px solid #ccc;
     border-radius: 6px;
     container-type: inline-size;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-row: 1 / -1;
+    grid-template-rows: subgrid;
     padding: 0.5rem 1rem;
   }
 
   .column ol {
+    display: grid;
+    grid-row: 2 / span 9;
+    grid-template-rows: subgrid;
     list-style: none;
     margin: 0;
     padding: 0;
   }
 
   .column li {
-    display: flex;
-    gap: 1rem;
-    justify-content: space-between;
+    column-gap: 1rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding-block: 0.25rem;
+  }
+
+  .column li + li {
+    border-top: 1px solid #eee;
   }
 
   /* A flex item is otherwise at least as wide as its longest word, and would
@@ -54,25 +66,29 @@
     display: none;
   }
 
+  .meta {
+    color: #666;
+    font-size: 0.8125rem;
+    grid-column: 1;
+  }
+
   /* A box that never gives way to a name, so every row's name gets the same
      width and the points share one right edge. 5ch holds 112.5, the widest
      realistic value, and a negative like -2.5; it is a minimum, so a rarer
      -12.5 widens the box instead of overflowing it. */
   .points {
-    flex: none;
     font-variant-numeric: tabular-nums;
     min-width: 5ch;
     text-align: right;
     white-space: nowrap;
   }
 
-  /* The grid already stretches both cards to the same height; pushing each
-     total to the bottom of its card lines the two up however many lines the
-     names above them wrap onto. */
+  /* The shared row tracks put the total in the same track in both cards,
+     however many lines the names above it wrap onto. */
   .total {
     border-top: 1px solid #ccc;
     font-weight: 600;
-    margin-top: auto;
+    grid-row: -2 / -1;
     padding-top: 0.5rem;
     text-align: right;
   }
@@ -85,7 +101,7 @@
     }
 
     .matchup {
-      gap: 0.5rem;
+      column-gap: 0.5rem;
     }
 
     .column {
@@ -93,7 +109,7 @@
     }
 
     .column li {
-      gap: 0.5rem;
+      column-gap: 0.5rem;
     }
 
     .column h2 {
@@ -120,7 +136,7 @@
   <section class="column">
     <h2>{{.Team}}</h2>
     <ol>
-      {{range .Starters}}<li><span class="player"><span class="long">{{.Name}}</span><span class="short">{{.ShortName}}</span></span><span class="points">{{.Points}}</span></li>{{end}}
+      {{range .Starters}}<li><span class="player"><span class="long">{{.Name}}</span><span class="short">{{.ShortName}}</span></span><span class="points">{{.Points}}</span><span class="meta">{{.Position}} · {{.Team}}</span></li>{{end}}
     </ol>
     <p class="total">{{.Total}}</p>
   </section>
