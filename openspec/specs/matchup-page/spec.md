@@ -64,6 +64,17 @@ Each column SHALL show the team name, that team's starting lineup in file order,
 the starters' points. Starters are the roster's first nine records per `lineup-source`; bench
 players SHALL NOT appear on the page.
 
+The team name and the total SHALL share one heading at the top of the column, above the first
+starter: the name at the left and the total at the right, on the same line. Nothing in the column
+SHALL be rendered above the heading, and the total SHALL NOT be repeated anywhere else in the
+column. A team name too long for the space beside the total SHALL wrap under itself, and SHALL NOT
+push the total out of line or out of the column.
+
+The heading SHALL be set apart from the starters by a tinted band across the full width of the
+column and a dividing line below it. The team name SHALL be set in capitals and the total in bold
+tabular figures. The band, the line, and the type SHALL be identical in both columns and SHALL NOT
+depend on points or on which total is larger. No line SHALL be drawn above the total.
+
 Each starter line SHALL show the player's name from the roster file and that player's points for
 the requested season and week, computed by the `player-week-score` rules.
 
@@ -88,6 +99,30 @@ width.
 
 - **WHEN** a team's nine starters score 12, 0, 6, 3, 9, 0, 15, 4, and 7 points
 - **THEN** that column lists all nine players with those points and shows a total of 56
+
+#### Scenario: The total sits beside the team name
+
+- **WHEN** a page is rendered for a week whose two teams are `bojjaes` and `wood`
+- **THEN** each column's total is in the same heading element as its team name, on the same line
+  as the name, and above the column's first starter
+
+#### Scenario: Nothing sits above the heading
+
+- **WHEN** the page is viewed in a browser
+- **THEN** in each column the heading's top is above every other element of the column, and no
+  total or dividing line is rendered above the team name
+
+#### Scenario: A phone fits the heading on one line
+
+- **WHEN** the page is viewed on a viewport 390 CSS px wide with `bojjaes` totalling `112.5`
+- **THEN** the team name and total are on one line, the total is inside the column, and the two do
+  not overlap
+
+#### Scenario: A long team name wraps under itself
+
+- **WHEN** a team name does not fit on one line beside its total
+- **THEN** the name wraps onto further lines at the left, and the total stays on the name's first
+  line inside the column
 
 #### Scenario: Bench players are not rendered
 
@@ -133,7 +168,8 @@ A name too long for the space beside the points box SHALL wrap onto further line
 The name SHALL NOT be truncated or elided, and it SHALL NOT push the points box out of line or out
 of the column.
 
-The two column totals SHALL sit at the same height, whichever column has more wrapped lines.
+The two column totals SHALL sit at the same height, whichever column has more wrapped lines in its
+team name or its starters.
 
 At narrow viewports the page SHALL use less padding and spacing than it does at wide viewports, so
 the space goes to the names rather than to margins.
@@ -157,7 +193,8 @@ the space goes to the names rather than to margins.
 
 #### Scenario: Totals line up
 
-- **WHEN** one column has a wrapped starter name and the other has none
+- **WHEN** one column's team name wraps onto two lines and the other's does not, or one column has a
+  wrapped starter name and the other has none
 - **THEN** the two column totals are rendered at the same height
 
 ### Requirement: Starters are separate rows that line up across the columns
@@ -168,10 +205,10 @@ same line as the first line of the name. The separation SHALL NOT use a per-row 
 per-row box, or any styling that depends on points or on which column is ahead, and both columns
 SHALL be styled identically.
 
-The two columns SHALL share their row heights: the team headings SHALL start at the same height,
-the Nth starter in each column SHALL start at the same height and occupy the same height, and the
-totals SHALL sit at the same height. This SHALL hold whichever column has more wrapped lines, and
-when a column has fewer than nine starters.
+The two columns SHALL share their row heights: the headings, which hold the team names and totals,
+SHALL start at the same height and occupy the same height, and the Nth starter in each column SHALL
+start at the same height and occupy the same height. This SHALL hold whichever column has more
+wrapped lines, and when a column has fewer than nine starters.
 
 Separating the rows SHALL NOT add horizontal padding or borders inside a row, so the width left for
 a name beside the points box is unchanged.
@@ -182,6 +219,12 @@ a name beside the points box is unchanged.
   right column
 - **THEN** the fourth starter in each column starts at the same height, and the dividers between
   rows sit at the same heights in both columns
+
+#### Scenario: A wrapped team name on one side does not stagger the rows
+
+- **WHEN** the left column's team name wraps onto two lines and the right column's does not
+- **THEN** both headings occupy the same height and the first starter in each column starts at the
+  same height
 
 #### Scenario: Adjacent starters are divided
 
@@ -202,7 +245,7 @@ a name beside the points box is unchanged.
 #### Scenario: Row styling does not depend on the score
 
 - **WHEN** one column's total is higher than the other's, or one starter outscores the rest
-- **THEN** every starter row in both columns carries the same classes and styling
+- **THEN** every starter row and heading in both columns carries the same classes and styling
 
 ### Requirement: A starter the provider has no stats for shows no number
 

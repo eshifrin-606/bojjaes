@@ -688,6 +688,48 @@ func TestTheTwoColumnsCarryTheSameMarkup(t *testing.T) {
 	}
 }
 
+var headerTagPattern = regexp.MustCompile(`<header\b([^>]*)>`)
+
+// A class or style on one heading is the hook a leader highlight would need.
+func TestTheHeadingsCarryNoClassOrStyle(t *testing.T) {
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	tags := headerTagPattern.FindAllStringSubmatch(rec.Body.String(), -1)
+	if len(tags) != 2 {
+		t.Fatalf("found %d header tags, want 2", len(tags))
+	}
+	for i, tag := range tags {
+		if strings.Contains(tag[1], "class") || strings.Contains(tag[1], "style") {
+			t.Errorf("header %d carries attributes %q, want no class or style", i, tag[1])
+		}
+	}
+}
+
+var sectionPattern = regexp.MustCompile(`(?s)<section class="column">(.*?)</section>`)
+var headerPattern = regexp.MustCompile(`(?s)<header>(.*?)</header>`)
+
+func TestTheTeamNameAndTotalShareAHeading(t *testing.T) {
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+
+	sections := sectionPattern.FindAllStringSubmatch(rec.Body.String(), -1)
+	if len(sections) != 2 {
+		t.Fatalf("found %d column sections, want 2", len(sections))
+	}
+	for i, team := range []string{"bojjaes", "wood"} {
+		header := headerPattern.FindStringSubmatch(sections[i][1])
+		if header == nil {
+			t.Errorf("column %d has no header:\n%s", i, sections[i][1])
+			continue
+		}
+		if !strings.Contains(header[1], "<h2>"+team+"</h2>") {
+			t.Errorf("column %d header has no h2 for %q:\n%s", i, team, header[1])
+		}
+		if !strings.Contains(header[1], `class="total"`) {
+			t.Errorf("column %d header has no total:\n%s", i, header[1])
+		}
+	}
+}
+
 // Names reach the page from file names and hand-edited CSV, so contextual
 // escaping is the only thing between a typo and injected markup.
 func TestLineupTextIsEscaped(t *testing.T) {
@@ -1015,29 +1057,51 @@ func TestTheStyleSheetDeclares(t *testing.T) {
 		{name: "the meta line sits under the name, not the points", block: []string{".meta"}, declaration: "grid-column: 1"},
 		{name: "a narrow viewport has less body padding", block: []string{"@media (max-width: 33rem)", "body"}, declaration: "padding: 0.5rem"},
 		{name: "a narrow viewport has a narrower gap between the cards", block: []string{"@media (max-width: 33rem)", ".matchup"}, declaration: "column-gap: 0.5rem"},
-		{name: "a narrow viewport has less card padding", block: []string{"@media (max-width: 33rem)", ".column"}, declaration: "padding: 0.5rem"},
+		{name: "a narrow viewport has less card padding", block: []string{"@media (max-width: 33rem)", ".column"}, declaration: "padding: 0 0.5rem 0.5rem"},
 		{name: "a narrow viewport has a narrower gap between name and points", block: []string{"@media (max-width: 33rem)", ".column li"}, declaration: "column-gap: 0.5rem"},
-		{name: "a narrow viewport has smaller margins around the team name", block: []string{"@media (max-width: 33rem)", ".column h2"}, declaration: "margin: 0.25rem 0"},
 		{name: "a wide viewport keeps its body padding", block: []string{"body"}, declaration: "padding: 1rem"},
 		{name: "a wide viewport keeps its gap between the cards", block: []string{".matchup"}, declaration: "column-gap: 1rem"},
-		{name: "a wide viewport keeps its card padding", block: []string{".column"}, declaration: "padding: 0.5rem 1rem"},
+		{name: "a wide viewport keeps its card padding", block: []string{".column"}, declaration: "padding: 0 1rem 0.5rem"},
 		{name: "a wide viewport keeps its gap between name and points", block: []string{".column li"}, declaration: "column-gap: 1rem"},
 		{name: "a card hides the short name by default", block: []string{".player .short"}, declaration: "display: none"},
-		{name: "a card is a container its name form can be chosen by", block: []string{".column"}, declaration: "container-type: inline-size"},
+		{name: "a starter row is a container its name form can be chosen by", block: []string{".column li"}, declaration: "container-type: inline-size"},
 		{name: "a narrow card hides the long name", block: []string{"@container (max-width: 12.5rem)", ".player .long"}, declaration: "display: none"},
 		{name: "a narrow card shows the short name", block: []string{"@container (max-width: 12.5rem)", ".player .short"}, declaration: "display: inline"},
 		{name: "adjacent starters are divided by a hairline", block: []string{".column li + li"}, declaration: "border-top: 1px solid #eee"},
 		{name: "a row has vertical breathing room", block: []string{".column li"}, declaration: "padding-block: 0.25rem"},
 		{name: "the meta line is muted", block: []string{".meta"}, declaration: "color: #666"},
 		{name: "the meta line is smaller than the name", block: []string{".meta"}, declaration: "font-size: 0.8125rem"},
-		{name: "the matchup grid declares one row track per starter", block: []string{".matchup"}, declaration: "grid-template-rows: auto repeat(9, auto) auto"},
+		{name: "the matchup grid declares one row track per starter", block: []string{".matchup"}, declaration: "grid-template-rows: auto repeat(9, auto)"},
 		{name: "a card spans every row track", block: []string{".column"}, declaration: "grid-row: 1 / -1"},
 		{name: "a card lays out its own grid", block: []string{".column"}, declaration: "display: grid"},
 		{name: "a card shares its parent's row tracks", block: []string{".column"}, declaration: "grid-template-rows: subgrid"},
 		{name: "the starter list spans the starter row tracks", block: []string{".column ol"}, declaration: "grid-row: 2 / span 9"},
 		{name: "the starter list lays out its own grid", block: []string{".column ol"}, declaration: "display: grid"},
 		{name: "the starter list shares the starter row tracks", block: []string{".column ol"}, declaration: "grid-template-rows: subgrid"},
-		{name: "the total sits in the last row track", block: []string{".total"}, declaration: "grid-row: -2 / -1"},
+		{name: "the heading sits in the first row track", block: []string{".column header"}, declaration: "grid-row: 1"},
+		{name: "the heading lays out its own grid", block: []string{".column header"}, declaration: "display: grid"},
+		{name: "the heading has a flexible name column and an auto total column", block: []string{".column header"}, declaration: "grid-template-columns: minmax(0, 1fr) auto"},
+		{name: "the name and total share a baseline", block: []string{".column header"}, declaration: "align-items: baseline"},
+		{name: "the heading has a gap between name and total", block: []string{".column header"}, declaration: "column-gap: 0.5rem"},
+		{name: "the heading is a grey band", block: []string{".column header"}, declaration: "background: #f3f3f3"},
+		{name: "the band is ruled off from the starters like the card frame", block: []string{".column header"}, declaration: "border-bottom: 1px solid #ccc"},
+		{name: "the band's top corners follow the card's inner radius", block: []string{".column header"}, declaration: "border-radius: 5px 5px 0 0"},
+		{name: "the band has its own padding", block: []string{".column header"}, declaration: "padding: 0.5rem 1rem"},
+		{name: "the band reaches past the card's padding to its border", block: []string{".column header"}, declaration: "margin-inline: -1rem"},
+		{name: "a narrow viewport's band reaches past the narrower card padding", block: []string{"@media (max-width: 33rem)", ".column header"}, declaration: "margin-inline: -0.5rem"},
+		{name: "a narrow viewport's band pads its content back to the card's", block: []string{"@media (max-width: 33rem)", ".column header"}, declaration: "padding-inline: 0.5rem"},
+		{name: "the team name is a size down from a default h2", block: []string{".column h2"}, declaration: "font-size: 1.125rem"},
+		{name: "the team name is tracked out for its capitals", block: []string{".column h2"}, declaration: "letter-spacing: 0.04em"},
+		{name: "the band's padding owns the team name's spacing", block: []string{".column h2"}, declaration: "margin: 0"},
+		{name: "the team name reads as capitals", block: []string{".column h2"}, declaration: "text-transform: uppercase"},
+		{name: "a long team name wraps instead of pushing the total out", block: []string{".column h2"}, declaration: "overflow-wrap: break-word"},
+		{name: "the total is larger than the team name", block: []string{".total"}, declaration: "font-size: 1.5rem"},
+		{name: "totals stay tabular", block: []string{".total"}, declaration: "font-variant-numeric: tabular-nums"},
+		{name: "the total is bold", block: []string{".total"}, declaration: "font-weight: 700"},
+		{name: "the band's padding owns the total's spacing", block: []string{".total"}, declaration: "margin: 0"},
+		{name: "the total never breaks", block: []string{".total"}, declaration: "white-space: nowrap"},
+		{name: "the heading is a container a tight card's total can be sized by", block: []string{".column header"}, declaration: "container-type: inline-size"},
+		{name: "a narrow card has a smaller total", block: []string{"@container (max-width: 12.5rem)", ".total"}, declaration: "font-size: 1.25rem"},
 	}
 
 	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
@@ -1112,6 +1176,23 @@ func TestRowPaddingIsVerticalOnly(t *testing.T) {
 	}
 	if strings.Contains(block, "padding-inline") {
 		t.Errorf(".column li declares padding-inline:\n%s", block)
+	}
+}
+
+// The total sits beside the team name now, so a sum rule above it would read
+// as a line under the heading rather than under the starters it adds up.
+func TestTheTotalHasNoSumLine(t *testing.T) {
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	style := renderedStyle(t, rec.Body.String())
+
+	block, found := cssBlock(style, ".total")
+	if !found {
+		t.Fatalf("no %q block; style:\n%s", ".total", style)
+	}
+	for _, d := range strings.Split(block, ";") {
+		if d = strings.TrimSpace(d); strings.HasPrefix(d, "border") {
+			t.Errorf(".total declares %q", d)
+		}
 	}
 }
 
