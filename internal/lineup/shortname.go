@@ -33,18 +33,3 @@ func writtenAsInitials(word string) bool {
 	return utf8.RuneCountInString(word) == 2 &&
 		!strings.ContainsFunc(word, func(r rune) bool { return !unicode.IsUpper(r) })
 }
-
-func fillShortNames(group []Record) {
-	derived := make([]string, len(group))
-	uses := make(map[string]int, len(group))
-	for i, rec := range group {
-		derived[i] = shortName(rec.Name)
-		uses[derived[i]]++
-	}
-	for i := range group {
-		group[i].ShortName = derived[i]
-		if uses[derived[i]] > 1 {
-			group[i].ShortName = group[i].Name
-		}
-	}
-}

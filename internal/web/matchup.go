@@ -73,6 +73,8 @@ type column struct {
 type starter struct {
 	Name      string
 	ShortName string
+	Position  string
+	Team      string
 	// Points is formatted here rather than in the template, so the choice
 	// between a number and a placeholder is made in Go, where it is testable.
 	Points string
@@ -191,7 +193,7 @@ func scoreColumn(team string, l lineup.Lineup, weekStats score.WeekStats) column
 
 	var total float64
 	for _, rec := range l.Starters() {
-		s := starter{Name: rec.Name, ShortName: rec.ShortName, Points: noStats}
+		s := starter{Name: rec.Name, ShortName: rec.ShortName, Position: rec.Position, Team: rec.Team, Points: noStats}
 
 		// Absence and a scoreless week are different facts, and Player's
 		// second return is the only thing that tells them apart.

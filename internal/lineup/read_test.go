@@ -125,9 +125,9 @@ func TestTreeReadIsConfinedToItsOwnFilesystem(t *testing.T) {
 	}
 }
 
-// Collisions are resolved within starters and bench separately, so the two
-// bench Allens leave the starting Josh Allen with his short name.
-func TestTreeReadResolvesShortNameCollisionsWithinEachGroup(t *testing.T) {
+// Colliding short names, whether within starters, within bench, or between
+// them, all keep their derived short form.
+func TestTreeReadKeepsCollidingShortNames(t *testing.T) {
 	fsys := fstest.MapFS{}
 	seedLineup(t, fsys, 2025, 14, "wood", "shortnames.csv")
 
@@ -136,16 +136,16 @@ func TestTreeReadResolvesShortNameCollisionsWithinEachGroup(t *testing.T) {
 		t.Fatalf("Read: %v", err)
 	}
 
-	wantBench := []string{"Jaylen Allen", "Jordan Allen", "D Prescott"}
+	wantBench := []string{"J Allen", "J Allen", "D Prescott"}
 	if len(got.Starters()) != starterCount || len(got.Bench()) != len(wantBench) {
 		t.Fatalf("Read() split = %d starters, %d bench, want %d starters, %d bench",
 			len(got.Starters()), len(got.Bench()), starterCount, len(wantBench))
 	}
 
 	wantStarters := map[int]string{
-		0: "Jameson Williams",
+		0: "J Williams",
 		1: "J Allen",
-		2: "Javonte Williams",
+		2: "J Williams",
 		3: "C Williams",
 		4: "W McDonald",
 		5: "A.J. Brown",
@@ -167,8 +167,28 @@ func TestTreeReadResolvesShortNameCollisionsWithinEachGroup(t *testing.T) {
 	}
 }
 
-// Moving a colliding player across the ninth line changes whether the
-// collision counts, because only players in the same group collide.
+// A regression pin: two starters with different ids and the same name both
+// keep the short form, rather than falling back to the full name.
+func TestTreeReadKeepsShortNameForRepeatedFullName(t *testing.T) {
+	tree := New(fstest.MapFS{
+		"2025/14/wood.csv": &fstest.MapFile{Data: []byte(header +
+			"401,Josh Allen,QB,BUF\n402,Josh Allen,WR,KC\n")},
+	})
+
+	got, err := tree.Read(2025, 14, "wood")
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+
+	for i, rec := range got.records {
+		if rec.ShortName != "J Allen" {
+			t.Errorf("Starters()[%d].ShortName = %q, want %q", i, rec.ShortName, "J Allen")
+		}
+	}
+}
+
+// Moving a colliding player across the ninth line does not change another
+// record's short name: each record's short name depends only on its own name.
 func TestTreeReadShortNameCollisionFollowsTheStarterSplit(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -177,7 +197,7 @@ func TestTreeReadShortNameCollisionFollowsTheStarterSplit(t *testing.T) {
 		wantJaylen string
 	}{
 		{name: "Jaylen Allen on the bench", jaylenLine: 10, wantJosh: "J Allen", wantJaylen: "J Allen"},
-		{name: "Jaylen Allen starting", jaylenLine: 9, wantJosh: "Josh Allen", wantJaylen: "Jaylen Allen"},
+		{name: "Jaylen Allen starting", jaylenLine: 9, wantJosh: "J Allen", wantJaylen: "J Allen"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -203,23 +223,6 @@ func TestTreeReadShortNameCollisionFollowsTheStarterSplit(t *testing.T) {
 				t.Errorf("Jaylen Allen ShortName = %q, want %q", short, tt.wantJaylen)
 			}
 		})
-	}
-}
-
-func TestTreeReadDoesNotResolveShortNamesAcrossTeams(t *testing.T) {
-	tree := New(fstest.MapFS{
-		"2025/14/wood.csv":  &fstest.MapFile{Data: []byte(header + "401,Josh Allen,QB,BUF\n")},
-		"2025/14/bojja.csv": &fstest.MapFile{Data: []byte(header + "402,Jaylen Allen,WR,FA\n")},
-	})
-
-	for _, team := range []string{"wood", "bojja"} {
-		got, err := tree.Read(2025, 14, team)
-		if err != nil {
-			t.Fatalf("Read %s: %v", team, err)
-		}
-		if short := got.Starters()[0].ShortName; short != "J Allen" {
-			t.Errorf("%s: ShortName = %q, want %q", team, short, "J Allen")
-		}
 	}
 }
 

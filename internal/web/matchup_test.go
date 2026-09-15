@@ -77,50 +77,78 @@ func weekFS(season, week int, lineups map[string]string) fstest.MapFS {
 // scoreless lines, totalling 42.
 var (
 	ourLine = []struct {
-		id, name string
-		points   float64
-		stats    score.StatLine
+		id, name, position, team string
+		points                   float64
+		stats                    score.StatLine
 	}{
-		{id: "1", name: "Puka Nacua", points: 12, stats: score.StatLine{RushTD: 2}},
-		{id: "2", name: "Bijan Robinson", points: 0},
-		{id: "3", name: "Rachaad White", points: 6, stats: score.StatLine{RushTD: 1}},
-		{id: "4", name: "Cam Little", points: 3, stats: score.StatLine{FGMade: 1}},
-		{id: "5", name: "Jaxon Smith-Njigba", points: 9, stats: score.StatLine{RushTD: 1, FGMade: 1}},
-		{id: "6", name: "Tyreek Hill", points: 0},
-		{id: "7", name: "Brandon Aubrey", points: 15, stats: score.StatLine{FGMade: 5}},
-		{id: "8", name: "Chase McLaughlin", points: 4, stats: score.StatLine{XPMade: 4}},
-		{id: "9", name: "Kyren Williams", points: 7, stats: score.StatLine{RushTD: 1, XPMade: 1}},
+		{id: "1", name: "Puka Nacua", position: "WR", team: "LAR", points: 12, stats: score.StatLine{RushTD: 2}},
+		{id: "2", name: "Bijan Robinson", position: "RB", team: "ATL", points: 0},
+		{id: "3", name: "Rachaad White", position: "RB", team: "TB", points: 6, stats: score.StatLine{RushTD: 1}},
+		{id: "4", name: "Cam Little", position: "K", team: "JAX", points: 3, stats: score.StatLine{FGMade: 1}},
+		{id: "5", name: "Jaxon Smith-Njigba", position: "WR", team: "SEA", points: 9, stats: score.StatLine{RushTD: 1, FGMade: 1}},
+		{id: "6", name: "Tyreek Hill", position: "WR", team: "MIA", points: 0},
+		{id: "7", name: "Brandon Aubrey", position: "K", team: "DAL", points: 15, stats: score.StatLine{FGMade: 5}},
+		{id: "8", name: "Chase McLaughlin", position: "K", team: "TB", points: 4, stats: score.StatLine{XPMade: 4}},
+		{id: "9", name: "Kyren Williams", position: "RB", team: "LAR", points: 7, stats: score.StatLine{RushTD: 1, XPMade: 1}},
 	}
 
 	theirLine = []struct {
-		id, name string
-		points   float64
-		stats    score.StatLine
+		id, name, position, team string
+		points                   float64
+		stats                    score.StatLine
 	}{
-		{id: "11", name: "Josh Allen", points: 6, stats: score.StatLine{RushTD: 1}},
-		{id: "12", name: "Saquon Barkley", points: 6, stats: score.StatLine{RushTD: 1}},
-		{id: "13", name: "CeeDee Lamb", points: 6, stats: score.StatLine{RecTD: 1}},
-		{id: "14", name: "Amon-Ra St. Brown", points: 6, stats: score.StatLine{RecTD: 1}},
-		{id: "15", name: "Derrick Henry", points: 6, stats: score.StatLine{RushTD: 1}},
-		{id: "16", name: "Malik Nabers", points: 6, stats: score.StatLine{RecTD: 1}},
-		{id: "17", name: "Trey McBride", points: 6, stats: score.StatLine{RecTD: 1}},
-		{id: "18", name: "Jayden Daniels", points: 0},
-		{id: "19", name: "Ladd McConkey", points: 0},
+		{id: "11", name: "Josh Allen", position: "QB", team: "BUF", points: 6, stats: score.StatLine{RushTD: 1}},
+		{id: "12", name: "Saquon Barkley", position: "RB", team: "PHI", points: 6, stats: score.StatLine{RushTD: 1}},
+		{id: "13", name: "CeeDee Lamb", position: "WR", team: "DAL", points: 6, stats: score.StatLine{RecTD: 1}},
+		{id: "14", name: "Amon-Ra St. Brown", position: "WR", team: "DET", points: 6, stats: score.StatLine{RecTD: 1}},
+		{id: "15", name: "Derrick Henry", position: "RB", team: "BAL", points: 6, stats: score.StatLine{RushTD: 1}},
+		{id: "16", name: "Malik Nabers", position: "WR", team: "NYG", points: 6, stats: score.StatLine{RecTD: 1}},
+		{id: "17", name: "Trey McBride", position: "TE", team: "ARI", points: 6, stats: score.StatLine{RecTD: 1}},
+		{id: "18", name: "Jayden Daniels", position: "QB", team: "WAS", points: 0},
+		{id: "19", name: "Ladd McConkey", position: "WR", team: "LAC", points: 0},
 	}
 )
 
 // lineupCSV writes one of the fixtures above as a lineup file.
 func lineupCSV(records []struct {
-	id, name string
-	points   float64
-	stats    score.StatLine
+	id, name, position, team string
+	points                   float64
+	stats                    score.StatLine
 }) string {
 	var b strings.Builder
 	b.WriteString(lineupHeader)
 	for _, r := range records {
-		fmt.Fprintf(&b, "%s,%s,WR,FA\n", r.id, r.name)
+		fmt.Fprintf(&b, "%s,%s,%s,%s\n", r.id, r.name, r.position, r.team)
 	}
 	return b.String()
+}
+
+// fixtureGuardsPositionAndTeam stops the test suite unless the fixture can
+// actually distinguish position from team: at least two distinct positions,
+// at least two distinct teams, and no record whose position equals its team.
+func fixtureGuardsPositionAndTeam(t *testing.T) {
+	t.Helper()
+
+	positions := map[string]bool{}
+	teamsSeen := map[string]bool{}
+	all := append(append([]struct {
+		id, name, position, team string
+		points                   float64
+		stats                    score.StatLine
+	}{}, ourLine...), theirLine...)
+	for _, r := range all {
+		positions[r.position] = true
+		teamsSeen[r.team] = true
+		if r.position == r.team {
+			t.Fatalf("fixture record %q has position == team (%q); pick a record where they differ", r.name, r.position)
+		}
+	}
+	if len(positions) < 2 {
+		t.Fatalf("fixture has %d distinct position(s), want at least 2", len(positions))
+	}
+	if len(teamsSeen) < 2 {
+		t.Fatalf("fixture has %d distinct team(s), want at least 2", len(teamsSeen))
+	}
 }
 
 // fixtureStats is the payload both fixture lineups are scored from. A record
@@ -133,9 +161,9 @@ func fixtureStats(omit ...string) score.WeekStats {
 
 	players := make(map[string]score.StatLine)
 	for _, r := range append(append([]struct {
-		id, name string
-		points   float64
-		stats    score.StatLine
+		id, name, position, team string
+		points                   float64
+		stats                    score.StatLine
 	}{}, ourLine...), theirLine...) {
 		if skip[r.id] {
 			continue
@@ -196,7 +224,40 @@ func fixtureShortNames(t *testing.T) []string {
 var (
 	rowPattern       = regexp.MustCompile(`(?s)<li>(.*?)</li>`)
 	shortNamePattern = regexp.MustCompile(`(?s)class="short">(.*?)</span>`)
+	metaPattern      = regexp.MustCompile(`(?s)class="meta">(.*?)</span>`)
 )
+
+// fixtureMeta is each fixture starter's "Position · Team" in page order, read
+// back through lineup.New so these tests never restate the CSV.
+func fixtureMeta(t *testing.T) []string {
+	t.Helper()
+	fixtureGuardsPositionAndTeam(t)
+
+	tree := lineup.New(fixtureWeek())
+	var meta []string
+	for _, team := range []string{"bojjaes", "wood"} {
+		l, err := tree.Read(2025, 15, team)
+		if err != nil {
+			t.Fatalf("reading the %s fixture lineup: %v", team, err)
+		}
+		for _, rec := range l.Starters() {
+			meta = append(meta, rec.Position+" · "+rec.Team)
+		}
+	}
+	return meta
+}
+
+// renderedMeta reads the position-and-team text inside each starter row,
+// unescaped since html/template writes entities html.EscapeString would not.
+func renderedMeta(body string) []string {
+	var meta []string
+	for _, row := range rowPattern.FindAllStringSubmatch(body, -1) {
+		if m := metaPattern.FindStringSubmatch(row[1]); m != nil {
+			meta = append(meta, html.UnescapeString(m[1]))
+		}
+	}
+	return meta
+}
 
 // renderedShortNames reads the short name inside each row, so a short name
 // rendered outside its starter's <li> is not counted. The text is unescaped
@@ -443,6 +504,27 @@ func TestEachStarterRendersItsShortName(t *testing.T) {
 			want := fixtureShortNames(t)
 			if got := renderedShortNames(rec.Body.String()); !slices.Equal(got, want) {
 				t.Errorf("rendered short names:\n got %q\nwant %q", got, want)
+			}
+		})
+	}
+}
+
+func TestEachStarterRendersItsPositionAndTeam(t *testing.T) {
+	tests := []struct {
+		name      string
+		weekStats score.WeekStats
+	}{
+		{name: "every starter played", weekStats: fixtureStats()},
+		{name: "a starter has no stats", weekStats: fixtureStats("7")},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: tt.weekStats}), http.MethodGet, "/2025/15")
+
+			want := fixtureMeta(t)
+			if got := renderedMeta(rec.Body.String()); !slices.Equal(got, want) {
+				t.Errorf("rendered meta:\n got %q\nwant %q", got, want)
 			}
 		})
 	}
@@ -923,28 +1005,39 @@ func TestTheStyleSheetDeclares(t *testing.T) {
 		declaration string
 	}{
 		{name: "points stay tabular", block: []string{".points"}, declaration: "font-variant-numeric: tabular-nums"},
-		{name: "points never shrink for a name", block: []string{".points"}, declaration: "flex: none"},
 		{name: "the placeholder never breaks at its hyphen", block: []string{".points"}, declaration: "white-space: nowrap"},
 		{name: "every row's points box is at least five characters", block: []string{".points"}, declaration: "min-width: 5ch"},
 		{name: "points share a right edge", block: []string{".points"}, declaration: "text-align: right"},
 		{name: "a name may be narrower than its longest word", block: []string{".player"}, declaration: "min-width: 0"},
 		{name: "an unbreakable name wraps instead of pushing the points out", block: []string{".player"}, declaration: "overflow-wrap: break-word"},
-		{name: "a card stacks its contents as a flex column", block: []string{".column"}, declaration: "display: flex"},
-		{name: "a card's flex direction is vertical", block: []string{".column"}, declaration: "flex-direction: column"},
-		{name: "each total sits at the bottom of its card", block: []string{".total"}, declaration: "margin-top: auto"},
+		{name: "a row is a two-column grid", block: []string{".column li"}, declaration: "display: grid"},
+		{name: "a row's grid has a flexible name column and an auto points column", block: []string{".column li"}, declaration: "grid-template-columns: minmax(0, 1fr) auto"},
+		{name: "the meta line sits under the name, not the points", block: []string{".meta"}, declaration: "grid-column: 1"},
 		{name: "a narrow viewport has less body padding", block: []string{"@media (max-width: 33rem)", "body"}, declaration: "padding: 0.5rem"},
-		{name: "a narrow viewport has a narrower gap between the cards", block: []string{"@media (max-width: 33rem)", ".matchup"}, declaration: "gap: 0.5rem"},
+		{name: "a narrow viewport has a narrower gap between the cards", block: []string{"@media (max-width: 33rem)", ".matchup"}, declaration: "column-gap: 0.5rem"},
 		{name: "a narrow viewport has less card padding", block: []string{"@media (max-width: 33rem)", ".column"}, declaration: "padding: 0.5rem"},
-		{name: "a narrow viewport has a narrower gap between name and points", block: []string{"@media (max-width: 33rem)", ".column li"}, declaration: "gap: 0.5rem"},
+		{name: "a narrow viewport has a narrower gap between name and points", block: []string{"@media (max-width: 33rem)", ".column li"}, declaration: "column-gap: 0.5rem"},
 		{name: "a narrow viewport has smaller margins around the team name", block: []string{"@media (max-width: 33rem)", ".column h2"}, declaration: "margin: 0.25rem 0"},
 		{name: "a wide viewport keeps its body padding", block: []string{"body"}, declaration: "padding: 1rem"},
-		{name: "a wide viewport keeps its gap between the cards", block: []string{".matchup"}, declaration: "gap: 1rem"},
+		{name: "a wide viewport keeps its gap between the cards", block: []string{".matchup"}, declaration: "column-gap: 1rem"},
 		{name: "a wide viewport keeps its card padding", block: []string{".column"}, declaration: "padding: 0.5rem 1rem"},
-		{name: "a wide viewport keeps its gap between name and points", block: []string{".column li"}, declaration: "gap: 1rem"},
+		{name: "a wide viewport keeps its gap between name and points", block: []string{".column li"}, declaration: "column-gap: 1rem"},
 		{name: "a card hides the short name by default", block: []string{".player .short"}, declaration: "display: none"},
 		{name: "a card is a container its name form can be chosen by", block: []string{".column"}, declaration: "container-type: inline-size"},
 		{name: "a narrow card hides the long name", block: []string{"@container (max-width: 12.5rem)", ".player .long"}, declaration: "display: none"},
 		{name: "a narrow card shows the short name", block: []string{"@container (max-width: 12.5rem)", ".player .short"}, declaration: "display: inline"},
+		{name: "adjacent starters are divided by a hairline", block: []string{".column li + li"}, declaration: "border-top: 1px solid #eee"},
+		{name: "a row has vertical breathing room", block: []string{".column li"}, declaration: "padding-block: 0.25rem"},
+		{name: "the meta line is muted", block: []string{".meta"}, declaration: "color: #666"},
+		{name: "the meta line is smaller than the name", block: []string{".meta"}, declaration: "font-size: 0.8125rem"},
+		{name: "the matchup grid declares one row track per starter", block: []string{".matchup"}, declaration: "grid-template-rows: auto repeat(9, auto) auto"},
+		{name: "a card spans every row track", block: []string{".column"}, declaration: "grid-row: 1 / -1"},
+		{name: "a card lays out its own grid", block: []string{".column"}, declaration: "display: grid"},
+		{name: "a card shares its parent's row tracks", block: []string{".column"}, declaration: "grid-template-rows: subgrid"},
+		{name: "the starter list spans the starter row tracks", block: []string{".column ol"}, declaration: "grid-row: 2 / span 9"},
+		{name: "the starter list lays out its own grid", block: []string{".column ol"}, declaration: "display: grid"},
+		{name: "the starter list shares the starter row tracks", block: []string{".column ol"}, declaration: "grid-template-rows: subgrid"},
+		{name: "the total sits in the last row track", block: []string{".total"}, declaration: "grid-row: -2 / -1"},
 	}
 
 	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
@@ -963,6 +1056,86 @@ func TestTheStyleSheetDeclares(t *testing.T) {
 				t.Errorf("%q does not declare %q:\n%s", tt.block, tt.declaration, block)
 			}
 		})
+	}
+}
+
+// padding-block, not the padding shorthand or padding-inline, so a row's
+// vertical breathing room never eats into the name's horizontal width — the
+// 12.5rem name-form threshold assumes no inline padding inside the row.
+// A subgrid inherits the parent's row-gap, so the matchup grid uses
+// column-gap alone; a bare `gap` would open unwanted space between every
+// starter row.
+func TestMatchupGridHasNoGapShorthand(t *testing.T) {
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	style := renderedStyle(t, rec.Body.String())
+
+	block, found := cssBlock(style, ".matchup")
+	if !found {
+		t.Fatalf("no %q block; style:\n%s", ".matchup", style)
+	}
+	if strings.Contains(block, "gap:") && !strings.Contains(block, "column-gap:") {
+		t.Errorf(".matchup declares a bare gap:\n%s", block)
+	}
+	for _, d := range strings.Split(block, ";") {
+		d = strings.TrimSpace(d)
+		if strings.HasPrefix(d, "gap:") {
+			t.Errorf(".matchup declares a gap shorthand %q:\n%s", d, block)
+		}
+	}
+
+	narrow, found := cssBlock(style, "@media (max-width: 33rem)")
+	if !found {
+		t.Fatalf("no %q block; style:\n%s", "@media (max-width: 33rem)", style)
+	}
+	narrowMatchup, found := cssBlock(narrow, ".matchup")
+	if !found {
+		t.Fatalf("no %q block inside the narrow media query; style:\n%s", ".matchup", style)
+	}
+	for _, d := range strings.Split(narrowMatchup, ";") {
+		d = strings.TrimSpace(d)
+		if strings.HasPrefix(d, "gap:") {
+			t.Errorf("narrow .matchup declares a gap shorthand %q:\n%s", d, narrowMatchup)
+		}
+	}
+}
+
+func TestRowPaddingIsVerticalOnly(t *testing.T) {
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	style := renderedStyle(t, rec.Body.String())
+
+	block, found := cssBlock(style, ".column li")
+	if !found {
+		t.Fatalf("no %q block; style:\n%s", ".column li", style)
+	}
+	if declares(block, "padding: 0.5rem") || strings.Contains(block, "padding:") {
+		t.Errorf(".column li declares a padding shorthand:\n%s", block)
+	}
+	if strings.Contains(block, "padding-inline") {
+		t.Errorf(".column li declares padding-inline:\n%s", block)
+	}
+}
+
+// A regression pin: row separation comes from hairlines and the meta line
+// alone, never from zebra striping keyed on row position.
+func TestRowsAreNotStriped(t *testing.T) {
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	style := renderedStyle(t, rec.Body.String())
+
+	for _, forbidden := range []string{"nth-child", ":nth-of-type", "odd", "even"} {
+		if strings.Contains(style, forbidden) {
+			t.Errorf("the style sheet contains %q, which implies zebra striping:\n%s", forbidden, style)
+		}
+	}
+
+	block, found := cssBlock(style, "li")
+	if found && strings.Contains(block, "background") {
+		t.Errorf("an li block declares a background:\n%s", block)
+	}
+	if block, found := cssBlock(style, ".column li"); found && strings.Contains(block, "background") {
+		t.Errorf(".column li declares a background:\n%s", block)
+	}
+	if block, found := cssBlock(style, ".column li + li"); found && strings.Contains(block, "background") {
+		t.Errorf(".column li + li declares a background:\n%s", block)
 	}
 }
 

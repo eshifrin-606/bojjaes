@@ -74,6 +74,12 @@ longest long names beside their points, and the long form otherwise. The choice 
 on the width available to the column. It SHALL NOT depend on the device, the orientation, or
 either column's points. Both columns SHALL use the same markup for both forms.
 
+Each starter line SHALL also show the record's position and team, in that order, separated by a
+middle dot (`WR · CIN`), on a line of its own below the name. The position and team SHALL be shown
+for every starter, including starters the provider has no stats for, at every column width, and
+beside either name form. They SHALL be set smaller than the name and in a muted colour, identically
+in both columns.
+
 The two columns SHALL be rendered side by side and at equal width at every viewport width,
 including a phone held in portrait, and neither column's length or content SHALL change the other's
 width.
@@ -94,16 +100,27 @@ width.
 - **THEN** each starter line contains that record's name and that record's short name, in both
   columns, including starters the provider has no stats for
 
+#### Scenario: Every starter line carries its position and team
+
+- **WHEN** a page is rendered for a week whose starters include `Ja'Marr Chase,WR,CIN`
+- **THEN** that starter's line contains `WR · CIN` below the name, in its own element inside the
+  starter line
+
+#### Scenario: A starter without stats still shows position and team
+
+- **WHEN** a starter has no entry in the provider's stats
+- **THEN** that starter's line shows `--` for points and still shows its position and team
+
 #### Scenario: A portrait phone shows short names side by side
 
 - **WHEN** the page is viewed on a viewport 390 CSS px wide
 - **THEN** the two columns are side by side at equal width and every starter line shows the short
-  form of the name
+  form of the name, with the position and team below it
 
 #### Scenario: A wide column shows long names
 
 - **WHEN** the page is viewed on a viewport 768 CSS px wide, or on a phone held in landscape
-- **THEN** every starter line shows the long form of the name
+- **THEN** every starter line shows the long form of the name, with the position and team below it
 
 ### Requirement: A starter's points hold their place in the row
 
@@ -142,6 +159,50 @@ the space goes to the names rather than to margins.
 
 - **WHEN** one column has a wrapped starter name and the other has none
 - **THEN** the two column totals are rendered at the same height
+
+### Requirement: Starters are separate rows that line up across the columns
+
+Each starter's name, points, position, and team SHALL read as one row, visibly separated from the
+starters above and below it by a dividing line between adjacent rows. The points SHALL sit on the
+same line as the first line of the name. The separation SHALL NOT use a per-row background, a
+per-row box, or any styling that depends on points or on which column is ahead, and both columns
+SHALL be styled identically.
+
+The two columns SHALL share their row heights: the team headings SHALL start at the same height,
+the Nth starter in each column SHALL start at the same height and occupy the same height, and the
+totals SHALL sit at the same height. This SHALL hold whichever column has more wrapped lines, and
+when a column has fewer than nine starters.
+
+Separating the rows SHALL NOT add horizontal padding or borders inside a row, so the width left for
+a name beside the points box is unchanged.
+
+#### Scenario: A wrapped name on one side does not stagger the rows
+
+- **WHEN** the third starter's name wraps onto two lines in the left column and no name wraps in the
+  right column
+- **THEN** the fourth starter in each column starts at the same height, and the dividers between
+  rows sit at the same heights in both columns
+
+#### Scenario: Adjacent starters are divided
+
+- **WHEN** a column shows nine starters
+- **THEN** a dividing line separates each pair of adjacent starters, and nothing separates a name
+  from its own position and team line
+
+#### Scenario: Points sit on the name's line
+
+- **WHEN** a starter's row has a name line and a position-and-team line
+- **THEN** the points are on the name's first line, right-aligned in the points box
+
+#### Scenario: A short column still lines up
+
+- **WHEN** one roster has nine starters and the other has eight
+- **THEN** the first eight rows line up across the columns and the two totals are at the same height
+
+#### Scenario: Row styling does not depend on the score
+
+- **WHEN** one column's total is higher than the other's, or one starter outscores the rest
+- **THEN** every starter row in both columns carries the same classes and styling
 
 ### Requirement: A starter the provider has no stats for shows no number
 

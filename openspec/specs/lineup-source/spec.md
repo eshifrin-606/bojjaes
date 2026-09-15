@@ -492,49 +492,27 @@ name, and SHALL NOT fail a read for any name the roster accepts.
 - **WHEN** a roster holds ten records and the tenth is named `Dak Prescott`
 - **THEN** the bench record's short name is `D Prescott`
 
-### Requirement: Colliding short names fall back to the full name
+### Requirement: A short name depends only on its own record's name
 
-Collisions SHALL be resolved within each group of a lineup separately: the starters against the
-other starters, and the bench against the other bench records. When two or more records in one
-group would derive the same non-empty short name, each of those records SHALL carry its full name
-as its short name. Records whose derived short name is unique in their group SHALL keep it.
+A record's short name SHALL be derived from that record's name alone, by the rules in *Every record
+read from a roster carries a short name*. It SHALL NOT depend on any other record in the roster or in
+any other roster, and it SHALL NOT depend on whether the record is a starter or on the bench.
 
-A record in one group SHALL NOT cause a record in the other group to fall back. Because the groups
-are positional, moving a record across the starters/bench split MAY change the short name of another
-record. Collisions SHALL NOT be considered across different rosters: each team's names are shown
-under that team.
+Two or more records MAY carry the same short name. That SHALL NOT be an error, and neither record
+SHALL fall back to its full name or to any longer form.
 
-A collision SHALL NOT be an error. It is a repeated label, and a repeated name is not an error
-either.
-
-#### Scenario: Two starters who share an initial and surname show their full names
+#### Scenario: Two starters who share an initial and surname keep the short form
 
 - **WHEN** a roster's starters include `Jameson Williams`, `Javonte Williams`, and `Caleb Williams`
-- **THEN** their short names are `Jameson Williams`, `Javonte Williams`, and `C Williams`
+- **THEN** their short names are `J Williams`, `J Williams`, and `C Williams`
 
-#### Scenario: A bench record does not force a starter to its full name
+#### Scenario: A repeated name keeps the short form
 
-- **WHEN** a roster's second record is `Josh Allen` and its tenth record is `Jaylen Allen`
-- **THEN** both records carry `J Allen` as their short name
+- **WHEN** two starters carry different ids and the same name `Josh Allen`
+- **THEN** reading succeeds and both records carry `J Allen` as their short name
 
-#### Scenario: Two bench records who collide show their full names
-
-- **WHEN** a roster's tenth record is `Jaylen Allen` and its eleventh is `Jordan Allen`
-- **THEN** both records carry their full names as short names
-
-#### Scenario: Moving a record into the starters can change another's short name
+#### Scenario: Moving a record across the starter split does not change another's short name
 
 - **WHEN** a roster's second record is `Josh Allen`, and `Jaylen Allen` is moved from the tenth
   record to the ninth
-- **THEN** both records carry their full names as short names
-
-#### Scenario: A repeated name is read with its full name as its short name
-
-- **WHEN** two starters carry different ids and the same name `Josh Allen`
-- **THEN** reading succeeds and both records carry `Josh Allen` as their short name
-
-#### Scenario: Another roster's names do not cause a collision
-
-- **WHEN** one roster holds `Josh Allen` and a different roster holds `Jaylen Allen`
-- **THEN** each record's short name is `J Allen`
-
+- **THEN** both records carry `J Allen` as their short name before and after the move
