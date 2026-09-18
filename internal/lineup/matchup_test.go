@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -305,5 +306,57 @@ func TestMatchupListsThroughTheSuppliedFilesystem(t *testing.T) {
 	}
 	if ours != "bojjaes" || theirs != "wood" {
 		t.Errorf("Matchup() = %q, %q, want %q, %q", ours, theirs, "bojjaes", "wood")
+	}
+}
+
+func TestHasWeekFindsAWeekDirectory(t *testing.T) {
+	tree := seedWeek(t, 2026, 2, "bojjaes.csv", "renegades.csv")
+
+	if !tree.HasWeek(2026, 2) {
+		t.Errorf("HasWeek(2026, 2) = false, want true")
+	}
+}
+
+func TestHasWeekIsFalseForAMissingWeek(t *testing.T) {
+	fsys := weekFS(2026, 1, "bojjaes.csv", "wood.csv")
+	maps.Copy(fsys, weekFS(2026, 2, "bojjaes.csv", "renegades.csv"))
+	tree := New(fsys)
+
+	if tree.HasWeek(2026, 3) {
+		t.Errorf("HasWeek(2026, 3) = true, want false")
+	}
+}
+
+// Stat succeeds on a regular file, so only the directory check keeps a stray
+// file from being linked to as a week that Matchup would then call missing.
+func TestHasWeekIsFalseForAFileWhereAWeekShouldBe(t *testing.T) {
+	tree := New(fstest.MapFS{"2026/3": &fstest.MapFile{}})
+
+	if tree.HasWeek(2026, 3) {
+		t.Errorf("HasWeek(2026, 3) = true, want false")
+	}
+}
+
+// A week that is not a matchup is a mistake in the tree, and its link should
+// lead to the 500 that exposes it rather than vanish.
+func TestHasWeekIsTrueForAWeekThatIsNotAMatchup(t *testing.T) {
+	unparseable := weekFS(2026, 3, "bojjaes.csv")
+	unparseable["2026/3/wood.csv"] = &fstest.MapFile{Data: []byte(",Alpha\n")}
+
+	tests := []struct {
+		name string
+		fsys fstest.MapFS
+	}{
+		{"three rosters", weekFS(2026, 3, "aroma.csv", "bojjaes.csv", "wood.csv")},
+		{"lone roster", weekFS(2026, 3, "bojjaes.csv")},
+		{"no bojjaes", weekFS(2026, 3, "aroma.csv", "wood.csv")},
+		{"unparseable roster", unparseable},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if !New(tt.fsys).HasWeek(2026, 3) {
+				t.Errorf("HasWeek(2026, 3) = false, want true")
+			}
+		})
 	}
 }

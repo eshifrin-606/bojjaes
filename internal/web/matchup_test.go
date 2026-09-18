@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html"
 	"io/fs"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -32,18 +33,20 @@ func (u unusedSource) WeekStatsAsOf(context.Context, int, int) (score.WeekStats,
 }
 
 // fakeSource stands in for the provider: a WeekStats built here rather than
-// fetched, the fetch instant the page will stamp, and a count of how many times
-// the page asked for one.
+// fetched, the fetch instant the page will stamp, and a record of each season
+// and week the page asked for.
 type fakeSource struct {
 	weekStats score.WeekStats
 	fetchedAt time.Time
 	err       error
 
 	calls int
+	asked [][2]int
 }
 
-func (f *fakeSource) WeekStatsAsOf(context.Context, int, int) (score.WeekStats, time.Time, error) {
+func (f *fakeSource) WeekStatsAsOf(_ context.Context, season, week int) (score.WeekStats, time.Time, error) {
 	f.calls++
+	f.asked = append(f.asked, [2]int{season, week})
 	if f.err != nil {
 		return score.WeekStats{}, time.Time{}, f.err
 	}
@@ -181,6 +184,46 @@ func fixtureWeek() fstest.MapFS {
 		"bojjaes": lineupCSV(ourLine),
 		"wood":    lineupCSV(theirLine),
 	})
+}
+
+// matchupWeek is the fixture matchup filed under another season and week.
+func matchupWeek(season, week int) fstest.MapFS {
+	return weekFS(season, week, map[string]string{
+		"bojjaes": lineupCSV(ourLine),
+		"wood":    lineupCSV(theirLine),
+	})
+}
+
+// treeFS merges several weeks into one lineup tree.
+func treeFS(weeks ...fstest.MapFS) fstest.MapFS {
+	tree := fstest.MapFS{}
+	for _, w := range weeks {
+		maps.Copy(tree, w)
+	}
+	return tree
+}
+
+var (
+	anchorPattern = regexp.MustCompile(`<a [^>]*>`)
+	hrefPattern   = regexp.MustCompile(`href="([^"]*)"`)
+)
+
+// renderedWeekLinks returns the hrefs of the page's rel="prev" and rel="next"
+// links, each empty when that link is absent.
+func renderedWeekLinks(body string) (prev, next string) {
+	for _, a := range anchorPattern.FindAllString(body, -1) {
+		m := hrefPattern.FindStringSubmatch(a)
+		if m == nil {
+			continue
+		}
+		switch {
+		case strings.Contains(a, `rel="prev"`):
+			prev = m[1]
+		case strings.Contains(a, `rel="next"`):
+			next = m[1]
+		}
+	}
+	return prev, next
 }
 
 // renderedStarters pulls each rendered starter line out of the page as
@@ -1102,6 +1145,13 @@ func TestTheStyleSheetDeclares(t *testing.T) {
 		{name: "the total never breaks", block: []string{".total"}, declaration: "white-space: nowrap"},
 		{name: "the heading is a container a tight card's total can be sized by", block: []string{".column header"}, declaration: "container-type: inline-size"},
 		{name: "a narrow card has a smaller total", block: []string{"@container (max-width: 12.5rem)", ".total"}, declaration: "font-size: 1.25rem"},
+		{name: "the week bar is a grid", block: []string{".weeks"}, declaration: "display: grid"},
+		{name: "the week bar's side slots share the width left by the label", block: []string{".weeks"}, declaration: "grid-template-columns: 1fr auto 1fr"},
+		{name: "the week links and label share a baseline", block: []string{".weeks"}, declaration: "align-items: baseline"},
+		{name: "the week bar stands apart from the cards", block: []string{".weeks"}, declaration: "margin-bottom: 1rem"},
+		{name: "the next link sits at the bar's right edge", block: []string{".weeks .next"}, declaration: "text-align: right"},
+		{name: "the bar's grid owns the label's spacing", block: []string{".weeks h1"}, declaration: "margin: 0"},
+		{name: "the week label is no larger than the team names", block: []string{".weeks h1"}, declaration: "font-size: 1.125rem"},
 	}
 
 	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
@@ -1348,5 +1398,151 @@ func TestTheScriptImpliesNoWinner(t *testing.T) {
 		if strings.Contains(script, strings.ToLower(api)) {
 			t.Errorf("the script stashes state across loads via %s:\n%s", api, script)
 		}
+	}
+}
+
+func TestAMiddleWeekLinksBothWays(t *testing.T) {
+	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3)))
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/2")
+
+	prev, next := renderedWeekLinks(rec.Body.String())
+	if prev != "/2026/1" || next != "/2026/3" {
+		t.Errorf("week links = prev %q, next %q, want prev %q, next %q", prev, next, "/2026/1", "/2026/3")
+	}
+}
+
+// The tree's layout cannot produce a week 0, so the fixture writes one
+// directly: the page must never link to a week its own URL check would refuse.
+func TestTheFirstWeekHasNoPreviousLink(t *testing.T) {
+	tree := lineup.New(treeFS(matchupWeek(2026, 0), matchupWeek(2026, 1), matchupWeek(2026, 2)))
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/1")
+
+	prev, next := renderedWeekLinks(rec.Body.String())
+	if prev != "" || next != "/2026/2" {
+		t.Errorf("week links = prev %q, next %q, want prev %q, next %q", prev, next, "", "/2026/2")
+	}
+}
+
+func TestTheLastWeekOfTheRangeHasNoNextLink(t *testing.T) {
+	tree := lineup.New(treeFS(matchupWeek(2026, 17), matchupWeek(2026, 18), matchupWeek(2026, 19)))
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/18")
+
+	prev, next := renderedWeekLinks(rec.Body.String())
+	if prev != "/2026/17" || next != "" {
+		t.Errorf("week links = prev %q, next %q, want prev %q, next %q", prev, next, "/2026/17", "")
+	}
+}
+
+func TestTheLatestWeekHasNoNextLink(t *testing.T) {
+	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2)))
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/2")
+
+	prev, next := renderedWeekLinks(rec.Body.String())
+	if prev != "/2026/1" || next != "" {
+		t.Errorf("week links = prev %q, next %q, want prev %q, next %q", prev, next, "/2026/1", "")
+	}
+}
+
+func TestLinksDoNotCrossASeason(t *testing.T) {
+	tree := lineup.New(treeFS(matchupWeek(2025, 16), matchupWeek(2026, 1)))
+	h := Handler(tree, &fakeSource{weekStats: fixtureStats()})
+
+	if _, next := renderedWeekLinks(serve(h, http.MethodGet, "/2025/16").Body.String()); next != "" {
+		t.Errorf("2025 week 16 next link = %q, want none", next)
+	}
+	if prev, _ := renderedWeekLinks(serve(h, http.MethodGet, "/2026/1").Body.String()); prev != "" {
+		t.Errorf("2026 week 1 prev link = %q, want none", prev)
+	}
+}
+
+func TestAGapIsNotSkipped(t *testing.T) {
+	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 3)))
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/3")
+
+	if prev, _ := renderedWeekLinks(rec.Body.String()); prev != "" {
+		t.Errorf("prev link = %q, want none", prev)
+	}
+}
+
+// The link leads to the 500 that exposes the broken week, rather than hiding it.
+func TestABrokenNeighbourStillGetsALink(t *testing.T) {
+	broken := weekFS(2026, 3, map[string]string{
+		"aroma":   lineupCSV(theirLine),
+		"bojjaes": lineupCSV(ourLine),
+		"wood":    lineupCSV(theirLine),
+	})
+	tree := lineup.New(treeFS(matchupWeek(2026, 2), broken))
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/2")
+
+	if _, next := renderedWeekLinks(rec.Body.String()); next != "/2026/3" {
+		t.Errorf("next link = %q, want %q", next, "/2026/3")
+	}
+}
+
+func TestOnlyTheShownWeekIsFetched(t *testing.T) {
+	source := &fakeSource{weekStats: fixtureStats()}
+	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3)))
+	serve(Handler(tree, source), http.MethodGet, "/2026/2")
+
+	if want := [][2]int{{2026, 2}}; !slices.Equal(source.asked, want) {
+		t.Errorf("provider asked for %v, want %v", source.asked, want)
+	}
+}
+
+var (
+	headingPattern = regexp.MustCompile(`(?s)<h1>(.*?)</h1>`)
+	weekBarPattern = regexp.MustCompile(`(?s)<nav class="weeks">.*?</nav>`)
+	relLinkPattern = regexp.MustCompile(`(?s)<a [^>]*rel="(prev|next)"[^>]*>(.*?)</a>`)
+)
+
+func TestThePageNamesItsWeek(t *testing.T) {
+	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3)))
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/2")
+
+	var heading string
+	if m := headingPattern.FindStringSubmatch(rec.Body.String()); m != nil {
+		heading = m[1]
+	}
+	if heading != "2026 · Week 2" {
+		t.Errorf("h1 = %q, want %q", heading, "2026 · Week 2")
+	}
+}
+
+func TestEachLinkNamesTheWeekItLeadsTo(t *testing.T) {
+	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3)))
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/2")
+
+	text := map[string]string{}
+	for _, m := range relLinkPattern.FindAllStringSubmatch(rec.Body.String(), -1) {
+		text[m[1]] = m[2]
+	}
+	if !strings.Contains(text["prev"], "Week 1") {
+		t.Errorf("prev link text = %q, want it to contain %q", text["prev"], "Week 1")
+	}
+	if !strings.Contains(text["next"], "Week 3") {
+		t.Errorf("next link text = %q, want it to contain %q", text["next"], "Week 3")
+	}
+}
+
+// Nothing on the bar may hint at who is winning.
+func TestTheWeekBarIsIdenticalWhateverTheScore(t *testing.T) {
+	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3)))
+	weekBar := func(stats score.WeekStats, wantTotals []string) string {
+		t.Helper()
+		body := serve(Handler(tree, &fakeSource{weekStats: stats}), http.MethodGet, "/2026/2").Body.String()
+		if totals := renderedTotals(body); !slices.Equal(totals, wantTotals) {
+			t.Fatalf("totals = %q, want %q", totals, wantTotals)
+		}
+		return weekBarPattern.FindString(body)
+	}
+
+	oursLeading := weekBar(fixtureStats(), []string{"56", "42"})
+	theirsLeading := weekBar(fixtureStats("1", "7"), []string{"29", "42"})
+
+	if oursLeading == "" {
+		t.Fatal("no week bar rendered")
+	}
+	if oursLeading != theirsLeading {
+		t.Errorf("week bar differs with the score:\nours leading:\n%s\ntheirs leading:\n%s", oursLeading, theirsLeading)
 	}
 }
