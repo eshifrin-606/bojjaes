@@ -35,6 +35,14 @@ func (t *Tree) weekDir(season, week int) string {
 	return path.Join(fmt.Sprint(season), fmt.Sprint(week))
 }
 
+// HasWeek reports whether the tree holds a directory for the week. It does not
+// ask whether that directory is a matchup: a broken week still exists, and
+// hiding it would hide the mistake.
+func (t *Tree) HasWeek(season, week int) bool {
+	info, err := fs.Stat(t.fsys, t.weekDir(season, week))
+	return err == nil && info.IsDir()
+}
+
 // Matchup resolves a season and week to that week's two team names, ours
 // first. It never opens either lineup: whether a lineup is usable is a fact
 // about the file, reported by Read.

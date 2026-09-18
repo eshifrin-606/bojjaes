@@ -32,8 +32,14 @@ type columnLayout struct {
 	Column      rect
 }
 
+type weekBarLayout struct {
+	Bar, H1    *rect
+	Prev, Next *rect
+}
+
 type layout struct {
 	Columns []columnLayout
+	Weeks   weekBarLayout
 }
 
 func chromePath() string {
@@ -70,7 +76,13 @@ const measuringScript = `<pre id="layout"></pre>
       Column: box(c)
     };
   });
-  document.getElementById("layout").textContent = JSON.stringify({Columns: columns});
+  var weeks = {
+    Bar: box(document.querySelector(".weeks")),
+    H1: box(document.querySelector(".weeks h1")),
+    Prev: box(document.querySelector('.weeks a[rel="prev"]')),
+    Next: box(document.querySelector('.weeks a[rel="next"]'))
+  };
+  document.getElementById("layout").textContent = JSON.stringify({Columns: columns, Weeks: weeks});
 </script>`
 
 // fixtureCSS is page-only styling for the harness, kept out of the template.
@@ -132,9 +144,10 @@ func TestTheHarnessMeasuresTheStarterList(t *testing.T) {
 	}
 }
 
-// narrowCardCSS makes the cards narrow enough to show short names, since
-// headless Chrome will not open a phone-width window.
-const narrowCardCSS = `<style>.matchup { max-width: 390px }</style>`
+// narrowCardCSS gives the cards and the week bar a phone's width, narrow
+// enough to show short names, since headless Chrome will not open a
+// phone-width window.
+const narrowCardCSS = `<style>.matchup, .weeks { max-width: 390px }</style>`
 
 func TestStarterRowsLineUpAcrossCards(t *testing.T) {
 	wrapping := slices.Clone(ourLine)
@@ -252,5 +265,57 @@ func TestAWrappedTeamNameKeepsTheHeadingsAligned(t *testing.T) {
 	}
 	if ours.FirstLi.Top != theirs.FirstLi.Top {
 		t.Errorf("first li tops = %v and %v, want equal", ours.FirstLi.Top, theirs.FirstLi.Top)
+	}
+}
+
+func TestTheLabelDoesNotMoveWhenALinkIsAbsent(t *testing.T) {
+	labelLeft := func(tree *lineup.Tree) float64 {
+		t.Helper()
+		rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/2")
+		l := renderedLayout(t, rec.Body.String())
+		if l.Weeks.H1 == nil {
+			t.Fatal("no week label measured")
+		}
+		return l.Weeks.H1.Left
+	}
+
+	bothLinks := labelLeft(lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3))))
+	nextOnly := labelLeft(lineup.New(treeFS(matchupWeek(2026, 2), matchupWeek(2026, 3))))
+
+	if math.Abs(bothLinks-nextOnly) > 0.5 {
+		t.Errorf("label left = %v with both links, %v with only a next link, want within 0.5px", bothLinks, nextOnly)
+	}
+}
+
+func TestAPhoneFitsTheWeekBarOnOneLine(t *testing.T) {
+	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3)))
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/2")
+
+	w := renderedLayout(t, rec.Body.String()+narrowCardCSS).Weeks
+
+	if w.Bar == nil || w.Prev == nil || w.H1 == nil || w.Next == nil {
+		t.Fatalf("week bar = prev %v, label %v, next %v, want all three measured", w.Prev, w.H1, w.Next)
+	}
+	items := []struct {
+		name string
+		r    *rect
+	}{{"prev", w.Prev}, {"label", w.H1}, {"next", w.Next}}
+	for i, a := range items {
+		if a.r.Left < w.Bar.Left || a.r.Right > w.Bar.Right {
+			t.Errorf("%s spans %v–%v, outside the bar's %v–%v", a.name, a.r.Left, a.r.Right, w.Bar.Left, w.Bar.Right)
+		}
+		// A link's text is no larger than the label's, so one taller than the
+		// label has wrapped.
+		if a.r != w.H1 && a.r.Height > w.H1.Height {
+			t.Errorf("%s is %vpx tall, taller than the label's %vpx: it wraps", a.name, a.r.Height, w.H1.Height)
+		}
+		for _, b := range items[i+1:] {
+			if a.r.Top >= b.r.Bottom || b.r.Top >= a.r.Bottom {
+				t.Errorf("%s %v–%v and %s %v–%v do not share a line", a.name, a.r.Top, a.r.Bottom, b.name, b.r.Top, b.r.Bottom)
+			}
+			if a.r.Right > b.r.Left {
+				t.Errorf("%s right %v overlaps %s left %v", a.name, a.r.Right, b.name, b.r.Left)
+			}
+		}
 	}
 }

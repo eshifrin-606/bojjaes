@@ -48,8 +48,9 @@ func mustLoadLocation(name string) *time.Location {
 // them, plus the instant the stats were fetched — stated once, outside both
 // columns.
 type matchup struct {
-	Season, Week int
-	Columns      [2]column
+	Season, Week       int
+	PrevWeek, NextWeek int // 0 when that week does not exist
+	Columns            [2]column
 
 	// FetchedAtRFC3339 is the fetch instant as a machine-readable RFC 3339
 	// string; it is the original instant, not shifted into Chicago, so the
@@ -143,6 +144,19 @@ func Handler(tree *lineup.Tree, source StatsSource) http.Handler {
 			lineups[i] = l
 		}
 
+		// A neighbour this page's own URL check would refuse is never linked,
+		// whatever the tree holds.
+		linkable := func(w int) bool {
+			return score.ValidateSeasonWeek(season, w) == nil && tree.HasWeek(season, w)
+		}
+		var prevWeek, nextWeek int
+		if linkable(week - 1) {
+			prevWeek = week - 1
+		}
+		if linkable(week + 1) {
+			nextWeek = week + 1
+		}
+
 		// Fetched once, and both columns scored from it: the two lineups must
 		// not be read from different snapshots of the week.
 		weekStats, fetchedAt, err := source.WeekStatsAsOf(r.Context(), season, week)
@@ -158,6 +172,8 @@ func Handler(tree *lineup.Tree, source StatsSource) http.Handler {
 		view := matchup{
 			Season:           season,
 			Week:             week,
+			PrevWeek:         prevWeek,
+			NextWeek:         nextWeek,
 			FetchedAtRFC3339: fetchedAt.Format(time.RFC3339),
 			FetchedAtText:    fetchedAt.In(chicagoLoc).Format(fetchedAtLayout),
 		}
