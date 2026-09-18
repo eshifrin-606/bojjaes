@@ -43,15 +43,16 @@ func TestMuxRejectsTheWrongMethodOnTheMatchupRoute(t *testing.T) {
 	}
 }
 
-// /scores is no longer a route: it is one path segment with nothing registered
-// under it, so the mux answers 404 rather than reaching any handler.
+// /scores is not a JSON endpoint any more, but GET /{season} now matches any
+// single path segment, so a POST there is a wrong-method request against that
+// route rather than a path nothing is registered under.
 func TestMuxNoLongerAnswersScores(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	testMux().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/scores", nil))
 
-	if rec.Code != http.StatusNotFound {
-		t.Errorf("POST /scores = %d, want %d", rec.Code, http.StatusNotFound)
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("POST /scores = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path"
+	"strconv"
 	"strings"
 )
 
@@ -41,6 +42,29 @@ func (t *Tree) weekDir(season, week int) string {
 func (t *Tree) HasWeek(season, week int) bool {
 	info, err := fs.Stat(t.fsys, t.weekDir(season, week))
 	return err == nil && info.IsDir()
+}
+
+// LatestWeek reports the greatest week number the tree holds a directory for,
+// in a season. It reads only the season directory's listing: a week that is
+// not a well-formed matchup still counts, and no roster file is opened.
+func (t *Tree) LatestWeek(season int) (week int, ok bool) {
+	entries, err := fs.ReadDir(t.fsys, fmt.Sprint(season))
+	if err != nil {
+		return 0, false
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		n, err := strconv.Atoi(e.Name())
+		if err != nil {
+			continue
+		}
+		if !ok || n > week {
+			week, ok = n, true
+		}
+	}
+	return week, ok
 }
 
 // Matchup resolves a season and week to that week's two team names, ours

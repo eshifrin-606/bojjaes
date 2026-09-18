@@ -12,5 +12,6 @@ import (
 func newMux(stats web.StatsSource, tree *lineup.Tree) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("GET /{season}/{week}", web.Handler(tree, stats))
+	mux.Handle("GET /{season}", web.SeasonHandler(tree))
 	return mux
 }
