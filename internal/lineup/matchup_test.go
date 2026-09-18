@@ -309,6 +309,84 @@ func TestMatchupListsThroughTheSuppliedFilesystem(t *testing.T) {
 	}
 }
 
+func TestLatestWeekIsTheGreatestPresent(t *testing.T) {
+	fsys := weekFS(2026, 1, "bojjaes.csv", "wood.csv")
+	maps.Copy(fsys, weekFS(2026, 2, "bojjaes.csv", "renegades.csv"))
+	tree := New(fsys)
+
+	week, ok := tree.LatestWeek(2026)
+	if !ok {
+		t.Fatalf("LatestWeek(2026) ok = false, want true")
+	}
+	if week != 2 {
+		t.Errorf("LatestWeek(2026) = %d, want 2", week)
+	}
+}
+
+func TestLatestWeekIsNotLoweredByAGap(t *testing.T) {
+	fsys := weekFS(2026, 1, "bojjaes.csv", "wood.csv")
+	maps.Copy(fsys, weekFS(2026, 3, "bojjaes.csv", "renegades.csv"))
+	tree := New(fsys)
+
+	week, ok := tree.LatestWeek(2026)
+	if !ok {
+		t.Fatalf("LatestWeek(2026) ok = false, want true")
+	}
+	if week != 3 {
+		t.Errorf("LatestWeek(2026) = %d, want 3", week)
+	}
+}
+
+func TestLatestWeekIsFalseForASeasonWithNoWeeks(t *testing.T) {
+	tree := New(fstest.MapFS{})
+
+	if _, ok := tree.LatestWeek(2027); ok {
+		t.Errorf("LatestWeek(2027) ok = true, want false")
+	}
+}
+
+func TestLatestWeekIgnoresANonIntegerEntry(t *testing.T) {
+	fsys := weekFS(2026, 1, "bojjaes.csv", "wood.csv")
+	fsys["2026/notaweek"] = &fstest.MapFile{Mode: fs.ModeDir}
+	tree := New(fsys)
+
+	week, ok := tree.LatestWeek(2026)
+	if !ok {
+		t.Fatalf("LatestWeek(2026) ok = false, want true")
+	}
+	if week != 1 {
+		t.Errorf("LatestWeek(2026) = %d, want 1", week)
+	}
+}
+
+func TestLatestWeekCountsAWeekThatIsNotAMatchup(t *testing.T) {
+	tree := seedWeek(t, 2026, 3, "aroma.csv", "bojjaes.csv", "wood.csv")
+
+	week, ok := tree.LatestWeek(2026)
+	if !ok {
+		t.Fatalf("LatestWeek(2026) ok = false, want true")
+	}
+	if week != 3 {
+		t.Errorf("LatestWeek(2026) = %d, want 3", week)
+	}
+}
+
+// Regression: LatestWeek must answer from the directory listing alone, never
+// by opening a roster file.
+func TestLatestWeekNeverOpensARosterFile(t *testing.T) {
+	fsys := weekFS(2026, 2, "bojjaes.csv")
+	fsys["2026/2/wood.csv"] = &fstest.MapFile{Data: []byte(",Alpha\n")}
+	tree := New(fsys)
+
+	week, ok := tree.LatestWeek(2026)
+	if !ok {
+		t.Fatalf("LatestWeek(2026) ok = false, want true")
+	}
+	if week != 2 {
+		t.Errorf("LatestWeek(2026) = %d, want 2", week)
+	}
+}
+
 func TestHasWeekFindsAWeekDirectory(t *testing.T) {
 	tree := seedWeek(t, 2026, 2, "bojjaes.csv", "renegades.csv")
 
