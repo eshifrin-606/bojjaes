@@ -1,10 +1,10 @@
 # Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
 id,name,position,team
-4881,Lamar Jackson,QB,BAL
+11563,Bo Nix,QB,DEN
 4983,DJ Moore,WR,BUF
 8138,James Cook,RB,BUF
 11586,Blake Corum,RB,LAR
-12489,RJ Harvey,RB,DEN
+5045,Courtland Sutton,WR,DEN
 12502,Gunnar Helm,TE,TEN
 6650,Chase McLaughlin,K,TB
 13363,David Bailey,LB,NYJ
