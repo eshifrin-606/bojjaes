@@ -56,23 +56,23 @@ negligible beside a Sleeper fetch. Non-numeric names and non-directories are ski
 week". Nothing is created. *Alternative:* fail startup on a missing directory. Rejected — a fresh
 volume has no `lineups/` until the first write, and ADR 0005 decision 5 says that state is valid.
 
-**6. Logging the stale week happens once, at construction.** `Layered` scans the volume once when
-built and calls `logf` for each volume week it will ignore (older than the archive latest). Logging
-per request would flood the log on every page view. A week that goes stale *while running* is not
+**6. Logging ignored weeks happens once, at construction.** `Layered` scans the volume once when
+built and calls `logf` for each volume week it will not serve: one older than the archive latest,
+or one at or after it but smaller than the greatest volume week. Logging per request would flood
+the log on every page view. A week that goes stale *while running* is not
 possible in this change (the archive is fixed per binary and nothing writes the volume).
 
 **7. Config mirrors `resolveAddr`.** `resolveLineupVolume(getenv) string` in `cmd/server` reads
 `LINEUP_VOLUME`; a small `lineupTree(volume string) fs.FS` returns `lineup.Embedded` for `""` and
 otherwise `lineup.Layered(lineup.Embedded, os.DirFS(filepath.Join(volume, "lineups")), log.Printf)`.
 The env var names the mount path, not the `lineups/` dir, so the app — not the operator — owns the
-subdirectory name. `main.go` calls both. The `os.DirFS` wiring itself is the one line not covered
-by a unit test beyond "non-empty path yields a layered tree"; section 9 of tasks verifies it by
-hand.
+subdirectory name. `main.go` calls both. The `os.DirFS` wiring is covered by a unit test over a real
+`t.TempDir()` volume (task 8.3); section 9 of tasks checks the running server by hand.
 
 ## Risks / Trade-offs
 
 - [More than one week on the volume, before the write path enforces one] → Take the greatest as the
-  candidate and log the rest as ignored; never delete. This keeps the read side total rather than
+  candidate and log the rest as ignored at construction (decision 6); never delete. This keeps the read side total rather than
   refusing to serve.
 - [A symlink or `..` under the volume escaping `lineups/`] → `os.DirFS` does not follow names
   outside its root for `..`, and `Tree.Path` already refuses separators in team names. Symlinks on

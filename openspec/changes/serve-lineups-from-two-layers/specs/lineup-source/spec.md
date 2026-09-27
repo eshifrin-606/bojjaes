@@ -54,7 +54,7 @@ tree as over the embedded one.
 
 ### Requirement: The volume's week is served when it is at or after the embedded latest week
 
-The volume SHALL be read as holding at most one week. Weeks SHALL be ordered by season, then by
+At most one volume week SHALL be served. Weeks SHALL be ordered by season, then by
 week within a season, so the first week of a season is after every week of the season before it.
 The embedded latest week is the greatest week, in that order, the embedded tree holds a directory
 for.
@@ -94,12 +94,13 @@ the volume while the server runs is served without a restart.
 - **WHEN** the volume holds `2026/4/` and a request is for 2026/2
 - **THEN** week 2 is read from the embedded tree
 
-### Requirement: A volume week older than the embedded latest week is ignored, not deleted
+### Requirement: A volume week that is not served is ignored, not deleted
 
 When the volume holds a week before the embedded latest week, the tree SHALL read as the embedded
-tree alone: that week SHALL NOT shadow the embedded copy of it, nor be served in its absence. The
-stale week SHALL be logged, naming its season and week, and SHALL NOT be deleted or altered, since
-it may hold edits that never reached git.
+tree alone: that week SHALL NOT shadow the embedded copy of it, nor be served in its absence. When
+the volume holds several weeks at or after the embedded latest week, only the greatest SHALL be
+served. Every volume week that is not served SHALL be logged, naming its season and week, and
+SHALL NOT be deleted or altered, since it may hold edits that never reached git.
 
 #### Scenario: A stale volume week is not served
 
@@ -111,6 +112,12 @@ it may hold edits that never reached git.
 
 - **WHEN** the volume holds a week before the embedded latest week at startup
 - **THEN** a log line names that season and week as ignored
+
+#### Scenario: A smaller current volume week is logged
+
+- **WHEN** the embedded tree's latest week is 2026/3 and the volume holds `2026/4/` and `2026/5/`
+  at startup
+- **THEN** week 5 is served from the volume, and a log line names 2026/4 as ignored
 
 ### Requirement: An absent or empty volume reads as the embedded tree
 
