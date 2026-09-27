@@ -62,6 +62,10 @@ binary. **Option C.**
    - a volume week *older* than the embedded tree's latest is stale: it is **ignored, never
      deleted**, and logged, since it may hold edits that never reached git.
 
+   A volume week replaces the embedded copy of that week **whole, never file by file**: if a phone
+   edit changes the opponent, merging the two directories would leave three lineups and break the
+   week (ADR 0004's two-lineups-per-week invariant).
+
    The latest week overall is the greater of the two sources' latest weeks. `Read`, matchup
    resolution, and week-directory enforcement are untouched — `lineup.New` is handed an `fs.FS`
    composing the two layers, and only the season listing that `LatestWeek` reads needs merging.
