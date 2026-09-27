@@ -1,0 +1,11 @@
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+6794,Justin Jefferson,WR,MIN
+9754,Quentin Johnston,WR,LAC
+10859,Sam LaPorta,TE,DET
+4866,Saquon Barkley,RB,PHI
+9221,Jahmyr Gibbs,RB,DET
+6797,Justin Herbert,QB,LAC
+12713,Andy Borregales,K,NE
+11669,Laiatu Latu,DL,IND
+13341,Akheem Mesidor,DL,LAC
