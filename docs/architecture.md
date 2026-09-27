@@ -2,15 +2,15 @@
 
 How the running system behaves, from the reader's side and from the traffic's side.
 Package-level structure lives in [package-dependencies.md](package-dependencies.md); this is the
-altitude above that. Sections 1–4 are the system as built; section 5 is the planned Fly deployment
-with phone-writable lineups.
+altitude above that. Sections 1–4 are the system as built; section 5 is phone-writable lineups on a
+Fly volume, whose read side is built and whose write side and deployment are planned.
 
 ## The whole thing, one picture
 
 ```mermaid
 graph LR
     reader(["📱 reader"]) -->|"GET /2025/15"| server
-    subgraph box["one Go process (laptop today, one container later)"]
+    subgraph box["one Go process (one Fly machine)"]
         server["cmd/server<br/><i>net/http, no background jobs</i>"]
         tree[("internal/lineup/data/<br/>2025/15/*.csv<br/><i>embedded in the binary</i>")]
         server --- tree
@@ -144,11 +144,19 @@ Worth revisiting after one live Sunday.
 Also live: Sleeper revises stats, so a total can go *down* across a refresh with nothing on the page
 explaining why. Pre-existing, but refreshing turns it into something the reader watches happen.
 
-## 5. Planned: writable lineups (not built)
+## 5. Writable lineups (read side built)
 
-Everything above is current. This section is the design decided in
+This section is the design decided in
 [ADR 0005](adr/0005-writable-lineups-on-a-volume.md) — set a lineup from a phone without a laptop,
-git, or a deploy. None of it exists yet.
+git, or a deploy.
+
+| Part | State |
+|---|---|
+| Two-layer read: embedded tree + volume (`internal/lineup/layered.go`) | **built** |
+| Stale volume weeks ignored and logged, never deleted | **built** |
+| Phone form, passphrase, atomic write | planned |
+| Boot-time clear once git's week matches the volume | planned |
+| Fly volume mount, `LINEUP_VOLUME` set, `min_machines_running = 1` | planned — `fly.toml` has no mount and runs `min_machines_running = 0` |
 
 ### Deployment
 
@@ -166,16 +174,22 @@ graph LR
     server -->|"one fetch per request"| sleeper(["Sleeper REST API"])
 ```
 
-The read is two layers. The volume's week wins **only if it is at or after** the embedded tree's
-latest week (a new week, or a phone edit of the latest archived one); every other week comes from
-the embedded tree. A volume week older than that is stale: **ignored and logged, never deleted** —
-it may hold edits that never reached git. An empty volume reads exactly like the embedded tree
-alone. Sleeper is untouched: still one fetch per request.
+The read is two layers, and is built. `LINEUP_VOLUME` names the mount; the server reads only
+`<mount>/lineups/`, so nothing else on the mount (`lost+found`) reads as a season. Unset, the
+embedded tree is the only tree. The volume's week wins **only if it is at or after** the embedded
+tree's latest week (a new week, or a phone edit of the latest archived one); every other week comes
+from the embedded tree. A volume week older than that is stale: **ignored and logged, never
+deleted** — it may hold edits that never reached git. If the volume holds more than one eligible
+week, only the latest is served and the rest are logged as superseded. The volume is re-scanned per
+read, so a week written while the server runs is served without a restart. An empty or missing
+volume reads exactly like the embedded tree alone. Sleeper is untouched: still one fetch per
+request.
 
-### What the volume holds
+### What the volume holds (planned)
 
 `G` = the embedded tree's latest week. The app, not a human, keeps the volume to the one in-flight
-week.
+week. Nothing writes or clears the volume yet: the transitions below need the write path and the
+boot-time clear.
 
 ```mermaid
 stateDiagram-v2
@@ -187,11 +201,13 @@ stateDiagram-v2
     Holds: writable v only
     Holds: v served from the volume
     Empty --> Holds: phone write
-    Holds --> Holds: phone rewrite of v
+    Holds --> Holds: phone rewrite of v, still differs from git
+    Holds --> Holds: phone rewrite of v back to git's copy → stays until next boot
     Holds --> Holds: boot, git's v differs → stays, logged
-    Holds --> Empty: boot, git's week v parsed records match the volume copy → cleared
+    Holds --> Empty: boot, git's week v starters match the volume copy → cleared
     note right of Holds
-        Match is ids in order, not bytes.
+        Match is each team's set of starter ids
+        (first nine, any order), not bytes.
         If git commits a later week first,
         v falls behind G: stale, ignored,
         not deleted — hidden but recoverable.
@@ -199,5 +215,8 @@ stateDiagram-v2
 ```
 
 Archiving a week is committing the volume's version to git and deploying; the next boot sees the
-match and clears it. Clearing on presence alone would erase a phone edit of an archived week on
-every deploy, which is why the records must match.
+match and clears it. Clearing happens only at boot, so a phone edit that reverts to git's copy
+leaves the volume holding a duplicate until the next restart or deploy. That's harmless: it scores
+the same starters git would. Clearing on presence alone would erase a phone edit of an archived week
+on every deploy, which is why the starters must match. Starter order and bench rows are left out of
+the match: neither is scored, so losing them to git's version on a clear costs nothing.

@@ -102,9 +102,11 @@ binary. **Option C.**
 
    **The volume is the source of truth for its week until git matches it.** Archiving a week is
    committing the volume's version to git and deploying; on boot, when the embedded tree holds
-   the volume's week **and its parsed records match** (ids, in order — not bytes, since line
-   endings differ between a phone write and an editor), the volume copy is cleared and git
-   serves the week. The match is load-bearing: the app never observes a git update, only "both
+   the volume's week **and every team's starters match** (the same set of ids among the first
+   nine records, in any order — not bytes, since line endings differ between a phone write and an
+   editor), the volume copy is cleared and git serves the week. The starters are what is scored,
+   so they are what must survive; a difference only in starter order or in bench rows is
+   cosmetic, and clearing hands the week to git's version of it. The match is load-bearing: the app never observes a git update, only "both
    sources hold week `v`", which is also the state after any restart following a phone edit of an
    archived week. Clearing on presence alone would erase that edit on every deploy.
 
