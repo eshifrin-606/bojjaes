@@ -201,9 +201,7 @@ stateDiagram-v2
     Holds: writable v only
     Holds: v served from the volume
     Empty --> Holds: phone write
-    Holds --> Holds: phone rewrite of v, still differs from git
-    Holds --> Holds: phone rewrite of v back to git's copy → stays until next boot
-    Holds --> Holds: boot, git's v differs → stays, logged
+    Holds --> Holds: phone rewrite, or boot with git's v differing → stays
     Holds --> Empty: boot, git's week v starters match the volume copy → cleared
     note right of Holds
         Match is each team's set of starter ids
