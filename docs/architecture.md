@@ -2,14 +2,15 @@
 
 How the running system behaves, from the reader's side and from the traffic's side.
 Package-level structure lives in [package-dependencies.md](package-dependencies.md); this is the
-altitude above that.
+altitude above that. Sections 1–4 are the system as built; section 5 is phone-writable lineups on a
+Fly volume, whose read side is built and whose write side and deployment are planned.
 
 ## The whole thing, one picture
 
 ```mermaid
 graph LR
     reader(["📱 reader"]) -->|"GET /2025/15"| server
-    subgraph box["one Go process (laptop today, one container later)"]
+    subgraph box["one Go process (one Fly machine)"]
         server["cmd/server<br/><i>net/http, no background jobs</i>"]
         tree[("internal/lineup/data/<br/>2025/15/*.csv<br/><i>embedded in the binary</i>")]
         server --- tree
@@ -142,3 +143,78 @@ Worth revisiting after one live Sunday.
 
 Also live: Sleeper revises stats, so a total can go *down* across a refresh with nothing on the page
 explaining why. Pre-existing, but refreshing turns it into something the reader watches happen.
+
+## 5. Writable lineups (read side built)
+
+This section is the design decided in
+[ADR 0005](adr/0005-writable-lineups-on-a-volume.md) — set a lineup from a phone without a laptop,
+git, or a deploy.
+
+| Part | State |
+|---|---|
+| Two-layer read: embedded tree + volume (`internal/lineup/layered.go`) | **built** |
+| Stale volume weeks ignored and logged, never deleted | **built** |
+| Phone form, passphrase, atomic write | planned |
+| Boot-time clear once git's week matches the volume | planned |
+| Fly volume mount, `LINEUP_VOLUME` set, `min_machines_running = 1` | planned — `fly.toml` has no mount and runs `min_machines_running = 0` |
+
+### Deployment
+
+```mermaid
+graph LR
+    phone(["📱 phone form"]) -->|"POST lineup (passphrase)"| server
+    reader(["📱 reader"]) -->|"GET /2025/15"| server
+    subgraph fly["Fly machine — always on, min_machines_running = 1"]
+        server["the same single Go binary"]
+        tree[("embedded lineup tree<br/><i>git archive, in the binary</i>")]
+        vol[("Fly volume at &lt;mount&gt;<br/>lineups/&lt;season&gt;/&lt;week&gt;/&lt;team&gt;.csv<br/><i>at most one week</i>")]
+        server --- tree
+        server ---|"atomic write: temp + rename"| vol
+    end
+    server -->|"one fetch per request"| sleeper(["Sleeper REST API"])
+```
+
+The read is two layers, and is built. `LINEUP_VOLUME` names the mount; the server reads only
+`<mount>/lineups/`, so nothing else on the mount (`lost+found`) reads as a season. Unset, the
+embedded tree is the only tree. The volume's week wins **only if it is at or after** the embedded
+tree's latest week (a new week, or a phone edit of the latest archived one); every other week comes
+from the embedded tree. A volume week older than that is stale: **ignored and logged, never
+deleted** — it may hold edits that never reached git. If the volume holds more than one eligible
+week, only the latest is served and the rest are logged as superseded. The volume is re-scanned per
+read, so a week written while the server runs is served without a restart. An empty or missing
+volume reads exactly like the embedded tree alone. Sleeper is untouched: still one fetch per
+request.
+
+### What the volume holds (planned)
+
+`G` = the embedded tree's latest week. The app, not a human, keeps the volume to the one in-flight
+week. Nothing writes or clears the volume yet: the transitions below need the write path and the
+boot-time clear.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Empty
+    Empty: VOLUME EMPTY
+    Empty: writable G or G+1
+    Empty: every week served from git
+    Holds: VOLUME HOLDS WEEK v
+    Holds: writable v only
+    Holds: v served from the volume
+    Empty --> Holds: phone write
+    Holds --> Holds: phone rewrite, or boot with git's v differing → stays
+    Holds --> Empty: boot, git's week v starters match the volume copy → cleared
+    note right of Holds
+        Match is each team's set of starter ids
+        (first nine, any order), not bytes.
+        If git commits a later week first,
+        v falls behind G: stale, ignored,
+        not deleted — hidden but recoverable.
+    end note
+```
+
+Archiving a week is committing the volume's version to git and deploying; the next boot sees the
+match and clears it. Clearing happens only at boot, so a phone edit that reverts to git's copy
+leaves the volume holding a duplicate until the next restart or deploy. That's harmless: it scores
+the same starters git would. Clearing on presence alone would erase a phone edit of an archived week
+on every deploy, which is why the starters must match. Starter order and bench rows are left out of
+the match: neither is scored, so losing them to git's version on a clear costs nothing.

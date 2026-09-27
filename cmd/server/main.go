@@ -31,7 +31,7 @@ func main() {
 	stats := statscache.New(sleeper.Client{BaseURL: sleeper.BaseURL}, statscache.TTL)
 
 	addr := resolveAddr(os.Getenv)
-	srv := newServer(addr, newMux(stats, lineup.New(lineup.Embedded)))
+	srv := newServer(addr, newMux(stats, lineup.New(lineupTree(resolveLineupVolume(os.Getenv)))))
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)

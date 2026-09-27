@@ -1,6 +1,9 @@
 # ADR: Web Frontend Stack for the Fantasy Cast Scoreboard
 
-**Status:** Accepted 2026-09-05.
+**Status:** Accepted 2026-09-05. Decisions #3 (embedded lineup tree, "a deploy is the lineup
+update") and #7 ("writes do not exist") are modified by
+[ADR 0005](0005-writable-lineups-on-a-volume.md), which adds a passphrase-gated write path over a
+persistent volume. All other decisions here remain in force.
 
 Settles decision #7 of [ADR 0002](0002-live-scoreboard-backend.md) ("Hosting: local first,
 cloud-ready") and refines its decision #4 (freshness). Everything else in ADR 0002 and
