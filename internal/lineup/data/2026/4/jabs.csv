@@ -1,0 +1,11 @@
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+12501,Matthew Golden,WR,GB
+9484,Tucker Kraft,TE,GB
+12507,Omarion Hampton,RB,LAC
+12490,Bhayshul Tuten,RB,JAX
+7543,Travis Etienne,RB,NO
+3163,Jared Goff,QB,DET
+5095,Daniel Carlson,K,NO
+7627,Gregory Rousseau,DE,BUF
+7635,Jaelan Phillips,LB,CAR
