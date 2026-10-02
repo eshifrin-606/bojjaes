@@ -7,7 +7,7 @@ setting the current week's lineup from a phone, no laptop or deploy. Too big for
 change; sliced into independently shippable steps below. One line each, roughly in dependency
 order. Not sized, not prioritized. Each row is its own `/opsx:propose` when picked up.
 
-- [ ] Serve lineups from two layers — the embedded archive plus an optional volume directory
+- [x] Serve lineups from two layers — the embedded archive plus an optional volume directory
   (`<path>/lineups`, path via config; unset means embedded only). The volume week wins when it
   is at or after the embedded latest; an older volume week is ignored and logged, never deleted.
   No seeding — an empty volume reads as embed alone. Read path and page unchanged; ships with no
