@@ -50,7 +50,7 @@ two disagree, this document is right and the code is behind.
 | Action                                          | Points |
 | ------------------------------------------------ | -----: |
 | Fumble lost (turnover)                            |     -3 |
-| Bonus (any TD play of 40+ yards or FG 50+)        |      1 |
+| Bonus (offensive TD play of 40+ yards, or FG 50+) |      1 |
 
 ### Clarifications
 
@@ -61,10 +61,12 @@ Confirmed 2026-08-08. These resolve ambiguities in the tables above.
 - **The rush/rec bonus is awarded once.** A player with 80 rushing *and* 80 receiving gets a
   single 3-pt award (they qualify under the 100-combined clause), not two.
 - **"TD scored" is unqualified** — it includes kick/punt return TDs and defensive TDs. A
-  defender's pick-six is 6 (interception) + 6 (TD) = **12**, plus the 40+ bonus if the return
-  was 40+ yards (13).
-- **The 40+ yard TD bonus pays every player credited on the play.** A 45-yard TD pass is +1 to
-  the QB *and* +1 to the receiver.
+  defender's pick-six is 6 (interception) + 6 (TD) = **12**, however long the return.
+- **The 40+ yard TD bonus pays every player credited on the offensive play.** A 45-yard TD pass
+  is +1 to the QB *and* +1 to the receiver.
+- **The 40+ yard TD bonus is for offensive TDs only** — passing, rushing, and receiving.
+  Confirmed 2026-10-04. Defensive TDs (interception and fumble returns) and kick/punt return TDs
+  never earn it, at any distance. Earlier versions of this doc said they did; that was a misreading.
 - **"40+ yards" is inclusive.** Confirmed 2026-08-09. A TD play of exactly 40 yards earns the
   bonus.
 
@@ -75,19 +77,14 @@ from the rules above while it scores kicking and defense from Sleeper's REST wee
 None is a rules change; the rules above stand regardless.
 
 These deviations are **scoped to the aggregate-only stage**, not permanent positions. Per the
-2026-08-12 amendment to [ADR 0003](adr/0003-sleeper-as-initial-stat-provider.md), all three are
-computable from Sleeper's GraphQL play-by-play surface. They are deferred because opening that
-surface is a second provider path with its own risks, not because the rules are unreachable. Each
-one lifts when play-by-play lands.
+2026-08-12 amendment to [ADR 0003](adr/0003-sleeper-as-initial-stat-provider.md), both
+deviations below are computable from Sleeper's GraphQL play-by-play surface. They are deferred
+because opening that surface is a second provider path with its own risks, not because the rules
+are unreachable. Each lifts when play-by-play lands.
 
 - **Safety will not be scored at all.** The aggregate carries a per-player `idp_safe`, but nothing
   in it confirms the "solo credit only" qualifier, so we omit the 2 points rather than risk awarding
   them on shared credit. Play-by-play decides solo vs. assisted per play.
-- **The 40+ bonus will not be applied to defensive or return TDs.** It applies to passing, rushing,
-  and receiving TDs only, where the provider buckets at exactly our threshold. Per-player defensive
-  return yardage *is* present in the aggregate, but as a **weekly sum** — a defender with two
-  interception returns has no way to attribute distance to the one that scored. The obstacle is
-  aggregation, not absence.
 - **Forced fumbles will not be scored at all.** The rule pays only when the fumble results in a
   turnover, and turnover qualification is a property of the play, not of any player's aggregate stat
   line — so no aggregate key can carry it. Paying the raw count would overpay roughly 44% of forced
@@ -122,4 +119,4 @@ These need a commissioner ruling, not more data:
   against a safety with shared credit before the exclusion above is lifted.
 - **Is the provider's 40+ touchdown bucket inclusive at exactly 40?** Our rule is inclusive
   (confirmed 2026-08-09); the provider's boundary is unverified. This affects the already-shipped
-  passing, rushing, and receiving path, not only defense.
+  passing, rushing, and receiving path.
