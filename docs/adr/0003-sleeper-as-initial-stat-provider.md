@@ -174,6 +174,16 @@ Henry `idp_ff=1` and Oliver only tackle keys.
 Any code that reuses aggregate-derived parsing against the PBP feed **will credit forced fumbles
 to the offense.** Read PBP `idp_ff` as *"fumble forced against this player."*
 
+### The league applies the turnover qualifier (checked 2026-10-04)
+
+The rule text says FF pays only on a turnover; this checks that the official HMFFL scores actually
+do. In 2026 wk 2, four HMFFL starters forced fumbles that were **not** turnovers (own-team
+recovery, out of bounds), and each official score equals their sack points alone — the FF paid 0.
+The wk 3 turnover-qualified cases (Will Anderson, Maxx Crosby) await their official scores to
+confirm the +4 side. Plays and Sleeper IDs are in
+[internal/sleeper/testdata/ff-test-players.csv](../../internal/sleeper/testdata/ff-test-players.csv)
+(`ff_turnover` from nflverse `fumble_lost`), intended as ground truth for FF scoring tests.
+
 ### Consequences of the amendment
 
 - **The ESPN PBP supplement is no longer needed.** It was scoped for the FF rule alone; that rule
