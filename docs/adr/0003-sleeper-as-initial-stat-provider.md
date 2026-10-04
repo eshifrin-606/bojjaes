@@ -60,7 +60,7 @@ fumbles. The specific trade-offs we are accepting:
 | # | Rule | Sleeper's behavior | Direction | Decision |
 | --- | --- | --- | --- | --- |
 | 1 | Forced fumble resulting in turnover (4) | `idp_ff` is a raw count | **Over**pays ~44% of FFs | Award it, but **display it as provisional** (see below) |
-| 2 | 40+ yard bonus on defensive / return TDs (1) | No distance bucket known for these | **Under**pays 1 pt | Accept. Rare, low value |
+| 2 | 40+ yard bonus on defensive / return TDs (1) | No distance bucket known for these | **Under**pays 1 pt | Accept. Rare, low value. *(Corrected 2026-10-04: no such rule — the 40+ bonus is for offensive TDs only, so there is nothing to build.)* |
 | 3 | Safety, solo credit only (2) | `idp_safe` may include shared credit | Would **over**pay | **Exclude safeties from scoring entirely.** Prefer a known omission to a possible wrong award |
 
 Rules 2 and 3 are rare and cheap; correctness of the common path matters more than completeness
@@ -151,7 +151,7 @@ accepted inaccuracy is now available for free.
 | Original accepted cost | Amended position |
 | --- | --- |
 | #1 FF overpay (~162/season), displayed as provisional | **Compute it correctly.** The fumbler's PBP row carries `fum_lost: 1.0` exactly when the fumble was lost to the defense. All 20 FF plays in 2025 wk 1 classify correctly against the gamebook text (13 turnover-qualified); own-team recoveries and out-of-bounds fumbles read as non-turnovers. **No provisional flag.** |
-| #2 No 40+ bonus on defensive / return TDs | **Award it.** `idp_int_ret_yd` / `idp_fum_ret_yd` on the scorer's PBP row give raw return distance. Sleeper's own buckets are 50+ only (`bonus_def_int_td_50p`, `bonus_def_fum_td_50p`) — wrong threshold, so compute ours from the raw yardage. |
+| #2 No 40+ bonus on defensive / return TDs | **Award it.** `idp_int_ret_yd` / `idp_fum_ret_yd` on the scorer's PBP row give raw return distance. Sleeper's own buckets are 50+ only (`bonus_def_int_td_50p`, `bonus_def_fum_td_50p`) — wrong threshold, so compute ours from the raw yardage. *(Corrected 2026-10-04: no such rule — the 40+ bonus is for offensive TDs only, so there is nothing to build.)* |
 | #3 Safeties excluded entirely | **Award them.** `idp_safe` appears on the play alongside `idp_tkl_solo` rather than `idp_tkl_ast`, so solo credit is decidable per play. Caveat: only 2 instances observed — safeties are rare. Verify against a shared-credit safety before trusting the distinction. |
 | Freshness: up to 1 h stale, accepted | **Gone.** GraphQL is uncached (`max-age=0, private, must-revalidate`, `cf-cache-status: DYNAMIC`). Separately, the REST 3600 s TTL turned out to be a *completed-week* policy — the current week is served at `s-maxage=30` — and cache-busting the REST endpoint reaches origin anyway (`MISS`). Three independent answers. |
 
@@ -200,7 +200,8 @@ confirm the +4 side. Plays and Sleeper IDs are in
   - `stats_for_players_in_week(player_ids: [...])` — 1.9 KB, ~206 ms for 3 players. The natural
     primary poll for a ~20-starter lineup. Aggregates only; sufficient for every rule except FF.
   - `plays(sport, season, season_type, week)` trimmed to ids + stats — 574 KB, ~1.2 s. Same size
-    as the REST weekly dump but play-level. Needed for FF, safeties, and def/return TD distance.
+    as the REST weekly dump but play-level. Needed for FF, safeties, and def/return TD distance
+    (the last is moot — corrected 2026-10-04: the 40+ bonus is for offensive TDs only).
   - ⚠️ `plays`' `game_id` argument is **silently ignored** — you always get the whole week
     (2,966 plays / 16 games for 2025 wk 1). Filter client-side on the returned `game_id`.
 - **"A missing stat key means zero" still holds**, and so does "scores are allowed to decrease."
@@ -228,7 +229,9 @@ instead of waiting for September.
 ## Rationale
 
 - **Shipping beats optimizing.** A scoreboard that is right on 4.5 of 5 hard rules and honest
-  about the fifth is worth more than an unbuilt one that is right on all five.
+  about the fifth is worth more than an unbuilt one that is right on all five. (Corrected
+  2026-10-04: the "half" rule — 40+ bonus on defensive / return TDs — does not exist; the bonus is
+  for offensive TDs only.)
 - **Sleeper's aggregate coverage was the surprise of the probe.** The expectation going in was
   that pre-bucketed bonus stats would sit at the wrong thresholds and be useless. They sit at
   exactly ours, separately for passer and receiver, which matches our clarified rule that a 40+
@@ -250,7 +253,8 @@ instead of waiting for September.
 - ~~Our scoreboard will **overpay forced fumbles** relative to the league's official scoring until
   the ESPN supplement lands. The provisional flag makes this visible rather than silent.~~
 - ~~Our scoreboard will **not award safeties at all**, and will miss the 1-point bonus on 40+ yard
-  defensive and return TDs.~~
+  defensive and return TDs.~~ The second half was never a real cost: corrected 2026-10-04, the
+  40+ bonus is for offensive TDs only.
 - **nflverse validation is weakened but not blocked.** Sleeper's `gsis_id` covers only ~31% of
   players, so validation joins fall back to name + team + position. That is acceptable because
   validation is an offline batch activity, not a live path — but it means we cannot cheaply
@@ -268,7 +272,8 @@ Updated 2026-08-12. Done:
 
 - ~~**Investigate a fresher Sleeper surface.**~~ **Done** — GraphQL, uncached, with PBP.
 - ~~Confirm whether Sleeper exposes a **40+ distance bucket for defensive / return TDs**.~~
-  **Answered** — no bucket at 40+, but raw return yardage makes it computable.
+  **Answered** — no bucket at 40+, but raw return yardage makes it computable. Moot: corrected
+  2026-10-04, defensive / return TDs earn no 40+ bonus.
 - ~~Confirm **`idp_safe` solo-credit semantics**.~~ **Answered from PBP**, on 2 observations.
 - ~~Build the **ESPN PBP verification harness** for the FF rule.~~ **Dropped** — not needed.
 
