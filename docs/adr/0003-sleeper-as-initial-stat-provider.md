@@ -158,11 +158,24 @@ accepted inaccuracy is now available for free.
 ### Attributing the forced fumble
 
 The one genuine wrinkle. PBP gives the forcer no stat of their own, but names them in
-`metadata.description` (`"forced by E.Oliver"`) — and the forcer is almost always already among
-that same play's `play_stats` rows under a tackle or sack key. Matching the parsed name against
-**only that play's 2–6 rows** resolved 20/20 to a native Sleeper `player_id`. This is a bounded
-match, not the roster-wide fuzzy join the probe's Tier 4 warned about. Volume is ~20 FF plays per
-week league-wide.
+`metadata.description` (`"forced by E.Oliver"`) — and the forcer is among that same play's
+`play_stats` rows. Matching the parsed name against **only that play's 2–6 rows** resolved 20/20
+to a native Sleeper `player_id`. This is a bounded match, not the roster-wide fuzzy join the
+probe's Tier 4 warned about. Volume is ~20 FF plays per week league-wide.
+
+Corrected 2026-10-04 against 2026 wks 2–3:
+
+- **Match against every row on the play**, not only rows with tackle or sack keys. The forcer's
+  row can have empty stats (`M.Crosby {}`, `D.Hunter {}`). Nor is the sacker necessarily the
+  forcer: wk 3 HOU@IND Q4 4:45, Anderson sacked and Hunter forced.
+- **A play can hold multiple fumbles.** Wk 3 HOU@IND Q1 11:28: D.Jones fumbles (forced by
+  Anderson, recovered by HOU-Anderson), then Anderson fumbles (forced by Alie-Cox, HOU recovers).
+  The play has two `idp_ff` rows, so pair each "X FUMBLES, forced by Y" in the description with
+  that fumbler's row — and read turnover status from that row's `fum_lost`.
+- **The forcer is on the team opposite the fumbler's.** Team rows (e.g. `player_id` `"CAR"`) also
+  appear in `play_stats` and must be filtered.
+- **Trigger on stats, not text.** Overturned and no-play fumbles keep their "forced by" text but
+  carry no `idp_ff` (6 such plays in wks 2–3).
 
 ### ⚠️ `idp_ff` means opposite things in the two feeds
 
@@ -179,8 +192,10 @@ to the offense.** Read PBP `idp_ff` as *"fumble forced against this player."*
 The rule text says FF pays only on a turnover; this checks that the official HMFFL scores actually
 do. In 2026 wk 2, four HMFFL starters forced fumbles that were **not** turnovers (own-team
 recovery, out of bounds), and each official score equals their sack points alone — the FF paid 0.
-The wk 3 turnover-qualified cases (Will Anderson, Maxx Crosby) await their official scores to
-confirm the +4 side. Plays and Sleeper IDs are in
+The +4 side is confirmed by wk 3: Will Anderson's official score is 13.5 = 2.5 sacks (7.5) +
+turnover fumble recovery (2) + turnover FF (4); without the FF it would be 9.5. **Both sides of
+the rule are confirmed.** Turnover status is read per fumble, from `fum_lost` on that fumbler's
+PBP row — chosen because it is the simplest reading that matches. Plays and Sleeper IDs are in
 [internal/sleeper/testdata/ff-test-players.csv](../../internal/sleeper/testdata/ff-test-players.csv)
 (`ff_turnover` from nflverse `fumble_lost`), intended as ground truth for FF scoring tests.
 
@@ -189,7 +204,12 @@ confirm the +4 side. Plays and Sleeper IDs are in
 - **The ESPN PBP supplement is no longer needed.** It was scoped for the FF rule alone; that rule
   is now sourceable from Sleeper. ESPN drops from "planned enrichment" to "available independent
   oracle if we ever want one" — a want, not a need. This removes the last argument for a second
-  backend.
+  backend. Alternatives checked 2026-10-04:
+  - **ESPN core per-game plays** (~40 KB gzipped) records only the second fumble on the Anderson
+    play, missing his FF, and its `isTurnover` is wrong on a muffed kickoff. Rejected.
+  - **nflverse PBP** is correct on Anderson, but it is one season file (4→19 MB), updated 1–8 h
+    after games, keyed by GSIS ID. Cross-check or fallback only.
+  - Sportradar is trial-only, MySportsFeeds is paid, NFL.com needs auth.
 - **Player-ID mapping gets easier on the PBP path.** `play_stats[].player` embeds the full player
   object (id, name, team, position), so PBP needs no join against the 14.6 MB player dump and no
   name matching at all. The Tier 4 hazards — suffix stripping, 83 full-name collisions,
@@ -199,11 +219,30 @@ confirm the +4 side. Plays and Sleeper IDs are in
   as-of timestamp:
   - `stats_for_players_in_week(player_ids: [...])` — 1.9 KB, ~206 ms for 3 players. The natural
     primary poll for a ~20-starter lineup. Aggregates only; sufficient for every rule except FF.
-  - `plays(sport, season, season_type, week)` trimmed to ids + stats — 574 KB, ~1.2 s. Same size
-    as the REST weekly dump but play-level. Needed for FF, safeties, and def/return TD distance
-    (the last is moot — corrected 2026-10-04: the 40+ bonus is for offensive TDs only).
-  - ⚠️ `plays`' `game_id` argument is **silently ignored** — you always get the whole week
-    (2,966 plays / 16 games for 2025 wk 1). Filter client-side on the returned `game_id`.
+  - `plays(sport, season, season_type, week)` — play-level, needed for FF and safeties (and
+    def/return TD distance, moot — corrected 2026-10-04: the 40+ bonus is for offensive TDs
+    only). Sizes remeasured 2026-10-04 on 2026 wk 3 (the 574 KB / 1.2 s figure was 2025 wk 1,
+    stats only):
+    - `play_stats{player_id stats}` — 0.6–0.9 MB.
+    - plus `metadata` — 2.4–3.0 MB. **Required for FF**, since the forcer is only in the
+      description.
+    - plus the embedded `player` — ~5 MB.
+    - Latency varies on Sleeper's side: 3–15 s for the same query.
+  - ⚠️ `plays`' `game_id` **and `date`** arguments are **silently ignored** — you always get the
+    whole week (2,966 plays / 16 games for 2025 wk 1). Filter client-side on the returned
+    `game_id`. No GraphQL query returns play-level data per game, player, or play.
+- **A third, REST shape — `recent` (found 2026-10-04).**
+  `GET https://api.sleeper.com/plays/nfl/recent?season_type=regular&season=S&week=W&limit=K` is
+  what the Sleeper web app calls. It returns the K newest plays of the week, newest first, in the
+  same shape as GraphQL `plays`; `limit` is its only working parameter. limit=40 is 51 KB /
+  0.16 s, 300 is 394 KB / 0.45 s, 5000 (whole week) is 3.9 MB / 3–12 s. Cloudflare caches it at
+  `s-maxage=300, stale-while-revalidate=300`. It classified all three test cases correctly.
+  Unverified: whether a later correction to an old play resurfaces among the newest.
+- **FF fetch plan (decided 2026-10-04).** Current week: poll `recent` with a bounded limit and
+  merge plays by `play_id` into a store; if the oldest returned play is newer than the newest
+  held, fall back to a whole-week fetch. Past weeks: one whole-week fetch per deployment. The REST
+  weekly aggregate stays primary for every other stat. FF arriving minutes to an hour late is
+  accepted — during-game updates already beat the league's post-game email.
 - **"A missing stat key means zero" still holds**, and so does "scores are allowed to decrease."
   Neither depended on the freshness or FF findings.
 
@@ -213,7 +252,7 @@ confirm the +4 side. Plays and Sleeper IDs are in
   API; its 240 root fields span betting and social features, which suggests active churn. The
   ADR 0002 provider interface remains the mitigation, and the REST weekly dump is a working
   fallback at 30 s current-week TTL if GraphQL closes or starts requiring auth.
-- **Rate limiting is unprobed.** Do not poll a 574 KB uncached call aggressively without testing
+- **Rate limiting is unprobed.** Do not poll a multi-MB uncached call aggressively without testing
   tolerance — there is no edge cache absorbing that load, which is precisely why it is fresh.
 - **All PBP validation used completed 2025 games.** Live behavior is unmeasured: whether plays
   land promptly mid-game, how `updated_at` moves, and whether the 30 s current-week TTL holds once
