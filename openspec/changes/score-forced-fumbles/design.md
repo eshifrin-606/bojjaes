@@ -103,9 +103,10 @@ behavior the spec needs today.
 The poll piggybacks on `statscache`, so it runs at most once per TTL per week. The TTL matches the
 CDN's 300 s, so polling more often would gain nothing.
 
-`Client` gains `PlaysBaseURL string` and `Plays *PlayStore`. A nil `Plays` keeps today's behavior,
-so existing tests and benches are untouched. `main.go` wires `sleeper.NewPlayStore(...)` with
-`https://api.sleeper.com`.
+`Client` gains `Plays *PlayStore`. A nil `Plays` keeps today's behavior, so existing tests and
+benches are untouched. The weekly aggregate and the plays endpoint share the `api.sleeper.com` host,
+so the play store fetches from the client's existing `BaseURL`. `main.go` wires
+`sleeper.NewPlayStore(...)` into the client.
 
 *Alternative:* a background ticker that polls every live week. Rejected: it fetches with no readers,
 which `weekly-stats-cache` deliberately avoids, and it needs a definition of "live week".

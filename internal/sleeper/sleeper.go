@@ -157,9 +157,17 @@ func statLineFrom(weekly map[string]map[string]float64, playerID string, season,
 // ask for: that is what lets the decoded map's lifetime end in this function,
 // so no Sleeper shape escapes the package.
 func FetchWeekStats(ctx context.Context, baseURL string, season, week int) (score.WeekStats, error) {
-	weekly, err := fetchWeekly(ctx, baseURL, season, week)
+	players, err := fetchPlayers(ctx, baseURL, season, week)
 	if err != nil {
 		return score.WeekStats{}, err
+	}
+	return score.NewWeekStats(season, week, players), nil
+}
+
+func fetchPlayers(ctx context.Context, baseURL string, season, week int) (map[string]score.StatLine, error) {
+	weekly, err := fetchWeekly(ctx, baseURL, season, week)
+	if err != nil {
+		return nil, err
 	}
 
 	players := make(map[string]score.StatLine, len(weekly))
@@ -172,7 +180,7 @@ func FetchWeekStats(ctx context.Context, baseURL string, season, week int) (scor
 		}
 		players[playerID] = line
 	}
-	return score.NewWeekStats(season, week, players), nil
+	return players, nil
 }
 
 // Client is a handle on one Sleeper host. Its WeekStats method satisfies the
@@ -184,8 +192,23 @@ func FetchWeekStats(ctx context.Context, baseURL string, season, week int) (scor
 // happens to satisfy, so the dependency still points one way.
 type Client struct {
 	BaseURL string
+	Plays   *PlayStore
 }
 
 func (c Client) WeekStats(ctx context.Context, season, week int) (score.WeekStats, error) {
-	return FetchWeekStats(ctx, c.BaseURL, season, week)
+	players, err := fetchPlayers(ctx, c.BaseURL, season, week)
+	if err != nil {
+		return score.WeekStats{}, err
+	}
+	if c.Plays != nil {
+		for id, n := range c.Plays.ForcedFumbles(ctx, season, week) {
+			line, ok := players[id]
+			if !ok {
+				line = score.StatLine{PlayerID: id, Season: season, Week: week}
+			}
+			line.FFTurnover = n
+			players[id] = line
+		}
+	}
+	return score.NewWeekStats(season, week, players), nil
 }

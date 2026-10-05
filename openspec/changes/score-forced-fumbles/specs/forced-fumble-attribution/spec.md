@@ -184,13 +184,13 @@ means one whole-week fetch per deployment.
 
 Recent-plays polling may not show corrections to old plays. To catch them, the system SHALL start one
 background whole-week fetch for a week once no play has changed for an hour and no whole-week fetch
-has completed since that last change. A week whose last whole-week fetch is newer than its last
+has completed since an hour after that last change. A week whose last whole-week fetch is newer than its last
 change plus an hour SHALL NOT be refetched.
 
 #### Scenario: A finished week is refreshed once
 
 - **WHEN** a week's newest held change is more than an hour old and its last whole-week fetch
-  predates that change
+  predates that change plus an hour
 - **THEN** one background whole-week fetch is started
 
 #### Scenario: A settled past week is not refetched
