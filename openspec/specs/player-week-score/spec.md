@@ -6,10 +6,11 @@ Score NFL players' single-week production under the HMFFL rules, from a provider
 to a point total. Covers the passing, rushing, receiving, two-point-conversion, kicking, and
 defensive rules in `docs/scoring.md`.
 
-A score is therefore meaningful for every rostered player, kickers and defenders included. The rules
-that need play-by-play data — forced fumbles, safeties, and the 40+ yard bonus on defensive and
-return touchdowns — are absent from the calculation rather than rejected by it, so a defender's
-score is a number that may be low rather than an error.
+A score is therefore meaningful for every rostered player, kickers and defenders included. The one
+rule that needs play-by-play data, safeties, is absent from the calculation rather than rejected by
+it, so a defender's score is a number that may be low rather than an error. The 40+ yard bonus
+applies to offensive touchdowns only; it is not a rule for defensive or return touchdowns.
+
 ## Requirements
 ### Requirement: Weekly stat line domain object
 

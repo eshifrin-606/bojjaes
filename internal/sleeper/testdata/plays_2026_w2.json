@@ -1,0 +1,3962 @@
+[
+  {
+    "game_id": "202610232",
+    "metadata": {
+      "away_points": 6,
+      "away_used_timeouts": 0,
+      "description": "J.Winston pass short right complete. Catch made by C.Skattebo for 0 yards. C.Skattebo FUMBLES, forced by Q.Lake. Out of bounds. ",
+      "distance": 5,
+      "distance_end": 5,
+      "down": 2,
+      "down_end": 3,
+      "fantasy_description": "Jameis Winston 0 Yd pass complete to Cam Skattebo",
+      "home_points": 28,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "LAR",
+      "penalties": [],
+      "play_time": "2026-09-22T02:54:17+00:00",
+      "play_type": "pass_complete",
+      "possession": "NYG",
+      "quarter_name": "4",
+      "rec_yar": 1.0,
+      "sequence": 1790045667572,
+      "team": "NYG",
+      "time_remaining_minutes": 7,
+      "time_remaining_minutes_end": 6,
+      "time_remaining_seconds": 10,
+      "time_remaining_seconds_end": 21,
+      "topic_id": "1407957184821653504",
+      "type": "PassCompleted",
+      "yard_line": 30,
+      "yard_line_end": 30,
+      "yard_line_territory": "LAR",
+      "yard_line_territory_end": "LAR",
+      "yards_gained": 0,
+      "yards_to_end_zone": 30
+    },
+    "play_id": "d99a2780-b630-11f1-b8e1-07a516a4dc2f",
+    "play_stats": [
+      {
+        "player": {
+          "position": "RB",
+          "status": "Active",
+          "number": 44,
+          "first_name": "Cam",
+          "last_name": "Skattebo",
+          "sport": "nfl",
+          "team": "NYG",
+          "player_id": "12481",
+          "fantasy_positions": [
+            "RB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 1,
+          "news_updated": 1791042320113
+        },
+        "player_id": "12481",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_0_4": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yar": 1.0
+        },
+        "game_id": "202610232",
+        "play_id": "d99a2780-b630-11f1-b8e1-07a516a4dc2f"
+      },
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 19,
+          "first_name": "Jameis",
+          "last_name": "Winston",
+          "sport": "nfl",
+          "team": "NYG",
+          "player_id": "2306",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 11,
+          "news_updated": 1791037519702
+        },
+        "player_id": "2306",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": -1.0,
+          "pass_cmp": 1.0
+        },
+        "game_id": "202610232",
+        "play_id": "d99a2780-b630-11f1-b8e1-07a516a4dc2f"
+      },
+      {
+        "player": {
+          "position": "DB",
+          "status": "Active",
+          "number": 37,
+          "first_name": "Quentin",
+          "last_name": "Lake",
+          "sport": "nfl",
+          "team": "LAR",
+          "player_id": "8330",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 4,
+          "news_updated": 1790126710386
+        },
+        "player_id": "8330",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610232",
+        "play_id": "d99a2780-b630-11f1-b8e1-07a516a4dc2f"
+      }
+    ],
+    "sequence": 1790045667572,
+    "updated_at": 1790266129655
+  },
+  {
+    "game_id": "202610232",
+    "metadata": {
+      "away_points": 6,
+      "away_used_timeouts": 0,
+      "description": "B.Corum rushed left guard for 1 yard. B.Corum FUMBLES, forced by J.Holland. Fumble RECOVERED by LA-B.Corum at NYG 21.",
+      "distance": 10,
+      "distance_end": 9,
+      "down": 1,
+      "down_end": 2,
+      "fantasy_description": "FUMBLE! Blake Corum 1 Yd run, fumble recovered by LA",
+      "home_points": 21,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "NYG",
+      "penalties": [],
+      "play_time": "2026-09-22T02:45:28+00:00",
+      "play_type": "rush_fumble",
+      "possession": "LAR",
+      "quarter_name": "4",
+      "sequence": 1790045148121,
+      "team": "LAR",
+      "time_remaining_minutes": 11,
+      "time_remaining_minutes_end": 10,
+      "time_remaining_seconds": 25,
+      "time_remaining_seconds_end": 40,
+      "topic_id": "1407954966680748032",
+      "type": "Rush",
+      "yard_line": 22,
+      "yard_line_end": 21,
+      "yard_line_territory": "NYG",
+      "yard_line_territory_end": "NYG",
+      "yards_gained": 1,
+      "yards_to_end_zone": 22
+    },
+    "play_id": "a0e18b50-b62f-11f1-b8e1-07a516a4dc2f",
+    "play_stats": [
+      {
+        "player": {
+          "position": "RB",
+          "status": "Active",
+          "number": 24,
+          "first_name": "Blake",
+          "last_name": "Corum",
+          "sport": "nfl",
+          "team": "LAR",
+          "player_id": "11586",
+          "fantasy_positions": [
+            "RB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 2,
+          "news_updated": 1791075338222
+        },
+        "player_id": "11586",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_yd": 1.0
+        },
+        "game_id": "202610232",
+        "play_id": "a0e18b50-b62f-11f1-b8e1-07a516a4dc2f"
+      },
+      {
+        "player": {
+          "position": "DB",
+          "status": "Active",
+          "number": 8,
+          "first_name": "Jevón",
+          "last_name": "Holland",
+          "sport": "nfl",
+          "team": "NYG",
+          "player_id": "7666",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 5,
+          "news_updated": 1790127610409
+        },
+        "player_id": "7666",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610232",
+        "play_id": "a0e18b50-b62f-11f1-b8e1-07a516a4dc2f"
+      }
+    ],
+    "sequence": 1790045148121,
+    "updated_at": 1790266129612
+  },
+  {
+    "game_id": "202610232",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 0,
+      "description": "K.Williams rushed up the middle for 5 yards. K.Williams FUMBLES, forced by J.Holland. Fumble RECOVERED by NYG-J.Holland at LA 11. ",
+      "distance": 10,
+      "distance_end": 10,
+      "down": 1,
+      "down_end": 1,
+      "fantasy_description": "FUMBLE! Kyren Williams 5 Yd run, fumble recovered by NYG",
+      "home_points": 14,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "NYG",
+      "penalties": [],
+      "play_time": "2026-09-22T01:29:15+00:00",
+      "play_type": "rush_fumble",
+      "possession": "LAR",
+      "quarter_name": "2",
+      "sequence": 1790040606403,
+      "team": "LAR",
+      "time_remaining_minutes": 3,
+      "time_remaining_minutes_end": 3,
+      "time_remaining_seconds": 11,
+      "time_remaining_seconds_end": 6,
+      "topic_id": "1407935784077524992",
+      "type": "Fumble",
+      "yard_line": 6,
+      "yard_line_end": 11,
+      "yard_line_territory": "LAR",
+      "yard_line_territory_end": "LAR",
+      "yards_gained": 5,
+      "yards_to_end_zone": 94
+    },
+    "play_id": "ac600d90-b624-11f1-b8e1-07a516a4dc2f",
+    "play_stats": [
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 52,
+          "first_name": "Arvell",
+          "last_name": "Reese",
+          "sport": "nfl",
+          "team": "NYG",
+          "player_id": "13377",
+          "fantasy_positions": [
+            "DL",
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 0,
+          "news_updated": 1790820331226
+        },
+        "player_id": "13377",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610232",
+        "play_id": "ac600d90-b624-11f1-b8e1-07a516a4dc2f"
+      },
+      {
+        "player": {
+          "position": "DB",
+          "status": "Active",
+          "number": 8,
+          "first_name": "Jevón",
+          "last_name": "Holland",
+          "sport": "nfl",
+          "team": "NYG",
+          "player_id": "7666",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 5,
+          "news_updated": 1790127610409
+        },
+        "player_id": "7666",
+        "stats": {
+          "idp_fum_rec": 1.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610232",
+        "play_id": "ac600d90-b624-11f1-b8e1-07a516a4dc2f"
+      },
+      {
+        "player": {
+          "position": "RB",
+          "status": "Active",
+          "number": 23,
+          "first_name": "Kyren",
+          "last_name": "Williams",
+          "sport": "nfl",
+          "team": "LAR",
+          "player_id": "8150",
+          "fantasy_positions": [
+            "RB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 4,
+          "news_updated": 1791146413127
+        },
+        "player_id": "8150",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_yac": 1.0,
+          "rush_yd": 5.0
+        },
+        "game_id": "202610232",
+        "play_id": "ac600d90-b624-11f1-b8e1-07a516a4dc2f"
+      }
+    ],
+    "sequence": 1790040606403,
+    "updated_at": 1790266129353
+  },
+  {
+    "game_id": "202610216",
+    "metadata": {
+      "quarter_name": "OT",
+      "down": 1,
+      "possession": "IND",
+      "time_remaining_seconds": 50,
+      "sequence": 1789961951239,
+      "yard_line_territory_end": "KC",
+      "yard_line_end": 17,
+      "fantasy_description": "Daniel Jones 48 Yd pass complete to Laquon Treadwell",
+      "description": "D.Jones pass deep middle complete. Catch made by L.Treadwell for 48 yards. L.Treadwell FUMBLES, forced by N.Williams. Fumble RECOVERED by KC-L.Sneed at KC 15. Tackled by at KC 15. The Replay Official reviewed the pass completion and the play was overturned. D.Jones pass deep middle complete. Catch made by L.Treadwell for 48 yards. Tackled by L.Sneed at KC 17.",
+      "time_remaining_seconds_end": 48,
+      "team": "IND",
+      "distance": 10,
+      "opponent": "KC",
+      "yards_to_end_zone": 65,
+      "is_scoring_play": false,
+      "time_remaining_minutes": 4,
+      "review_result": "overturned",
+      "play_type": "pass_complete",
+      "penalties": [],
+      "play_time": "2026-09-21T03:39:23+00:00",
+      "rec_yar": 4.0,
+      "home_used_timeouts": 2,
+      "away_points": 27,
+      "yard_line": 35,
+      "type": "PassCompleted",
+      "distance_end": 10,
+      "home_points": 30,
+      "review_type": "pass completion",
+      "time_remaining_minutes_end": 4,
+      "yards_gained": 48,
+      "yard_line_territory": "IND",
+      "away_used_timeouts": 2,
+      "topic_id": "1407605095801135104",
+      "down_end": 1
+    },
+    "play_id": "71ba3f10-b56d-11f1-bf27-7984df77d65b",
+    "play_stats": [
+      {
+        "player": {
+          "position": "WR",
+          "status": "Active",
+          "number": 13,
+          "first_name": "Laquon",
+          "last_name": "Treadwell",
+          "sport": "nfl",
+          "team": "IND",
+          "player_id": "3155",
+          "fantasy_positions": [
+            "WR"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 10,
+          "news_updated": 1791146713694
+        },
+        "player_id": "3155",
+        "stats": {
+          "rec": 1.0,
+          "rec_40p": 1.0,
+          "rec_fd": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yar": 4.0,
+          "rec_yd": 48.0
+        },
+        "game_id": "202610216",
+        "play_id": "71ba3f10-b56d-11f1-bf27-7984df77d65b"
+      },
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 17,
+          "first_name": "Daniel",
+          "last_name": "Jones",
+          "sport": "nfl",
+          "team": "IND",
+          "player_id": "5870",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 7,
+          "news_updated": 1791146113287
+        },
+        "player_id": "5870",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": 44.0,
+          "pass_cmp": 1.0,
+          "pass_cmp_40p": 1.0,
+          "pass_fd": 1.0,
+          "pass_yd": 48.0
+        },
+        "game_id": "202610216",
+        "play_id": "71ba3f10-b56d-11f1-bf27-7984df77d65b"
+      },
+      {
+        "player": {
+          "position": "CB",
+          "status": "Active",
+          "number": 38,
+          "first_name": "L'Jarius",
+          "last_name": "Sneed",
+          "sport": "nfl",
+          "team": "KC",
+          "player_id": "7117",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 6,
+          "news_updated": 1790977540482
+        },
+        "player_id": "7117",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610216",
+        "play_id": "71ba3f10-b56d-11f1-bf27-7984df77d65b"
+      }
+    ],
+    "sequence": 1789961951239,
+    "updated_at": 1790266124050
+  },
+  {
+    "game_id": "202610209",
+    "metadata": {
+      "away_points": 20,
+      "away_used_timeouts": 1,
+      "description": "B.Aubrey kicks 55 yards from DAL 35 to the WAS 10. J.Lane returns the kickoff. J.Lane FUMBLES, forced by C.Downs. Fumble RECOVERED by WAS-J.Lane at WAS 43.",
+      "distance": 0,
+      "distance_end": 10,
+      "down": 0,
+      "down_end": 1,
+      "home_points": 37,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "WAS",
+      "penalties": [],
+      "play_time": "2026-09-20T23:24:06+00:00",
+      "play_type": "kickoff",
+      "possession": "DAL",
+      "quarter_name": "4",
+      "sequence": 1789946657731,
+      "team": "DAL",
+      "time_remaining_minutes": 3,
+      "time_remaining_minutes_end": 3,
+      "time_remaining_seconds": 7,
+      "time_remaining_seconds_end": 1,
+      "topic_id": "1407541907801804800",
+      "type": "Kickoff",
+      "yard_line": 35,
+      "yard_line_end": 43,
+      "yard_line_territory": "DAL",
+      "yard_line_territory_end": "WAS",
+      "yards_gained": 55,
+      "yards_to_end_zone": 65
+    },
+    "play_id": "42bd0fd0-b54a-11f1-9c13-157bfe7a3c96",
+    "play_stats": [
+      {
+        "player": {
+          "position": "K",
+          "status": "Active",
+          "number": 17,
+          "first_name": "Brandon",
+          "last_name": "Aubrey",
+          "sport": "nfl",
+          "team": "DAL",
+          "player_id": "11533",
+          "fantasy_positions": [
+            "K"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 3,
+          "news_updated": 1790591703899
+        },
+        "player_id": "11533",
+        "stats": {
+          "kick_yds": 55.0,
+          "kicks": 1.0
+        },
+        "game_id": "202610209",
+        "play_id": "42bd0fd0-b54a-11f1-9c13-157bfe7a3c96"
+      },
+      {
+        "player": {
+          "position": "WR",
+          "status": "Active",
+          "number": 83,
+          "first_name": "Jaylin",
+          "last_name": "Lane",
+          "sport": "nfl",
+          "team": "WAS",
+          "player_id": "12641",
+          "fantasy_positions": [
+            "WR"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": "Out",
+          "years_exp": 1,
+          "news_updated": 1791136510849
+        },
+        "player_id": "12641",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "kr": 1.0,
+          "kr_yd": 33.0
+        },
+        "game_id": "202610209",
+        "play_id": "42bd0fd0-b54a-11f1-9c13-157bfe7a3c96"
+      },
+      {
+        "player": {
+          "position": "DB",
+          "status": "Active",
+          "number": 13,
+          "first_name": "Caleb",
+          "last_name": "Downs",
+          "sport": "nfl",
+          "team": "DAL",
+          "player_id": "13376",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 0,
+          "news_updated": 1789523455394
+        },
+        "player_id": "13376",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610209",
+        "play_id": "42bd0fd0-b54a-11f1-9c13-157bfe7a3c96"
+      }
+    ],
+    "sequence": 1789946657731,
+    "updated_at": 1790266120985
+  },
+  {
+    "game_id": "202610229",
+    "metadata": {
+      "away_points": 17,
+      "away_used_timeouts": 2,
+      "description": "O.Hampton rushed up the middle for 2 yards. O.Hampton FUMBLES, forced by N.Dean. Fumble RECOVERED by LV-J.Chinn at LV 41. Tackled by J.Herbert at LAC 16.",
+      "distance": 10,
+      "distance_end": 10,
+      "down": 1,
+      "down_end": 1,
+      "fantasy_description": "FUMBLE! Omarion Hampton 2 Yd run, fumble recovered by LV",
+      "home_points": 14,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "LV",
+      "penalties": [],
+      "play_time": "2026-09-20T22:48:15+00:00",
+      "play_type": "rush_fumble",
+      "possession": "LAC",
+      "quarter_name": "4",
+      "sequence": 1789944519930,
+      "team": "LAC",
+      "time_remaining_minutes": 3,
+      "time_remaining_minutes_end": 3,
+      "time_remaining_seconds": 52,
+      "time_remaining_seconds_end": 42,
+      "topic_id": "1407532878857793536",
+      "type": "Fumble",
+      "yard_line": 48,
+      "yard_line_end": 16,
+      "yard_line_territory": "LV",
+      "yard_line_territory_end": "LAC",
+      "yards_gained": 2,
+      "yards_to_end_zone": 48
+    },
+    "play_id": "4e6133c0-b545-11f1-9890-3f016326050d",
+    "play_stats": [
+      {
+        "player": {
+          "position": "RB",
+          "status": "Active",
+          "number": 8,
+          "first_name": "Omarion",
+          "last_name": "Hampton",
+          "sport": "nfl",
+          "team": "LAC",
+          "player_id": "12507",
+          "fantasy_positions": [
+            "RB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 1,
+          "news_updated": 1791033619424
+        },
+        "player_id": "12507",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_yd": 2.0
+        },
+        "game_id": "202610229",
+        "play_id": "4e6133c0-b545-11f1-9890-3f016326050d"
+      },
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 10,
+          "first_name": "Justin",
+          "last_name": "Herbert",
+          "sport": "nfl",
+          "team": "LAC",
+          "player_id": "6797",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 6,
+          "news_updated": 1791033619423
+        },
+        "player_id": "6797",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610229",
+        "play_id": "4e6133c0-b545-11f1-9890-3f016326050d"
+      },
+      {
+        "player": {
+          "position": "DB",
+          "status": "Active",
+          "number": 11,
+          "first_name": "Jeremy",
+          "last_name": "Chinn",
+          "sport": "nfl",
+          "team": "LV",
+          "player_id": "7016",
+          "fantasy_positions": [
+            "DB",
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 6,
+          "news_updated": 1790819130992
+        },
+        "player_id": "7016",
+        "stats": {
+          "idp_fum_rec": 1.0,
+          "idp_fum_ret_yd": 43.0
+        },
+        "game_id": "202610229",
+        "play_id": "4e6133c0-b545-11f1-9890-3f016326050d"
+      },
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 17,
+          "first_name": "Nakobe",
+          "last_name": "Dean",
+          "sport": "nfl",
+          "team": "LV",
+          "player_id": "8267",
+          "fantasy_positions": [
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 4,
+          "news_updated": 1790818830860
+        },
+        "player_id": "8267",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610229",
+        "play_id": "4e6133c0-b545-11f1-9890-3f016326050d"
+      }
+    ],
+    "sequence": 1789944519930,
+    "updated_at": 1790266126788
+  },
+  {
+    "game_id": "202610229",
+    "metadata": {
+      "away_points": 17,
+      "away_used_timeouts": 2,
+      "description": "J.Herbert steps back to pass. Sacked at LAC 36 for -4 yards (M.Koonce). J.Herbert FUMBLES, forced by M.Koonce. Fumble RECOVERED by LAC-T.Harris at LAC 46. ",
+      "distance": 7,
+      "distance_end": 1,
+      "down": 3,
+      "down_end": 4,
+      "fantasy_description": "FUMBLE! Justin Herbert sacked, fumble recovered by LAC",
+      "home_points": 14,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "LV",
+      "penalties": [],
+      "play_time": "2026-09-20T22:45:21+00:00",
+      "play_type": "pass_fumble",
+      "possession": "LAC",
+      "quarter_name": "4",
+      "sequence": 1789944359379,
+      "team": "LAC",
+      "time_remaining_minutes": 4,
+      "time_remaining_minutes_end": 3,
+      "time_remaining_seconds": 49,
+      "time_remaining_seconds_end": 52,
+      "topic_id": "1407532149028012032",
+      "type": "Sack",
+      "yard_line": 40,
+      "yard_line_end": 46,
+      "yard_line_territory": "LAC",
+      "yard_line_territory_end": "LAC",
+      "yards_gained": 0,
+      "yards_to_end_zone": 60
+    },
+    "play_id": "c6b9e070-b544-11f1-9890-3f016326050d",
+    "play_stats": [
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 10,
+          "first_name": "Justin",
+          "last_name": "Herbert",
+          "sport": "nfl",
+          "team": "LAC",
+          "player_id": "6797",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 6,
+          "news_updated": 1791033619423
+        },
+        "player_id": "6797",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "pass_sack": 1.0
+        },
+        "game_id": "202610229",
+        "play_id": "c6b9e070-b544-11f1-9890-3f016326050d"
+      },
+      {
+        "player": {
+          "position": "DE",
+          "status": "Active",
+          "number": 51,
+          "first_name": "Malcolm",
+          "last_name": "Koonce",
+          "sport": "nfl",
+          "team": "LV",
+          "player_id": "7676",
+          "fantasy_positions": [
+            "DL"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 5,
+          "news_updated": 1773157240019
+        },
+        "player_id": "7676",
+        "stats": {
+          "idp_qb_hit": 1.0,
+          "idp_sack": 1.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610229",
+        "play_id": "c6b9e070-b544-11f1-9890-3f016326050d"
+      }
+    ],
+    "sequence": 1789944359379,
+    "updated_at": 1790266126777
+  },
+  {
+    "game_id": "202610209",
+    "metadata": {
+      "away_points": 13,
+      "away_used_timeouts": 1,
+      "description": "M.Mariota pass short left complete. Catch made by D.Brown for -6 yards. D.Brown FUMBLES, forced by J.Barham. Fumble RECOVERED by DAL-D.Winters at WAS 18. ",
+      "distance": 10,
+      "distance_end": 10,
+      "down": 1,
+      "down_end": 1,
+      "fantasy_description": "Marcus Mariota -6 Yd pass complete to Dyami Brown, FUMBLE recovered by DAL",
+      "home_points": 20,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "DAL",
+      "penalties": [],
+      "play_time": "2026-09-20T22:30:57+00:00",
+      "play_type": "pass_catch_fumble",
+      "possession": "WAS",
+      "quarter_name": "3",
+      "sequence": 1789943517138,
+      "team": "WAS",
+      "time_remaining_minutes": 7,
+      "time_remaining_minutes_end": 7,
+      "time_remaining_seconds": 15,
+      "time_remaining_seconds_end": 8,
+      "topic_id": "1407528525803671552",
+      "type": "Fumble",
+      "yard_line": 24,
+      "yard_line_end": 13,
+      "yard_line_territory": "WAS",
+      "yard_line_territory_end": "WAS",
+      "yards_gained": -6,
+      "yards_to_end_zone": 76
+    },
+    "play_id": "def4a500-b542-11f1-9c13-157bfe7a3c96",
+    "play_stats": [
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 53,
+          "first_name": "Dee",
+          "last_name": "Winters",
+          "sport": "nfl",
+          "team": "DAL",
+          "player_id": "11017",
+          "fantasy_positions": [
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 3,
+          "news_updated": 1789941058991
+        },
+        "player_id": "11017",
+        "stats": {
+          "idp_fum_rec": 1.0,
+          "idp_fum_ret_yd": 5.0
+        },
+        "game_id": "202610209",
+        "play_id": "def4a500-b542-11f1-9c13-157bfe7a3c96"
+      },
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 55,
+          "first_name": "Jaishawn",
+          "last_name": "Barham",
+          "sport": "nfl",
+          "team": "DAL",
+          "player_id": "13381",
+          "fantasy_positions": [
+            "DL",
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 0,
+          "news_updated": 1787013338077
+        },
+        "player_id": "13381",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_loss": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610209",
+        "play_id": "def4a500-b542-11f1-9c13-157bfe7a3c96"
+      },
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 8,
+          "first_name": "Marcus",
+          "last_name": "Mariota",
+          "sport": "nfl",
+          "team": "WAS",
+          "player_id": "2307",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": "Out",
+          "years_exp": 11,
+          "news_updated": 1791132645268
+        },
+        "player_id": "2307",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": -6.0,
+          "pass_cmp": 1.0,
+          "pass_yd": -6.0
+        },
+        "game_id": "202610209",
+        "play_id": "def4a500-b542-11f1-9c13-157bfe7a3c96"
+      },
+      {
+        "player": {
+          "position": "WR",
+          "status": "Active",
+          "number": 6,
+          "first_name": "Dyami",
+          "last_name": "Brown",
+          "sport": "nfl",
+          "team": "WAS",
+          "player_id": "7587",
+          "fantasy_positions": [
+            "WR"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 5,
+          "news_updated": 1790606705929
+        },
+        "player_id": "7587",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yd": -6.0
+        },
+        "game_id": "202610209",
+        "play_id": "def4a500-b542-11f1-9c13-157bfe7a3c96"
+      }
+    ],
+    "sequence": 1789943517138,
+    "updated_at": 1790266120777
+  },
+  {
+    "game_id": "202610229",
+    "metadata": {
+      "away_points": 17,
+      "away_used_timeouts": 2,
+      "description": "J.Herbert steps back to pass. Sacked at LAC 2 for -8 yards (E.Stokes). J.Herbert FUMBLES, forced by E.Stokes. J.Herbert FUMBLES, out of bounds. ",
+      "distance": 10,
+      "distance_end": 18,
+      "down": 1,
+      "down_end": 2,
+      "home_points": 14,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "LV",
+      "penalties": [],
+      "play_time": "2026-09-20T22:28:49+00:00",
+      "play_type": "pass_incomplete_sacked",
+      "possession": "LAC",
+      "quarter_name": "4",
+      "sequence": 1789943358256,
+      "team": "LAC",
+      "time_remaining_minutes": 12,
+      "time_remaining_minutes_end": 11,
+      "time_remaining_seconds": 26,
+      "time_remaining_seconds_end": 52,
+      "topic_id": "1407527988647518208",
+      "type": "Sack",
+      "yard_line": 10,
+      "yard_line_end": 2,
+      "yard_line_territory": "LAC",
+      "yard_line_territory_end": "LAC",
+      "yards_gained": 0,
+      "yards_to_end_zone": 90
+    },
+    "play_id": "3308f4d0-b542-11f1-9890-3f016326050d",
+    "play_stats": [
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 10,
+          "first_name": "Justin",
+          "last_name": "Herbert",
+          "sport": "nfl",
+          "team": "LAC",
+          "player_id": "6797",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 6,
+          "news_updated": 1791033619423
+        },
+        "player_id": "6797",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "pass_sack": 1.0,
+          "pass_sack_yds": -8.0
+        },
+        "game_id": "202610229",
+        "play_id": "3308f4d0-b542-11f1-9890-3f016326050d"
+      },
+      {
+        "player": {
+          "position": "CB",
+          "status": "Active",
+          "number": 5,
+          "first_name": "Eric",
+          "last_name": "Stokes",
+          "sport": "nfl",
+          "team": "LV",
+          "player_id": "7628",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 5,
+          "news_updated": 1773075332269
+        },
+        "player_id": "7628",
+        "stats": {
+          "idp_sack": 1.0,
+          "idp_sack_yd": -8.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_loss": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610229",
+        "play_id": "3308f4d0-b542-11f1-9890-3f016326050d"
+      }
+    ],
+    "sequence": 1789943358256,
+    "updated_at": 1790266126704
+  },
+  {
+    "game_id": "202610201",
+    "metadata": {
+      "away_points": 7,
+      "away_used_timeouts": 2,
+      "description": "C.Ryland kicks 64 yards from ARI 35 to the SEA 1. R.Shaheed returns the kickoff. R.Shaheed FUMBLES, forced by E.Higgins. Fumble RECOVERED by SEA-C.Surratt at SEA 26. Pushed out of bounds by K.Clark; C.Ryland at ARI 37. ",
+      "distance": 0,
+      "distance_end": 10,
+      "down": 0,
+      "down_end": 1,
+      "home_points": 7,
+      "home_used_timeouts": 0,
+      "is_scoring_play": false,
+      "opponent": "SEA",
+      "penalties": [],
+      "play_time": "2026-09-20T22:06:57+00:00",
+      "play_type": "kickoff",
+      "possession": "ARI",
+      "quarter_name": "3",
+      "sequence": 1789942062291,
+      "team": "ARI",
+      "time_remaining_minutes": 15,
+      "time_remaining_minutes_end": 14,
+      "time_remaining_seconds": 0,
+      "time_remaining_seconds_end": 48,
+      "topic_id": "1407522501721939968",
+      "type": "Kickoff",
+      "yard_line": 35,
+      "yard_line_end": 37,
+      "yard_line_territory": "ARI",
+      "yard_line_territory_end": "ARI",
+      "yards_gained": 64,
+      "yards_to_end_zone": 65
+    },
+    "play_id": "be3b0ed0-b53d-11f1-86ea-fd0b4f683457",
+    "play_stats": [
+      {
+        "player": {
+          "position": "TE",
+          "status": "Active",
+          "number": 84,
+          "first_name": "Elijah",
+          "last_name": "Higgins",
+          "sport": "nfl",
+          "team": "ARI",
+          "player_id": "10231",
+          "fantasy_positions": [
+            "TE"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 3,
+          "news_updated": 1787976942822
+        },
+        "player_id": "10231",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610201",
+        "play_id": "be3b0ed0-b53d-11f1-86ea-fd0b4f683457"
+      },
+      {
+        "player": {
+          "position": "K",
+          "status": "Active",
+          "number": 38,
+          "first_name": "Chad",
+          "last_name": "Ryland",
+          "sport": "nfl",
+          "team": "ARI",
+          "player_id": "10955",
+          "fantasy_positions": [
+            "K"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 3,
+          "news_updated": 1791024618817
+        },
+        "player_id": "10955",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0,
+          "kick_yds": 64.0,
+          "kicks": 1.0
+        },
+        "game_id": "202610201",
+        "play_id": "be3b0ed0-b53d-11f1-86ea-fd0b4f683457"
+      },
+      {
+        "player": {
+          "position": "DB",
+          "status": "Active",
+          "number": 13,
+          "first_name": "Kei'Trel",
+          "last_name": "Clark",
+          "sport": "nfl",
+          "team": "ARI",
+          "player_id": "11014",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 3,
+          "news_updated": 1781125816542
+        },
+        "player_id": "11014",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610201",
+        "play_id": "be3b0ed0-b53d-11f1-86ea-fd0b4f683457"
+      },
+      {
+        "player": {
+          "position": "WR",
+          "status": "Active",
+          "number": 22,
+          "first_name": "Rashid",
+          "last_name": "Shaheed",
+          "sport": "nfl",
+          "team": "SEA",
+          "player_id": "8676",
+          "fantasy_positions": [
+            "WR"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 4,
+          "news_updated": 1790960123005
+        },
+        "player_id": "8676",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "kr": 1.0,
+          "kr_yd": 27.0
+        },
+        "game_id": "202610201",
+        "play_id": "be3b0ed0-b53d-11f1-86ea-fd0b4f683457"
+      }
+    ],
+    "sequence": 1789942062291,
+    "updated_at": 1790266117691
+  },
+  {
+    "game_id": "202610201",
+    "metadata": {
+      "away_points": 7,
+      "away_used_timeouts": 2,
+      "description": "J.Price rushed up the middle for 0 yards. J.Price FUMBLES, forced by Z.Collins. Fumble RECOVERED by ARI-Z.Collins at ARI 47.",
+      "distance": 6,
+      "distance_end": 10,
+      "down": 2,
+      "down_end": 1,
+      "fantasy_description": "FUMBLE! Jadarian Price 0 Yd run, fumble recovered by ARI",
+      "home_points": 7,
+      "home_used_timeouts": 0,
+      "is_scoring_play": false,
+      "opponent": "ARI",
+      "penalties": [],
+      "play_time": "2026-09-20T21:02:32+00:00",
+      "play_type": "rush_fumble",
+      "possession": "SEA",
+      "quarter_name": "2",
+      "sequence": 1789938192438,
+      "team": "SEA",
+      "time_remaining_minutes": 13,
+      "time_remaining_minutes_end": 13,
+      "time_remaining_seconds": 36,
+      "time_remaining_seconds_end": 30,
+      "topic_id": "1407506284835549184",
+      "type": "Fumble",
+      "yard_line": 47,
+      "yard_line_end": 47,
+      "yard_line_territory": "ARI",
+      "yard_line_territory_end": "ARI",
+      "yards_gained": 0,
+      "yards_to_end_zone": 47
+    },
+    "play_id": "896f24e0-b536-11f1-86ea-fd0b4f683457",
+    "play_stats": [
+      {
+        "player": {
+          "position": "RB",
+          "status": "Inactive",
+          "number": 8,
+          "first_name": "Jadarian",
+          "last_name": "Price",
+          "sport": "nfl",
+          "team": "SEA",
+          "player_id": "13286",
+          "fantasy_positions": [
+            "RB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": "IR",
+          "years_exp": 0,
+          "news_updated": 1791144311884
+        },
+        "player_id": "13286",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_yac": 1.0
+        },
+        "game_id": "202610201",
+        "play_id": "896f24e0-b536-11f1-86ea-fd0b4f683457"
+      },
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 1,
+          "first_name": "Mack",
+          "last_name": "Wilson",
+          "sport": "nfl",
+          "team": "ARI",
+          "player_id": "6131",
+          "fantasy_positions": [
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 7,
+          "news_updated": 1790903416946
+        },
+        "player_id": "6131",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610201",
+        "play_id": "896f24e0-b536-11f1-86ea-fd0b4f683457"
+      },
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 25,
+          "first_name": "Zaven",
+          "last_name": "Collins",
+          "sport": "nfl",
+          "team": "ARI",
+          "player_id": "7637",
+          "fantasy_positions": [
+            "DL",
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 5,
+          "news_updated": 1775096416800
+        },
+        "player_id": "7637",
+        "stats": {
+          "idp_fum_rec": 1.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610201",
+        "play_id": "896f24e0-b536-11f1-86ea-fd0b4f683457"
+      }
+    ],
+    "sequence": 1789938192438,
+    "updated_at": 1790266117477
+  },
+  {
+    "game_id": "202610229",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 2,
+      "description": "K.Cousins pass short left complete. Catch made by J.Bech for 20 yards. J.Bech FUMBLES, forced by D.Jackson. Fumble RECOVERED by LV-J.Bech at LAC 3.",
+      "distance": 10,
+      "distance_end": 3,
+      "down": 1,
+      "down_end": 1,
+      "fantasy_description": "Kirk Cousins 20 Yd pass complete to Jack Bech, FUMBLE recovered by LV",
+      "home_points": 0,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "LAC",
+      "penalties": [],
+      "play_time": "2026-09-20T20:35:27+00:00",
+      "play_type": "pass_catch_fumble",
+      "possession": "LV",
+      "quarter_name": "1",
+      "rec_yar": 7.0,
+      "sequence": 1789936536994,
+      "team": "LV",
+      "time_remaining_minutes": 3,
+      "time_remaining_minutes_end": 2,
+      "time_remaining_seconds": 14,
+      "time_remaining_seconds_end": 39,
+      "topic_id": "1407499460690358272",
+      "type": "PassCompleted",
+      "yard_line": 23,
+      "yard_line_end": 3,
+      "yard_line_territory": "LAC",
+      "yard_line_territory_end": "LAC",
+      "yards_gained": 20,
+      "yards_to_end_zone": 23
+    },
+    "play_id": "bcc2c7b0-b532-11f1-9890-3f016326050d",
+    "play_stats": [
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 8,
+          "first_name": "Kirk",
+          "last_name": "Cousins",
+          "sport": "nfl",
+          "team": "LV",
+          "player_id": "1166",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 14,
+          "news_updated": 1790974539624
+        },
+        "player_id": "1166",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": 13.0,
+          "pass_cmp": 1.0,
+          "pass_fd": 1.0,
+          "pass_yd": 20.0
+        },
+        "game_id": "202610229",
+        "play_id": "bcc2c7b0-b532-11f1-9890-3f016326050d"
+      },
+      {
+        "player": {
+          "position": "WR",
+          "status": "Inactive",
+          "number": 18,
+          "first_name": "Jack",
+          "last_name": "Bech",
+          "sport": "nfl",
+          "team": "LV",
+          "player_id": "12483",
+          "fantasy_positions": [
+            "WR"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": "IR",
+          "years_exp": 1,
+          "news_updated": 1790748313996
+        },
+        "player_id": "12483",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_20_29": 1.0,
+          "rec_fd": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yar": 7.0,
+          "rec_yd": 20.0
+        },
+        "game_id": "202610229",
+        "play_id": "bcc2c7b0-b532-11f1-9890-3f016326050d"
+      },
+      {
+        "player": {
+          "position": "CB",
+          "status": "Active",
+          "number": 26,
+          "first_name": "Donte",
+          "last_name": "Jackson",
+          "sport": "nfl",
+          "team": "LAC",
+          "player_id": "5051",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": "Questionable",
+          "years_exp": 8,
+          "news_updated": 1791149113147
+        },
+        "player_id": "5051",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610229",
+        "play_id": "bcc2c7b0-b532-11f1-9890-3f016326050d"
+      }
+    ],
+    "sequence": 1789936536994,
+    "updated_at": 1790266126275
+  },
+  {
+    "game_id": "202610231",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 1,
+      "description": "M.Willis pass short left complete. Catch made by D.Herman for 18 yards. D.Herman FUMBLES, forced by F.Warner. D.Herman FUMBLES, out of bounds.",
+      "distance": 10,
+      "distance_end": 10,
+      "down": 2,
+      "down_end": 1,
+      "fantasy_description": "Malik Willis 18 Yd pass complete to DJ Herman",
+      "home_points": 0,
+      "home_used_timeouts": 0,
+      "is_scoring_play": false,
+      "opponent": "SF",
+      "penalties": [],
+      "play_time": "2026-09-20T20:26:51+00:00",
+      "play_type": "pass_complete",
+      "possession": "MIA",
+      "quarter_name": "1",
+      "rec_yar": 11.0,
+      "sequence": 1789936063609,
+      "team": "MIA",
+      "time_remaining_minutes": 14,
+      "time_remaining_minutes_end": 14,
+      "time_remaining_seconds": 45,
+      "time_remaining_seconds_end": 11,
+      "topic_id": "1407497291455053824",
+      "type": "PassCompleted",
+      "yard_line": 33,
+      "yard_line_end": 49,
+      "yard_line_territory": "MIA",
+      "yard_line_territory_end": "SF",
+      "yards_gained": 18,
+      "yards_to_end_zone": 67
+    },
+    "play_id": "95a66110-b531-11f1-99e4-27f9f12687b9",
+    "play_stats": [
+      {
+        "player": {
+          "position": "RB",
+          "status": "Active",
+          "number": 34,
+          "first_name": "DJ",
+          "last_name": "Herman",
+          "sport": "nfl",
+          "team": "MIA",
+          "player_id": "14026",
+          "fantasy_positions": [
+            "RB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 0,
+          "news_updated": null
+        },
+        "player_id": "14026",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_10_19": 1.0,
+          "rec_fd": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yar": 11.0,
+          "rec_yd": 18.0
+        },
+        "game_id": "202610231",
+        "play_id": "95a66110-b531-11f1-99e4-27f9f12687b9"
+      },
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 54,
+          "first_name": "Fred",
+          "last_name": "Warner",
+          "sport": "nfl",
+          "team": "SF",
+          "player_id": "5041",
+          "fantasy_positions": [
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 8,
+          "news_updated": 1790743212964
+        },
+        "player_id": "5041",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610231",
+        "play_id": "95a66110-b531-11f1-99e4-27f9f12687b9"
+      },
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 2,
+          "first_name": "Malik",
+          "last_name": "Willis",
+          "sport": "nfl",
+          "team": "MIA",
+          "player_id": "8161",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 4,
+          "news_updated": 1791025219211
+        },
+        "player_id": "8161",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": 7.0,
+          "pass_cmp": 1.0,
+          "pass_fd": 1.0,
+          "pass_yd": 18.0
+        },
+        "game_id": "202610231",
+        "play_id": "95a66110-b531-11f1-99e4-27f9f12687b9"
+      }
+    ],
+    "sequence": 1789936063609,
+    "updated_at": 1790266129000
+  },
+  {
+    "game_id": "202610229",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 2,
+      "description": "J.Herbert pass short left complete. Catch made by B.Thompson for 13 yards. B.Thompson FUMBLES, forced by T.Johnson. B.Thompson FUMBLES, out of bounds.",
+      "distance": 10,
+      "distance_end": 10,
+      "down": 3,
+      "down_end": 1,
+      "fantasy_description": "Justin Herbert 13 Yd pass complete to Brenen Thompson",
+      "home_points": 0,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "LV",
+      "penalties": [],
+      "play_time": "2026-09-20T20:22:33+00:00",
+      "play_type": "pass_complete",
+      "possession": "LAC",
+      "quarter_name": "1",
+      "sequence": 1789935761914,
+      "team": "LAC",
+      "time_remaining_minutes": 7,
+      "time_remaining_minutes_end": 6,
+      "time_remaining_seconds": 29,
+      "time_remaining_seconds_end": 56,
+      "topic_id": "1407496215737716736",
+      "type": "PassCompleted",
+      "yard_line": 17,
+      "yard_line_end": 30,
+      "yard_line_territory": "LAC",
+      "yard_line_territory_end": "LAC",
+      "yards_gained": 13,
+      "yards_to_end_zone": 83
+    },
+    "play_id": "e1a99100-b530-11f1-9890-3f016326050d",
+    "play_stats": [
+      {
+        "player": {
+          "position": "WR",
+          "status": "Active",
+          "number": 89,
+          "first_name": "Brenen",
+          "last_name": "Thompson",
+          "sport": "nfl",
+          "team": "LAC",
+          "player_id": "13380",
+          "fantasy_positions": [
+            "WR"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": "Out",
+          "years_exp": 0,
+          "news_updated": 1790983240855
+        },
+        "player_id": "13380",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_10_19": 1.0,
+          "rec_fd": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yd": 13.0
+        },
+        "game_id": "202610229",
+        "play_id": "e1a99100-b530-11f1-9890-3f016326050d"
+      },
+      {
+        "player": {
+          "position": "CB",
+          "status": "Active",
+          "number": 3,
+          "first_name": "Taron",
+          "last_name": "Johnson",
+          "sport": "nfl",
+          "team": "LV",
+          "player_id": "5341",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 8,
+          "news_updated": 1779003356392
+        },
+        "player_id": "5341",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610229",
+        "play_id": "e1a99100-b530-11f1-9890-3f016326050d"
+      },
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 10,
+          "first_name": "Justin",
+          "last_name": "Herbert",
+          "sport": "nfl",
+          "team": "LAC",
+          "player_id": "6797",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 6,
+          "news_updated": 1791033619423
+        },
+        "player_id": "6797",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": 13.0,
+          "pass_cmp": 1.0,
+          "pass_fd": 1.0,
+          "pass_yd": 13.0
+        },
+        "game_id": "202610229",
+        "play_id": "e1a99100-b530-11f1-9890-3f016326050d"
+      }
+    ],
+    "sequence": 1789935761914,
+    "updated_at": 1790266126221
+  },
+  {
+    "game_id": "202610210",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 3,
+      "description": "T.Lawrence steps back to pass. Sacked at JAC 35 for yards (N.Bonitto). T.Lawrence FUMBLES, forced by N.Bonitto. Fumble RECOVERED by DEN-A.Singleton at JAC 35. Tackled by at JAC 25. PENALTY on DEN-R.Moss, Illegal Contact, 5 yards, accepted. No Play.",
+      "distance": 10,
+      "distance_end": 10,
+      "down": 1,
+      "down_end": 1,
+      "fantasy_description": "FUMBLE! Trevor Lawrence sacked, fumble recovered by DEN",
+      "home_points": 0,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "DEN",
+      "penalties": [
+        {
+          "description": "Illegal Contact",
+          "player": {
+            "first_name": "Riley",
+            "last_name": "Moss",
+            "player_id": "10930",
+            "position": "DB",
+            "team": "DEN"
+          },
+          "result": "accepted",
+          "yards": 5
+        }
+      ],
+      "play_time": "2026-09-20T20:11:52+00:00",
+      "play_type": "pass_no_play",
+      "possession": "JAX",
+      "quarter_name": "1",
+      "sequence": 1789935150682,
+      "team": "JAX",
+      "time_remaining_minutes": 11,
+      "time_remaining_minutes_end": 11,
+      "time_remaining_seconds": 14,
+      "time_remaining_seconds_end": 3,
+      "topic_id": "1407493526282932224",
+      "type": "Play",
+      "yard_line": 43,
+      "yard_line_end": 48,
+      "yard_line_territory": "JAX",
+      "yard_line_territory_end": "JAX",
+      "yards_gained": 0,
+      "yards_to_end_zone": 57
+    },
+    "play_id": "75063ef0-b52f-11f1-a1a2-f9f6cb6a9115",
+    "play_stats": [
+      {
+        "player": {
+          "position": "DB",
+          "status": "Active",
+          "number": 21,
+          "first_name": "Riley",
+          "last_name": "Moss",
+          "sport": "nfl",
+          "team": "DEN",
+          "player_id": "10930",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": "Out",
+          "years_exp": 3,
+          "news_updated": 1791154513899
+        },
+        "player_id": "10930",
+        "stats": {
+          "penalty": 1.0,
+          "penalty_yd": 5.0
+        },
+        "game_id": "202610210",
+        "play_id": "75063ef0-b52f-11f1-a1a2-f9f6cb6a9115"
+      }
+    ],
+    "sequence": 1789935150682,
+    "updated_at": 1790266123081
+  },
+  {
+    "game_id": "202610224",
+    "metadata": {
+      "away_points": 7,
+      "away_used_timeouts": 1,
+      "description": "M.Lloyd rushed left tackle for 2 yards. M.Lloyd FUMBLES, forced by K.Enagbare. Fumble RECOVERED by NYJ-H.Phillips at GB 18.",
+      "distance": 10,
+      "distance_end": 10,
+      "down": 1,
+      "down_end": 1,
+      "fantasy_description": "FUMBLE! MarShawn Lloyd 2 Yd run, fumble recovered by NYJ",
+      "home_points": 14,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "NYJ",
+      "penalties": [],
+      "play_time": "2026-09-20T19:36:55+00:00",
+      "play_type": "rush_fumble",
+      "possession": "GB",
+      "quarter_name": "4",
+      "sequence": 1789933062881,
+      "team": "GB",
+      "time_remaining_minutes": 12,
+      "time_remaining_minutes_end": 12,
+      "time_remaining_seconds": 35,
+      "time_remaining_seconds_end": 27,
+      "topic_id": "1407484729699164160",
+      "type": "Fumble",
+      "yard_line": 14,
+      "yard_line_end": 18,
+      "yard_line_territory": "GB",
+      "yard_line_territory_end": "GB",
+      "yards_gained": 2,
+      "yards_to_end_zone": 86
+    },
+    "play_id": "9e4ff490-b52a-11f1-a768-71955b6b930e",
+    "play_stats": [
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 56,
+          "first_name": "Demario",
+          "last_name": "Davis",
+          "sport": "nfl",
+          "team": "NYJ",
+          "player_id": "1052",
+          "fantasy_positions": [
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 14,
+          "news_updated": 1790819731338
+        },
+        "player_id": "1052",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610224",
+        "play_id": "9e4ff490-b52a-11f1-a768-71955b6b930e"
+      },
+      {
+        "player": {
+          "position": "RB",
+          "status": "Active",
+          "number": 32,
+          "first_name": "MarShawn",
+          "last_name": "Lloyd",
+          "sport": "nfl",
+          "team": "GB",
+          "player_id": "11581",
+          "fantasy_positions": [
+            "RB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 2,
+          "news_updated": 1790345740917
+        },
+        "player_id": "11581",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_yd": 2.0
+        },
+        "game_id": "202610224",
+        "play_id": "9e4ff490-b52a-11f1-a768-71955b6b930e"
+      },
+      {
+        "player": {
+          "position": "DT",
+          "status": "Active",
+          "number": 97,
+          "first_name": "Harrison",
+          "last_name": "Phillips",
+          "sport": "nfl",
+          "team": "NYJ",
+          "player_id": "5049",
+          "fantasy_positions": [
+            "DL"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 8,
+          "news_updated": 1767824145453
+        },
+        "player_id": "5049",
+        "stats": {
+          "idp_fum_rec": 1.0
+        },
+        "game_id": "202610224",
+        "play_id": "9e4ff490-b52a-11f1-a768-71955b6b930e"
+      },
+      {
+        "player": {
+          "position": "DL",
+          "status": "Active",
+          "number": 52,
+          "first_name": "Kingsley",
+          "last_name": "Enagbare",
+          "sport": "nfl",
+          "team": "NYJ",
+          "player_id": "8382",
+          "fantasy_positions": [
+            "DL"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": "Out",
+          "years_exp": 4,
+          "news_updated": 1791128745339
+        },
+        "player_id": "8382",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610224",
+        "play_id": "9e4ff490-b52a-11f1-a768-71955b6b930e"
+      }
+    ],
+    "sequence": 1789933062881,
+    "updated_at": 1790266126674
+  },
+  {
+    "game_id": "202610221",
+    "metadata": {
+      "quarter_name": "4",
+      "down": 2,
+      "possession": "PIT",
+      "time_remaining_seconds": 46,
+      "scoring_description": "Elijah Ponder Fumble Return",
+      "sequence": 1789932165670,
+      "yard_line_territory_end": "PIT",
+      "yard_line_end": 15,
+      "fantasy_description": "FUMBLE! Aaron Rodgers sacked, fumble recovered by NE",
+      "description": "A.Rodgers steps back to pass. Sacked at PIT 19 for -11 yards (C.Barmore). A.Rodgers FUMBLES, forced by C.Barmore. Fumble RECOVERED by NE-E.Ponder at PIT 19. TOUCHDOWN. ",
+      "time_remaining_seconds_end": 37,
+      "team": "PIT",
+      "distance": 21,
+      "opponent": "NE",
+      "yards_to_end_zone": 70,
+      "is_scoring_play": true,
+      "time_remaining_minutes": 13,
+      "play_type": "pass_fumble",
+      "penalties": [],
+      "play_time": "2026-09-20T19:22:18+00:00",
+      "home_used_timeouts": 1,
+      "scoring_team": "NE",
+      "away_points": 3,
+      "yard_line": 30,
+      "type": "Fumble",
+      "distance_end": 0,
+      "home_points": 19,
+      "time_remaining_minutes_end": 13,
+      "scoring_points": 6,
+      "yards_gained": 0,
+      "yard_line_territory": "PIT",
+      "away_used_timeouts": 1,
+      "topic_id": "1407481053685288960",
+      "down_end": 0
+    },
+    "play_id": "84401eb0-b528-11f1-8e66-3984deea2f59",
+    "play_stats": [
+      {
+        "player": {
+          "position": "DE",
+          "status": "Active",
+          "number": 91,
+          "first_name": "Elijah",
+          "last_name": "Ponder",
+          "sport": "nfl",
+          "team": "NE",
+          "player_id": "12978",
+          "fantasy_positions": [
+            "DL"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 1,
+          "news_updated": 1790129110330
+        },
+        "player_id": "12978",
+        "stats": {
+          "idp_def_td": 1.0,
+          "idp_fum_rec": 1.0,
+          "idp_fum_ret_yd": 19.0
+        },
+        "game_id": "202610221",
+        "play_id": "84401eb0-b528-11f1-8e66-3984deea2f59"
+      },
+      {
+        "player": {
+          "position": "DT",
+          "status": "Active",
+          "number": 90,
+          "first_name": "Christian",
+          "last_name": "Barmore",
+          "sport": "nfl",
+          "team": "NE",
+          "player_id": "7664",
+          "fantasy_positions": [
+            "DL"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": "Out",
+          "years_exp": 5,
+          "news_updated": 1790970640111
+        },
+        "player_id": "7664",
+        "stats": {
+          "idp_qb_hit": 1.0,
+          "idp_sack": 1.0,
+          "idp_sack_yd": -11.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_loss": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610221",
+        "play_id": "84401eb0-b528-11f1-8e66-3984deea2f59"
+      },
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 8,
+          "first_name": "Aaron",
+          "last_name": "Rodgers",
+          "sport": "nfl",
+          "team": "PIT",
+          "player_id": "96",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 21,
+          "news_updated": 1790954724093
+        },
+        "player_id": "96",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "pass_sack": 1.0,
+          "pass_sack_yds": -11.0
+        },
+        "game_id": "202610221",
+        "play_id": "84401eb0-b528-11f1-8e66-3984deea2f59"
+      }
+    ],
+    "sequence": 1789932165670,
+    "updated_at": 1790266126509
+  },
+  {
+    "game_id": "202610224",
+    "metadata": {
+      "away_points": 7,
+      "away_used_timeouts": 1,
+      "description": "J.Love steps back to pass. Sacked at GB 19 for -3 yards (J.Briggs). J.Love FUMBLES, forced by J.Briggs. Fumble RECOVERED by GB-D.Jennings at GB 24. ",
+      "distance": 25,
+      "distance_end": 23,
+      "down": 1,
+      "down_end": 2,
+      "fantasy_description": "FUMBLE! Jordan Love sacked, fumble recovered by GB",
+      "home_points": 7,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "NYJ",
+      "penalties": [],
+      "play_time": "2026-09-20T18:59:47+00:00",
+      "play_type": "pass_fumble",
+      "possession": "GB",
+      "quarter_name": "3",
+      "sequence": 1789930842943,
+      "team": "GB",
+      "time_remaining_minutes": 10,
+      "time_remaining_minutes_end": 9,
+      "time_remaining_seconds": 15,
+      "time_remaining_seconds_end": 18,
+      "topic_id": "1407475386333347840",
+      "type": "Sack",
+      "yard_line": 22,
+      "yard_line_end": 24,
+      "yard_line_territory": "GB",
+      "yard_line_territory_end": "GB",
+      "yards_gained": 0,
+      "yards_to_end_zone": 78
+    },
+    "play_id": "6140f360-b525-11f1-a768-71955b6b930e",
+    "play_stats": [
+      {
+        "player": {
+          "position": "DE",
+          "status": "Active",
+          "number": 91,
+          "first_name": "Jowon",
+          "last_name": "Briggs",
+          "sport": "nfl",
+          "team": "NYJ",
+          "player_id": "11846",
+          "fantasy_positions": [
+            "DL"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 2,
+          "news_updated": 1772756451820
+        },
+        "player_id": "11846",
+        "stats": {
+          "idp_sack": 1.0,
+          "idp_sack_yd": -3.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610224",
+        "play_id": "6140f360-b525-11f1-a768-71955b6b930e"
+      },
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 10,
+          "first_name": "Jordan",
+          "last_name": "Love",
+          "sport": "nfl",
+          "team": "GB",
+          "player_id": "6804",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 6,
+          "news_updated": 1791155114146
+        },
+        "player_id": "6804",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "pass_sack": 1.0,
+          "pass_sack_yds": -3.0
+        },
+        "game_id": "202610224",
+        "play_id": "6140f360-b525-11f1-a768-71955b6b930e"
+      }
+    ],
+    "sequence": 1789930842943,
+    "updated_at": 1790266126532
+  },
+  {
+    "game_id": "202610206",
+    "metadata": {
+      "away_points": 6,
+      "away_used_timeouts": 2,
+      "description": "D.Swift rushed right tackle for 0 yards. D.Swift FUMBLES, forced by J.Redmond. Fumble RECOVERED by MIN-I.Rodgers at MIN 1. Tackled by at MIN 1.",
+      "distance": 1,
+      "distance_end": 10,
+      "down": 1,
+      "down_end": 1,
+      "fantasy_description": "FUMBLE! D'Andre Swift 0 Yd run, fumble recovered by MIN",
+      "home_points": 3,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "MIN",
+      "penalties": [],
+      "play_time": "2026-09-20T18:47:43+00:00",
+      "play_type": "rush_fumble",
+      "possession": "CHI",
+      "quarter_name": "3",
+      "sequence": 1789930100770,
+      "team": "CHI",
+      "time_remaining_minutes": 9,
+      "time_remaining_minutes_end": 9,
+      "time_remaining_seconds": 43,
+      "time_remaining_seconds_end": 38,
+      "topic_id": "1407472349606899712",
+      "type": "Fumble",
+      "yard_line": 1,
+      "yard_line_end": 1,
+      "yard_line_territory": "MIN",
+      "yard_line_territory_end": "MIN",
+      "yards_gained": 0,
+      "yards_to_end_zone": 1
+    },
+    "play_id": "b2b3b2c0-b523-11f1-aa1e-1de76de6beee",
+    "play_stats": [
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 0,
+          "first_name": "Ivan",
+          "last_name": "Pace",
+          "sport": "nfl",
+          "team": "MIN",
+          "player_id": "11086",
+          "fantasy_positions": [
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 3,
+          "news_updated": 1790536254954
+        },
+        "player_id": "11086",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610206",
+        "play_id": "b2b3b2c0-b523-11f1-aa1e-1de76de6beee"
+      },
+      {
+        "player": {
+          "position": "DE",
+          "status": "Active",
+          "number": 61,
+          "first_name": "Jalen",
+          "last_name": "Redmond",
+          "sport": "nfl",
+          "team": "MIN",
+          "player_id": "11328",
+          "fantasy_positions": [
+            "DL"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 4,
+          "news_updated": 1776200102835
+        },
+        "player_id": "11328",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610206",
+        "play_id": "b2b3b2c0-b523-11f1-aa1e-1de76de6beee"
+      },
+      {
+        "player": {
+          "position": "RB",
+          "status": "Active",
+          "number": 4,
+          "first_name": "D'Andre",
+          "last_name": "Swift",
+          "sport": "nfl",
+          "team": "CHI",
+          "player_id": "6790",
+          "fantasy_positions": [
+            "RB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 6,
+          "news_updated": 1791145512713
+        },
+        "player_id": "6790",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0
+        },
+        "game_id": "202610206",
+        "play_id": "b2b3b2c0-b523-11f1-aa1e-1de76de6beee"
+      },
+      {
+        "player": {
+          "position": "CB",
+          "status": "Active",
+          "number": 2,
+          "first_name": "Isaiah",
+          "last_name": "Rodgers",
+          "sport": "nfl",
+          "team": "MIN",
+          "player_id": "7133",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 6,
+          "news_updated": 1790742913059
+        },
+        "player_id": "7133",
+        "stats": {
+          "idp_fum_rec": 1.0
+        },
+        "game_id": "202610206",
+        "play_id": "b2b3b2c0-b523-11f1-aa1e-1de76de6beee"
+      }
+    ],
+    "sequence": 1789930100770,
+    "updated_at": 1790266120605
+  },
+  {
+    "game_id": "202610203",
+    "metadata": {
+      "away_points": 9,
+      "away_used_timeouts": 1,
+      "description": "D.Carlson kicks 65 yards from NO 35 to the BAL End Zone. C.Moore returns the kickoff. C.Moore FUMBLES, forced by D.Stutsman. Fumble RECOVERED by NO-J.Sanker at BAL 33. The Replay Official reviewed the fumble and the play was overturned. D.Carlson kicks 32 yards from NO 35 to the BAL End Zone. C.Moore returns the kickoff. Tackled by D.Stutsman; C.Rumph at NO 35. ",
+      "distance": 0,
+      "distance_end": 10,
+      "down": 0,
+      "down_end": 1,
+      "home_points": 14,
+      "home_used_timeouts": 2,
+      "is_scoring_play": false,
+      "opponent": "BAL",
+      "penalties": [],
+      "play_time": "2026-09-20T18:40:41+00:00",
+      "play_type": "kickoff",
+      "possession": "NO",
+      "quarter_name": "3",
+      "review_result": "overturned",
+      "review_type": "fumble",
+      "sequence": 1789929730276,
+      "team": "NO",
+      "time_remaining_minutes": 11,
+      "time_remaining_minutes_end": 10,
+      "time_remaining_seconds": 0,
+      "time_remaining_seconds_end": 53,
+      "topic_id": "1407470549281574912",
+      "type": "Kickoff",
+      "yard_line": 35,
+      "yard_line_end": 32,
+      "yard_line_territory": "NO",
+      "yard_line_territory_end": "BAL",
+      "yards_gained": 65,
+      "yards_to_end_zone": 65
+    },
+    "play_id": "c68645c0-b522-11f1-a8fe-a7ea79e4c53f",
+    "play_stats": [
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 28,
+          "first_name": "Danny",
+          "last_name": "Stutsman",
+          "sport": "nfl",
+          "team": "NO",
+          "player_id": "12650",
+          "fantasy_positions": [
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 1,
+          "news_updated": 1771191617881
+        },
+        "player_id": "12650",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610203",
+        "play_id": "c68645c0-b522-11f1-a8fe-a7ea79e4c53f"
+      },
+      {
+        "player": {
+          "position": "WR",
+          "status": "Active",
+          "number": 17,
+          "first_name": "Chris",
+          "last_name": "Moore",
+          "sport": "nfl",
+          "team": "BAL",
+          "player_id": "3269",
+          "fantasy_positions": [
+            "WR"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": "Out",
+          "years_exp": 10,
+          "news_updated": 1791129645505
+        },
+        "player_id": "3269",
+        "stats": {
+          "kr": 1.0,
+          "kr_yd": 32.0
+        },
+        "game_id": "202610203",
+        "play_id": "c68645c0-b522-11f1-a8fe-a7ea79e4c53f"
+      },
+      {
+        "player": {
+          "position": "K",
+          "status": "Active",
+          "number": 10,
+          "first_name": "Daniel",
+          "last_name": "Carlson",
+          "sport": "nfl",
+          "team": "NO",
+          "player_id": "5095",
+          "fantasy_positions": [
+            "K"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 8,
+          "news_updated": 1790638508719
+        },
+        "player_id": "5095",
+        "stats": {
+          "kick_yds": 65.0,
+          "kicks": 1.0
+        },
+        "game_id": "202610203",
+        "play_id": "c68645c0-b522-11f1-a8fe-a7ea79e4c53f"
+      },
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 58,
+          "first_name": "Chris",
+          "last_name": "Rumph",
+          "sport": "nfl",
+          "team": "NO",
+          "player_id": "7721",
+          "fantasy_positions": [
+            "DL"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 5,
+          "news_updated": 1789003235292
+        },
+        "player_id": "7721",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610203",
+        "play_id": "c68645c0-b522-11f1-a8fe-a7ea79e4c53f"
+      }
+    ],
+    "sequence": 1789929730276,
+    "updated_at": 1790266117679
+  },
+  {
+    "game_id": "202610224",
+    "metadata": {
+      "quarter_name": "2",
+      "down": 2,
+      "possession": "GB",
+      "time_remaining_seconds": 12,
+      "sequence": 1789928251385,
+      "yard_line_territory_end": "GB",
+      "yard_line_end": 43,
+      "fantasy_description": "Jordan Love 5 Yd pass complete to Tucker Kraft, FUMBLE recovered by GB",
+      "description": "J.Love pass short right complete. Catch made by T.Kraft for 5 yards. T.Kraft FUMBLES, forced by D.Bailey. Fumble RECOVERED by GB-T.Kraft at GB 43. New York challenged the fumble and the play was upheld. Timeout #3 by NYJ.",
+      "time_remaining_seconds_end": 14,
+      "team": "GB",
+      "distance": 18,
+      "opponent": "NYJ",
+      "yards_to_end_zone": 62,
+      "is_scoring_play": false,
+      "time_remaining_minutes": 5,
+      "review_result": "upheld",
+      "play_type": "pass_catch_fumble",
+      "penalties": [],
+      "play_time": "2026-09-20T18:16:30+00:00",
+      "rec_yar": 8.0,
+      "home_used_timeouts": 1,
+      "away_points": 7,
+      "yard_line": 38,
+      "type": "PassCompleted",
+      "distance_end": 13,
+      "home_points": 7,
+      "review_type": "fumble",
+      "time_remaining_minutes_end": 4,
+      "yards_gained": 5,
+      "yard_line_territory": "GB",
+      "away_used_timeouts": 1,
+      "topic_id": "1407464494011076608",
+      "down_end": 3
+    },
+    "play_id": "60ab2ac0-b51f-11f1-a768-71955b6b930e",
+    "play_stats": [
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 31,
+          "first_name": "David",
+          "last_name": "Bailey",
+          "sport": "nfl",
+          "team": "NYJ",
+          "player_id": "13363",
+          "fantasy_positions": [
+            "DL",
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 0,
+          "news_updated": 1790369423439
+        },
+        "player_id": "13363",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610224",
+        "play_id": "60ab2ac0-b51f-11f1-a768-71955b6b930e"
+      },
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 10,
+          "first_name": "Jordan",
+          "last_name": "Love",
+          "sport": "nfl",
+          "team": "GB",
+          "player_id": "6804",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 6,
+          "news_updated": 1791155114146
+        },
+        "player_id": "6804",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": -3.0,
+          "pass_cmp": 1.0,
+          "pass_yd": 5.0
+        },
+        "game_id": "202610224",
+        "play_id": "60ab2ac0-b51f-11f1-a768-71955b6b930e"
+      },
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 44,
+          "first_name": "Jamien",
+          "last_name": "Sherwood",
+          "sport": "nfl",
+          "team": "NYJ",
+          "player_id": "7841",
+          "fantasy_positions": [
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 5,
+          "news_updated": 1790127010429
+        },
+        "player_id": "7841",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610224",
+        "play_id": "60ab2ac0-b51f-11f1-a768-71955b6b930e"
+      },
+      {
+        "player": {
+          "position": "TE",
+          "status": "Active",
+          "number": 85,
+          "first_name": "Tucker",
+          "last_name": "Kraft",
+          "sport": "nfl",
+          "team": "GB",
+          "player_id": "9484",
+          "fantasy_positions": [
+            "TE"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 3,
+          "news_updated": 1791151813551
+        },
+        "player_id": "9484",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_5_9": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yar": 8.0,
+          "rec_yd": 5.0
+        },
+        "game_id": "202610224",
+        "play_id": "60ab2ac0-b51f-11f1-a768-71955b6b930e"
+      }
+    ],
+    "sequence": 1789928251385,
+    "updated_at": 1790266126412
+  },
+  {
+    "game_id": "202610224",
+    "metadata": {
+      "away_points": 7,
+      "away_used_timeouts": 1,
+      "description": "K.Johnson rushed right guard for -4 yards. K.Johnson FUMBLES, forced by A.Cisco. Fumble RECOVERED by GB-J.Love at GB 38. ",
+      "distance": 10,
+      "distance_end": 18,
+      "down": 1,
+      "down_end": 2,
+      "fantasy_description": "FUMBLE! Kaleb Johnson -4 Yd run, fumble recovered by GB",
+      "home_points": 7,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "NYJ",
+      "penalties": [],
+      "play_time": "2026-09-20T18:15:45+00:00",
+      "play_type": "rush_fumble",
+      "possession": "GB",
+      "quarter_name": "2",
+      "sequence": 1789928178564,
+      "team": "GB",
+      "time_remaining_minutes": 5,
+      "time_remaining_minutes_end": 5,
+      "time_remaining_seconds": 58,
+      "time_remaining_seconds_end": 12,
+      "topic_id": "1407464303841275904",
+      "type": "Rush",
+      "yard_line": 46,
+      "yard_line_end": 38,
+      "yard_line_territory": "GB",
+      "yard_line_territory_end": "GB",
+      "yards_gained": -4,
+      "yards_to_end_zone": 54
+    },
+    "play_id": "3f8f5e10-b51f-11f1-a768-71955b6b930e",
+    "play_stats": [
+      {
+        "player": {
+          "position": "RB",
+          "status": "Active",
+          "number": 26,
+          "first_name": "Kaleb",
+          "last_name": "Johnson",
+          "sport": "nfl",
+          "team": "GB",
+          "player_id": "12504",
+          "fantasy_positions": [
+            "RB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 1,
+          "news_updated": 1791035719676
+        },
+        "player_id": "12504",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_yd": -4.0
+        },
+        "game_id": "202610224",
+        "play_id": "3f8f5e10-b51f-11f1-a768-71955b6b930e"
+      },
+      {
+        "player": {
+          "position": "DB",
+          "status": "Active",
+          "number": 8,
+          "first_name": "Andre",
+          "last_name": "Cisco",
+          "sport": "nfl",
+          "team": "NYJ",
+          "player_id": "7698",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 5,
+          "news_updated": 1786810801019
+        },
+        "player_id": "7698",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_loss": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610224",
+        "play_id": "3f8f5e10-b51f-11f1-a768-71955b6b930e"
+      }
+    ],
+    "sequence": 1789928178564,
+    "updated_at": 1790266126408
+  },
+  {
+    "game_id": "202610202",
+    "metadata": {
+      "away_points": 10,
+      "away_used_timeouts": 0,
+      "description": "B.Young pass short left complete. Catch made by T.Tremble for 4 yards. T.Tremble FUMBLES, forced by X.Watts. Fumble RECOVERED by CAR-T.Tremble at ATL 7. Tackled by X.Watts at ATL 7.",
+      "distance": 10,
+      "distance_end": 6,
+      "down": 1,
+      "down_end": 2,
+      "fantasy_description": "Bryce Young 4 Yd pass complete to Tommy Tremble, FUMBLE recovered by CAR",
+      "home_points": 0,
+      "home_used_timeouts": 0,
+      "is_scoring_play": false,
+      "opponent": "ATL",
+      "penalties": [],
+      "play_time": "2026-09-20T18:09:22+00:00",
+      "play_type": "pass_catch_fumble",
+      "possession": "CAR",
+      "quarter_name": "2",
+      "rec_yar": 4.0,
+      "sequence": 1789927770443,
+      "team": "CAR",
+      "time_remaining_minutes": 7,
+      "time_remaining_minutes_end": 6,
+      "time_remaining_seconds": 20,
+      "time_remaining_seconds_end": 42,
+      "topic_id": "1407462704108560384",
+      "type": "PassCompleted",
+      "yard_line": 11,
+      "yard_line_end": 7,
+      "yard_line_territory": "ATL",
+      "yard_line_territory_end": "ATL",
+      "yards_gained": 4,
+      "yards_to_end_zone": 11
+    },
+    "play_id": "67110110-b51e-11f1-bf3d-af057388437f",
+    "play_stats": [
+      {
+        "player": {
+          "position": "DB",
+          "status": "Active",
+          "number": 31,
+          "first_name": "Xavier",
+          "last_name": "Watts",
+          "sport": "nfl",
+          "team": "ATL",
+          "player_id": "12591",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 1,
+          "news_updated": 1790481002991
+        },
+        "player_id": "12591",
+        "stats": {
+          "idp_tkl": 2.0,
+          "idp_tkl_solo": 2.0
+        },
+        "game_id": "202610202",
+        "play_id": "67110110-b51e-11f1-bf3d-af057388437f"
+      },
+      {
+        "player": {
+          "position": "TE",
+          "status": "Active",
+          "number": 82,
+          "first_name": "Tommy",
+          "last_name": "Tremble",
+          "sport": "nfl",
+          "team": "CAR",
+          "player_id": "7694",
+          "fantasy_positions": [
+            "TE"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 5,
+          "news_updated": 1789431007560
+        },
+        "player_id": "7694",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_0_4": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yar": 4.0,
+          "rec_yd": 4.0
+        },
+        "game_id": "202610202",
+        "play_id": "67110110-b51e-11f1-bf3d-af057388437f"
+      },
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 9,
+          "first_name": "Bryce",
+          "last_name": "Young",
+          "sport": "nfl",
+          "team": "CAR",
+          "player_id": "9228",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 3,
+          "news_updated": 1790973339494
+        },
+        "player_id": "9228",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_cmp": 1.0,
+          "pass_yd": 4.0
+        },
+        "game_id": "202610202",
+        "play_id": "67110110-b51e-11f1-bf3d-af057388437f"
+      }
+    ],
+    "sequence": 1789927770443,
+    "updated_at": 1790266117574
+  },
+  {
+    "game_id": "202610234",
+    "metadata": {
+      "quarter_name": "2",
+      "down": 1,
+      "possession": "TEN",
+      "time_remaining_seconds": 45,
+      "sequence": 1789927626610,
+      "yard_line_territory_end": "TEN",
+      "yard_line_end": 32,
+      "fantasy_description": "Cam Ward 2 Yd pass complete to Tyjae Spears",
+      "description": "C.Ward pass short right complete. Catch made by T.Spears for 2 yards. T.Spears FUMBLES, forced by J.Campbell. T.Spears FUMBLES, out of bounds. The Replay Official reviewed the pass completion and the play was upheld.",
+      "time_remaining_seconds_end": 28,
+      "team": "TEN",
+      "distance": 10,
+      "opponent": "PHI",
+      "yards_to_end_zone": 70,
+      "is_scoring_play": false,
+      "time_remaining_minutes": 1,
+      "review_result": "upheld",
+      "play_type": "pass_complete",
+      "penalties": [],
+      "play_time": "2026-09-20T18:06:57+00:00",
+      "home_used_timeouts": 3,
+      "away_points": 14,
+      "yard_line": 30,
+      "type": "PassCompleted",
+      "distance_end": 8,
+      "home_points": 7,
+      "review_type": "pass completion",
+      "time_remaining_minutes_end": 1,
+      "yards_gained": 2,
+      "yard_line_territory": "TEN",
+      "away_used_timeouts": 3,
+      "topic_id": "1407462091232681984",
+      "down_end": 2
+    },
+    "play_id": "0a29e480-b51e-11f1-a72d-81c0bffb403e",
+    "play_stats": [
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 1,
+          "first_name": "Cam",
+          "last_name": "Ward",
+          "sport": "nfl",
+          "team": "TEN",
+          "player_id": "12522",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 1,
+          "news_updated": 1791153013675
+        },
+        "player_id": "12522",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": 2.0,
+          "pass_cmp": 1.0,
+          "pass_yd": 2.0
+        },
+        "game_id": "202610234",
+        "play_id": "0a29e480-b51e-11f1-a72d-81c0bffb403e"
+      },
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 11,
+          "first_name": "Jihaad",
+          "last_name": "Campbell",
+          "sport": "nfl",
+          "team": "PHI",
+          "player_id": "12566",
+          "fantasy_positions": [
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 1,
+          "news_updated": 1790902516723
+        },
+        "player_id": "12566",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610234",
+        "play_id": "0a29e480-b51e-11f1-a72d-81c0bffb403e"
+      },
+      {
+        "player": {
+          "position": "RB",
+          "status": "Active",
+          "number": 2,
+          "first_name": "Tyjae",
+          "last_name": "Spears",
+          "sport": "nfl",
+          "team": "TEN",
+          "player_id": "9508",
+          "fantasy_positions": [
+            "RB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 3,
+          "news_updated": 1791150914683
+        },
+        "player_id": "9508",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_0_4": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yd": 2.0
+        },
+        "game_id": "202610234",
+        "play_id": "0a29e480-b51e-11f1-a72d-81c0bffb403e"
+      }
+    ],
+    "sequence": 1789927626610,
+    "updated_at": 1790266132034
+  },
+  {
+    "game_id": "202610233",
+    "metadata": {
+      "quarter_name": "2",
+      "down": 2,
+      "possession": "TB",
+      "time_remaining_seconds": 32,
+      "sequence": 1789927508880,
+      "yard_line_territory_end": "TB",
+      "yard_line_end": 49,
+      "fantasy_description": "Baker Mayfield 3 Yd pass complete to Cade Otton, FUMBLE recovered by TB",
+      "description": "B.Mayfield pass short right complete. Catch made by C.Otton for 3 yards. C.Otton FUMBLES, forced by D.Ward. Fumble RECOVERED by TB-C.Otton at TB 49. Cleveland challenged the pass completion and the play was upheld. Timeout #1 by CLE.",
+      "time_remaining_seconds_end": 51,
+      "team": "TB",
+      "distance": 8,
+      "opponent": "CLE",
+      "yards_to_end_zone": 54,
+      "is_scoring_play": false,
+      "time_remaining_minutes": 6,
+      "review_result": "upheld",
+      "play_type": "pass_catch_fumble",
+      "penalties": [],
+      "play_time": "2026-09-20T18:04:54+00:00",
+      "rec_yar": -1.0,
+      "home_used_timeouts": 2,
+      "away_points": 6,
+      "yard_line": 46,
+      "type": "PassCompleted",
+      "distance_end": 5,
+      "home_points": 6,
+      "review_type": "pass completion",
+      "time_remaining_minutes_end": 5,
+      "yards_gained": 3,
+      "yard_line_territory": "TB",
+      "away_used_timeouts": 3,
+      "topic_id": "1407461581679263744",
+      "down_end": 3
+    },
+    "play_id": "b58027f0-b51d-11f1-8043-7d2ab91a1882",
+    "play_stats": [
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 6,
+          "first_name": "Baker",
+          "last_name": "Mayfield",
+          "sport": "nfl",
+          "team": "TB",
+          "player_id": "4892",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": "Out",
+          "years_exp": 8,
+          "news_updated": 1791121545014
+        },
+        "player_id": "4892",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": 4.0,
+          "pass_cmp": 1.0,
+          "pass_yd": 3.0
+        },
+        "game_id": "202610233",
+        "play_id": "b58027f0-b51d-11f1-8043-7d2ab91a1882"
+      },
+      {
+        "player": {
+          "position": "CB",
+          "status": "Active",
+          "number": 21,
+          "first_name": "Denzel",
+          "last_name": "Ward",
+          "sport": "nfl",
+          "team": "CLE",
+          "player_id": "4964",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 8,
+          "news_updated": 1790994017248
+        },
+        "player_id": "4964",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610233",
+        "play_id": "b58027f0-b51d-11f1-8043-7d2ab91a1882"
+      },
+      {
+        "player": {
+          "position": "TE",
+          "status": "Active",
+          "number": 88,
+          "first_name": "Cade",
+          "last_name": "Otton",
+          "sport": "nfl",
+          "team": "TB",
+          "player_id": "8111",
+          "fantasy_positions": [
+            "TE"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 4,
+          "news_updated": 1790977539777
+        },
+        "player_id": "8111",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_0_4": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yar": -1.0,
+          "rec_yd": 3.0
+        },
+        "game_id": "202610233",
+        "play_id": "b58027f0-b51d-11f1-8043-7d2ab91a1882"
+      }
+    ],
+    "sequence": 1789927508880,
+    "updated_at": 1790266129244
+  },
+  {
+    "game_id": "202610221",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 1,
+      "description": "A.Rodgers steps back to pass. Sacked at NE 30 for -8 yards (C.Elliss). A.Rodgers FUMBLES, forced by C.Elliss. Fumble RECOVERED by PIT-T.Fautanu at PIT 42. ",
+      "distance": 7,
+      "distance_end": 43,
+      "down": 3,
+      "down_end": 4,
+      "fantasy_description": "FUMBLE! Aaron Rodgers sacked, fumble recovered by PIT",
+      "home_points": 10,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "NE",
+      "penalties": [],
+      "play_time": "2026-09-20T17:56:18+00:00",
+      "play_type": "pass_fumble",
+      "possession": "PIT",
+      "quarter_name": "2",
+      "sequence": 1789927036085,
+      "team": "PIT",
+      "time_remaining_minutes": 8,
+      "time_remaining_minutes_end": 7,
+      "time_remaining_seconds": 5,
+      "time_remaining_seconds_end": 31,
+      "topic_id": "1407459411244429312",
+      "type": "Sack",
+      "yard_line": 22,
+      "yard_line_end": 42,
+      "yard_line_territory": "NE",
+      "yard_line_territory_end": "PIT",
+      "yards_gained": 0,
+      "yards_to_end_zone": 22
+    },
+    "play_id": "87623cb0-b51c-11f1-8e66-3984deea2f59",
+    "play_stats": [
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 53,
+          "first_name": "Christian",
+          "last_name": "Elliss",
+          "sport": "nfl",
+          "team": "NE",
+          "player_id": "7921",
+          "fantasy_positions": [
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 5,
+          "news_updated": 1791131445836
+        },
+        "player_id": "7921",
+        "stats": {
+          "idp_qb_hit": 1.0,
+          "idp_sack": 1.0,
+          "idp_sack_yd": -8.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_loss": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610221",
+        "play_id": "87623cb0-b51c-11f1-8e66-3984deea2f59"
+      },
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 8,
+          "first_name": "Aaron",
+          "last_name": "Rodgers",
+          "sport": "nfl",
+          "team": "PIT",
+          "player_id": "96",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 21,
+          "news_updated": 1790954724093
+        },
+        "player_id": "96",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "pass_sack": 1.0,
+          "pass_sack_yds": -8.0
+        },
+        "game_id": "202610221",
+        "play_id": "87623cb0-b51c-11f1-8e66-3984deea2f59"
+      }
+    ],
+    "sequence": 1789927036085,
+    "updated_at": 1790266126197
+  },
+  {
+    "game_id": "202610221",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 1,
+      "description": "D.Maye pass short left complete. Catch made by R.Doubs for 4 yards. R.Doubs FUMBLES, forced by J.Dean. R.Doubs FUMBLES, out of bounds.",
+      "distance": 5,
+      "distance_end": 1,
+      "down": 2,
+      "down_end": 3,
+      "fantasy_description": "Drake Maye 4 Yd pass complete to Romeo Doubs",
+      "home_points": 7,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "PIT",
+      "penalties": [],
+      "play_time": "2026-09-20T17:32:39+00:00",
+      "play_type": "pass_complete",
+      "possession": "NE",
+      "quarter_name": "1",
+      "rec_yar": 6.0,
+      "sequence": 1789925575510,
+      "team": "NE",
+      "time_remaining_minutes": 3,
+      "time_remaining_minutes_end": 3,
+      "time_remaining_seconds": 35,
+      "time_remaining_seconds_end": 3,
+      "topic_id": "1407453456741982208",
+      "type": "PassCompleted",
+      "yard_line": 48,
+      "yard_line_end": 44,
+      "yard_line_territory": "PIT",
+      "yard_line_territory_end": "PIT",
+      "yards_gained": 4,
+      "yards_to_end_zone": 48
+    },
+    "play_id": "39f6ee10-b519-11f1-8e66-3984deea2f59",
+    "play_stats": [
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 10,
+          "first_name": "Drake",
+          "last_name": "Maye",
+          "sport": "nfl",
+          "team": "NE",
+          "player_id": "11564",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 2,
+          "news_updated": 1791152414407
+        },
+        "player_id": "11564",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": -2.0,
+          "pass_cmp": 1.0,
+          "pass_yd": 4.0
+        },
+        "game_id": "202610221",
+        "play_id": "39f6ee10-b519-11f1-8e66-3984deea2f59"
+      },
+      {
+        "player": {
+          "position": "CB",
+          "status": "Active",
+          "number": 35,
+          "first_name": "Jamel",
+          "last_name": "Dean",
+          "sport": "nfl",
+          "team": "PIT",
+          "player_id": "5946",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": "Questionable",
+          "years_exp": 7,
+          "news_updated": 1791119744231
+        },
+        "player_id": "5946",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610221",
+        "play_id": "39f6ee10-b519-11f1-8e66-3984deea2f59"
+      },
+      {
+        "player": {
+          "position": "WR",
+          "status": "Active",
+          "number": 87,
+          "first_name": "Romeo",
+          "last_name": "Doubs",
+          "sport": "nfl",
+          "team": "NE",
+          "player_id": "8121",
+          "fantasy_positions": [
+            "WR"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 4,
+          "news_updated": 1791154813826
+        },
+        "player_id": "8121",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_0_4": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yar": 6.0,
+          "rec_yd": 4.0
+        },
+        "game_id": "202610221",
+        "play_id": "39f6ee10-b519-11f1-8e66-3984deea2f59"
+      }
+    ],
+    "sequence": 1789925575510,
+    "updated_at": 1790266126091
+  },
+  {
+    "game_id": "202610221",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 1,
+      "description": "D.Maye pass short left complete. Catch made by R.Stevenson for 3 yards. R.Stevenson FUMBLES, forced by N.Herbig. Fumble RECOVERED by PIT-P.Wilson at PIT 31. PENALTY on PIT-J.Ramsey, Taunting / Defense, 15 yards, accepted.",
+      "distance": 10,
+      "distance_end": 10,
+      "down": 1,
+      "down_end": 1,
+      "fantasy_description": "Drake Maye 3 Yd pass complete to Rhamondre Stevenson, FUMBLE recovered by PIT",
+      "home_points": 0,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "PIT",
+      "penalties": [
+        {
+          "description": "Taunting / Defense",
+          "player": {
+            "first_name": "Jalen",
+            "last_name": "Ramsey",
+            "player_id": "3160",
+            "position": "CB",
+            "team": "PIT"
+          },
+          "result": "accepted",
+          "yards": 15
+        }
+      ],
+      "play_time": "2026-09-20T17:08:09+00:00",
+      "play_type": "pass_catch_fumble",
+      "possession": "NE",
+      "quarter_name": "1",
+      "rec_yar": 5.0,
+      "sequence": 1789924138979,
+      "team": "NE",
+      "time_remaining_minutes": 11,
+      "time_remaining_minutes_end": 11,
+      "time_remaining_seconds": 30,
+      "time_remaining_seconds_end": 17,
+      "topic_id": "1407447290779586560",
+      "type": "Fumble",
+      "yard_line": 34,
+      "yard_line_end": 16,
+      "yard_line_territory": "PIT",
+      "yard_line_territory_end": "PIT",
+      "yards_gained": 3,
+      "yards_to_end_zone": 34
+    },
+    "play_id": "d7193490-b515-11f1-882d-b79fda7eb6b0",
+    "play_stats": [
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 51,
+          "first_name": "Nick",
+          "last_name": "Herbig",
+          "sport": "nfl",
+          "team": "PIT",
+          "player_id": "10940",
+          "fantasy_positions": [
+            "DL",
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 3,
+          "news_updated": 1780447850435
+        },
+        "player_id": "10940",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610221",
+        "play_id": "d7193490-b515-11f1-882d-b79fda7eb6b0"
+      },
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 10,
+          "first_name": "Drake",
+          "last_name": "Maye",
+          "sport": "nfl",
+          "team": "NE",
+          "player_id": "11564",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 2,
+          "news_updated": 1791152414407
+        },
+        "player_id": "11564",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": -2.0,
+          "pass_cmp": 1.0,
+          "pass_yd": 3.0
+        },
+        "game_id": "202610221",
+        "play_id": "d7193490-b515-11f1-882d-b79fda7eb6b0"
+      },
+      {
+        "player": {
+          "position": "LB",
+          "status": "Active",
+          "number": 41,
+          "first_name": "Payton",
+          "last_name": "Wilson",
+          "sport": "nfl",
+          "team": "PIT",
+          "player_id": "11727",
+          "fantasy_positions": [
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 2,
+          "news_updated": 1790991916976
+        },
+        "player_id": "11727",
+        "stats": {
+          "idp_fum_rec": 1.0
+        },
+        "game_id": "202610221",
+        "play_id": "d7193490-b515-11f1-882d-b79fda7eb6b0"
+      },
+      {
+        "player": {
+          "position": "CB",
+          "status": "Active",
+          "number": 5,
+          "first_name": "Jalen",
+          "last_name": "Ramsey",
+          "sport": "nfl",
+          "team": "PIT",
+          "player_id": "3160",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 10,
+          "news_updated": 1790896515883
+        },
+        "player_id": "3160",
+        "stats": {
+          "penalty": 1.0,
+          "penalty_yd": 15.0
+        },
+        "game_id": "202610221",
+        "play_id": "d7193490-b515-11f1-882d-b79fda7eb6b0"
+      },
+      {
+        "player": {
+          "position": "RB",
+          "status": "Active",
+          "number": 38,
+          "first_name": "Rhamondre",
+          "last_name": "Stevenson",
+          "sport": "nfl",
+          "team": "NE",
+          "player_id": "7611",
+          "fantasy_positions": [
+            "RB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 5,
+          "news_updated": 1791153914001
+        },
+        "player_id": "7611",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_0_4": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yar": 5.0,
+          "rec_yd": 3.0
+        },
+        "game_id": "202610221",
+        "play_id": "d7193490-b515-11f1-882d-b79fda7eb6b0"
+      }
+    ],
+    "sequence": 1789924138979,
+    "updated_at": 1790266125975
+  },
+  {
+    "game_id": "202610202",
+    "metadata": {
+      "quarter_name": "1",
+      "down": 1,
+      "possession": "ATL",
+      "time_remaining_seconds": 0,
+      "sequence": 1789923883175,
+      "yard_line_territory_end": "ATL",
+      "yard_line_end": 35,
+      "fantasy_description": "FUMBLE! Cooper Rush 9 Yd run, fumble recovered by CAR",
+      "description": "C.Rush scrambles right end for 9 yards. C.Rush FUMBLES, forced by Z.Wheatley. Fumble RECOVERED by CAR-N.Scott at ATL 35. The Replay Official reviewed the runner was down by contact and the play was upheld.",
+      "time_remaining_seconds_end": 30,
+      "team": "ATL",
+      "distance": 10,
+      "opponent": "CAR",
+      "yards_to_end_zone": 80,
+      "is_scoring_play": false,
+      "time_remaining_minutes": 15,
+      "review_result": "upheld",
+      "play_type": "rush_fumble",
+      "penalties": [],
+      "play_time": "2026-09-20T17:03:44+00:00",
+      "home_used_timeouts": 0,
+      "away_points": 0,
+      "yard_line": 20,
+      "type": "Fumble",
+      "distance_end": 10,
+      "home_points": 0,
+      "review_type": "runner was down by contact",
+      "time_remaining_minutes_end": 14,
+      "yards_gained": 9,
+      "yard_line_territory": "ATL",
+      "away_used_timeouts": 0,
+      "topic_id": "1407446186046025728",
+      "down_end": 1
+    },
+    "play_id": "271a6d20-b515-11f1-bf3d-af057388437f",
+    "play_stats": [
+      {
+        "player": {
+          "position": "DB",
+          "status": "Active",
+          "number": 20,
+          "first_name": "Zakee",
+          "last_name": "Wheatley",
+          "sport": "nfl",
+          "team": "CAR",
+          "player_id": "13522",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 0,
+          "news_updated": 1777148122960
+        },
+        "player_id": "13522",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610202",
+        "play_id": "271a6d20-b515-11f1-bf3d-af057388437f"
+      },
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 13,
+          "first_name": "Cooper",
+          "last_name": "Rush",
+          "sport": "nfl",
+          "team": "ATL",
+          "player_id": "4574",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 9,
+          "news_updated": 1790291146699
+        },
+        "player_id": "4574",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_yd": 9.0
+        },
+        "game_id": "202610202",
+        "play_id": "271a6d20-b515-11f1-bf3d-af057388437f"
+      },
+      {
+        "player": {
+          "position": "DB",
+          "status": "Active",
+          "number": 21,
+          "first_name": "Nick",
+          "last_name": "Scott",
+          "sport": "nfl",
+          "team": "CAR",
+          "player_id": "6301",
+          "fantasy_positions": [
+            "DB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 7,
+          "news_updated": 1790798719878
+        },
+        "player_id": "6301",
+        "stats": {
+          "idp_fum_rec": 1.0
+        },
+        "game_id": "202610202",
+        "play_id": "271a6d20-b515-11f1-bf3d-af057388437f"
+      }
+    ],
+    "sequence": 1789923883175,
+    "updated_at": 1790266117253
+  },
+  {
+    "game_id": "202610204",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 2,
+      "description": "J.Goff steps back to pass. Sacked at DET 49 for -10 yards (G.Rousseau) [G.Rousseau]. J.Goff FUMBLES, forced by G.Rousseau. Fumble RECOVERED by DET-B.Wright at DET 49. ",
+      "distance": 1,
+      "distance_end": 11,
+      "down": 2,
+      "down_end": 3,
+      "fantasy_description": "FUMBLE! Jared Goff sacked, fumble recovered by DET",
+      "home_points": 14,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "BUF",
+      "penalties": [],
+      "play_time": "2026-09-18T00:45:20+00:00",
+      "play_type": "pass_fumble",
+      "possession": "DET",
+      "quarter_name": "1",
+      "sequence": 1789692345570,
+      "team": "DET",
+      "time_remaining_minutes": 2,
+      "time_remaining_minutes_end": 1,
+      "time_remaining_seconds": 25,
+      "time_remaining_seconds_end": 43,
+      "topic_id": "1406475186672271360",
+      "type": "Sack",
+      "yard_line": 41,
+      "yard_line_end": 49,
+      "yard_line_territory": "BUF",
+      "yard_line_territory_end": "DET",
+      "yards_gained": 0,
+      "yards_to_end_zone": 41
+    },
+    "play_id": "2aa34fb0-b2fa-11f1-8c30-4b76db0d6a74",
+    "play_stats": [
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 16,
+          "first_name": "Jared",
+          "last_name": "Goff",
+          "sport": "nfl",
+          "team": "DET",
+          "player_id": "3163",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 10,
+          "news_updated": 1790990140665
+        },
+        "player_id": "3163",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "pass_sack": 1.0,
+          "pass_sack_yds": -10.0
+        },
+        "game_id": "202610204",
+        "play_id": "2aa34fb0-b2fa-11f1-8c30-4b76db0d6a74"
+      },
+      {
+        "player": {
+          "position": "DE",
+          "status": "Active",
+          "number": 15,
+          "first_name": "Greg",
+          "last_name": "Rousseau",
+          "sport": "nfl",
+          "team": "BUF",
+          "player_id": "7627",
+          "fantasy_positions": [
+            "DL",
+            "LB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 5,
+          "news_updated": 1790818830855
+        },
+        "player_id": "7627",
+        "stats": {
+          "idp_qb_hit": 2.0,
+          "idp_sack": 1.0,
+          "idp_sack_yd": -10.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_loss": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610204",
+        "play_id": "2aa34fb0-b2fa-11f1-8c30-4b76db0d6a74"
+      }
+    ],
+    "sequence": 1789692345570,
+    "updated_at": 1790266120440
+  },
+  {
+    "game_id": "202610204",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 2,
+      "description": "J.Allen steps back to pass. Sacked at BUF 31 for -5 yards (A.Hutchinson). J.Allen FUMBLES, forced by A.Hutchinson. Fumble RECOVERED by BUF-S.Brown at BUF 31. ",
+      "distance": 10,
+      "distance_end": 15,
+      "down": 1,
+      "down_end": 2,
+      "fantasy_description": "FUMBLE! Josh Allen sacked, fumble recovered by BUF",
+      "home_points": 0,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "DET",
+      "penalties": [],
+      "play_time": "2026-09-18T00:20:09+00:00",
+      "play_type": "pass_fumble",
+      "possession": "BUF",
+      "quarter_name": "1",
+      "sequence": 1789690834362,
+      "team": "BUF",
+      "time_remaining_minutes": 13,
+      "time_remaining_minutes_end": 12,
+      "time_remaining_seconds": 51,
+      "time_remaining_seconds_end": 57,
+      "topic_id": "1406468845404770304",
+      "type": "Sack",
+      "yard_line": 36,
+      "yard_line_end": 31,
+      "yard_line_territory": "BUF",
+      "yard_line_territory_end": "BUF",
+      "yards_gained": 0,
+      "yards_to_end_zone": 64
+    },
+    "play_id": "a615c6e0-b2f6-11f1-8c30-4b76db0d6a74",
+    "play_stats": [
+      {
+        "player": {
+          "position": "QB",
+          "status": "Active",
+          "number": 17,
+          "first_name": "Josh",
+          "last_name": "Allen",
+          "sport": "nfl",
+          "team": "BUF",
+          "player_id": "4984",
+          "fantasy_positions": [
+            "QB"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 8,
+          "news_updated": 1791153614390
+        },
+        "player_id": "4984",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "pass_sack": 1.0,
+          "pass_sack_yds": -5.0
+        },
+        "game_id": "202610204",
+        "play_id": "a615c6e0-b2f6-11f1-8c30-4b76db0d6a74"
+      },
+      {
+        "player": {
+          "position": "DL",
+          "status": "Active",
+          "number": 97,
+          "first_name": "Aidan",
+          "last_name": "Hutchinson",
+          "sport": "nfl",
+          "team": "DET",
+          "player_id": "8289",
+          "fantasy_positions": [
+            "DL"
+          ],
+          "team_abbr": null,
+          "team_changed_at": null,
+          "injury_status": null,
+          "years_exp": 4,
+          "news_updated": 1789789851517
+        },
+        "player_id": "8289",
+        "stats": {
+          "idp_qb_hit": 1.0,
+          "idp_sack": 1.0,
+          "idp_sack_yd": -5.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_loss": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610204",
+        "play_id": "a615c6e0-b2f6-11f1-8c30-4b76db0d6a74"
+      }
+    ],
+    "sequence": 1789690834362,
+    "updated_at": 1790266120311
+  }
+]

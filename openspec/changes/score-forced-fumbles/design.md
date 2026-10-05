@@ -124,7 +124,11 @@ would make scores flicker.
 The 2026 week 2/3 GraphQL recordings are about 5 MB each. A one-off script, kept out of the repo,
 keeps only plays with an `idp_ff` row or "forced by" in the description, and writes them as
 `internal/sleeper/testdata/plays_2026_w2.json` and `plays_2026_w3.json` in the REST `recent` response
-shape. One live `recent` call confirms the envelope before recording. Ground-truth tests join
+shape. One live `recent` call confirms the envelope before recording. Confirmed 2026-10-04: the response is a
+bare JSON array of plays (no `data` wrapper). Each play has `play_id`, `game_id`, `sequence`, `updated_at`,
+`metadata` (`description`, `team`, `opponent`, `quarter_name`, `time_remaining_minutes`/`_seconds`) and
+`play_stats[{player_id, stats, game_id, play_id}]`. REST rows carry no `player` object, unlike GraphQL, so
+names must come from `description`, and the fixtures keep the GraphQL `player` objects as extra data. Ground-truth tests join
 `ff-test-players.csv` to plays on `quarter_name` + `time_remaining_minutes:seconds`, filtered by the
 CSV team appearing as `metadata.team` or `metadata.opponent`. Sleeper `game_id` and nflverse
 `game_id` do not share a format.

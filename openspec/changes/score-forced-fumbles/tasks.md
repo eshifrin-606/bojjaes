@@ -4,10 +4,10 @@ not a build error.
 
 ## 1. Fixtures
 
-- [ ] 1.1 Make one live `GET https://api.sleeper.com/plays/nfl/recent?season_type=regular&season=2026&week=3&limit=5`
+- [x] 1.1 Make one live `GET https://api.sleeper.com/plays/nfl/recent?season_type=regular&season=2026&week=3&limit=5`
       call to confirm the response envelope (bare array or wrapped). Record the finding in design.md
       D6.
-- [ ] 1.2 With a throwaway script in the scratchpad, not the repo, trim the 2026 wk 2 and wk 3
+- [x] 1.2 With a throwaway script in the scratchpad, not the repo, trim the 2026 wk 2 and wk 3
       GraphQL recordings (`.../scratchpad/plays_w2.json`, `plays_w3.json`). Keep only plays with an
       `idp_ff` row or "forced by" in `metadata.description`, written in the `recent` shape, to
       `internal/sleeper/testdata/plays_2026_w2.json` and `plays_2026_w3.json`. Keep `player` objects
@@ -15,13 +15,13 @@ not a build error.
 
 ## 2. Domain: pay turnover-qualified forced fumbles
 
-- [ ] 2.1 Stub: add `FFTurnover int` (`json:"ff_turnover"`) to `score.StatLine`, with a why-comment
+- [x] 2.1 Stub: add `FFTurnover int` (`json:"ff_turnover"`) to `score.StatLine`, with a why-comment
       that it is turnover-qualified before it arrives. No `Points` change.
-- [ ] 2.2 Red-green: one forced fumble with no other production scores 4.
-- [ ] 2.3 Red-green, or confirm green: two forced fumbles score 8.
-- [ ] 2.4 Confirm green: 2.5 sacks + 1 recovery + 1 forced fumble scores 13.5, Will Anderson's
+- [x] 2.2 Red-green: one forced fumble with no other production scores 4.
+- [x] 2.3 Red-green, or confirm green: two forced fumbles score 8.
+- [x] 2.4 Confirm green: 2.5 sacks + 1 recovery + 1 forced fumble scores 13.5, Will Anderson's
       official wk 3 total.
-- [ ] 2.5 Correct the `Points` doc comment. The only unimplemented rule is safeties. Drop "forced
+- [x] 2.5 Correct the `Points` doc comment. The only unimplemented rule is safeties. Drop "forced
       fumbles" and the 40+ bonus on defensive/return touchdowns.
 
 ## 3. Description parsing (pure)
@@ -114,10 +114,10 @@ not a build error.
 
 ## 8. Docs and spec cleanup
 
-- [ ] 8.1 In `openspec/specs/player-week-score/spec.md`, rewrite the Purpose paragraph (~line 10).
+- [x] 8.1 In `openspec/specs/player-week-score/spec.md`, rewrite the Purpose paragraph (~line 10).
       Only safeties remain unscored, and the defensive/return 40+ bonus is not a rule. The
       requirement deltas themselves land via sync/archive.
-- [ ] 8.2 In `docs/scoring.md`, remove the forced-fumble bullet from "Planned implementation
+- [x] 8.2 In `docs/scoring.md`, remove the forced-fumble bullet from "Planned implementation
       deviations". Add open rules questions (a), lost-then-recovered-back on the same play, and (b), an
       offensive player forcing a turnover after an interception. Do not edit
       `docs/adr/0003-sleeper-as-initial-stat-provider.md`.
