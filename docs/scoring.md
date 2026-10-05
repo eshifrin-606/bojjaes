@@ -85,13 +85,6 @@ are unreachable. Each lifts when play-by-play lands.
 - **Safety will not be scored at all.** The aggregate carries a per-player `idp_safe`, but nothing
   in it confirms the "solo credit only" qualifier, so we omit the 2 points rather than risk awarding
   them on shared credit. Play-by-play decides solo vs. assisted per play.
-- **Forced fumbles will not be scored at all.** The rule pays only when the fumble results in a
-  turnover, and turnover qualification is a property of the play, not of any player's aggregate stat
-  line — so no aggregate key can carry it. Paying the raw count would overpay roughly 44% of forced
-  fumbles, a systematic one-directional disagreement with the spreadsheet. An earlier plan was to pay
-  it and flag the award as provisional; we prefer a visible omission to a knowingly wrong award,
-  consistent with how safety is handled above. The 4 points arrive with play-by-play, which decides
-  turnover qualification per play.
 
 ### Attribution hazards
 
@@ -117,6 +110,10 @@ These need a commissioner ruling, not more data:
   interception was already the turnover. Does the 2 points pay?
 - **Shared-credit safety.** The solo/assisted distinction rests on two clean observations. Confirm
   against a safety with shared credit before the exclusion above is lifted.
+- **Fumble lost, then recovered back by the original team on the same play.** Scoring is per fumble
+  from the fumbler's `fum_lost`, the simplest reading. Confirm with the commissioners.
+- **Offensive player forcing a turnover after an interception.** For example, a QB forcing a fumble
+  on the return. Does the rule pay an offensive player?
 - **Is the provider's 40+ touchdown bucket inclusive at exactly 40?** Our rule is inclusive
   (confirmed 2026-08-09); the provider's boundary is unverified. This affects the already-shipped
   passing, rushing, and receiving path.

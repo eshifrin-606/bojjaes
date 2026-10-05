@@ -171,6 +171,22 @@ func TestPoints(t *testing.T) {
 			want: 2,
 		},
 		{
+			name: "forced fumble",
+			in:   StatLine{FFTurnover: 1},
+			want: 4,
+		},
+		{
+			name: "two forced fumbles",
+			in:   StatLine{FFTurnover: 2},
+			want: 8,
+		},
+		{
+			// Will Anderson, 2026 week 3, official total.
+			name: "sacks, a recovery, and a forced fumble",
+			in:   StatLine{Sack: 2.5, FumRec: 1, FFTurnover: 1},
+			want: 13.5,
+		},
+		{
 			name: "defensive touchdown",
 			in:   StatLine{DefTD: 1},
 			want: 6,

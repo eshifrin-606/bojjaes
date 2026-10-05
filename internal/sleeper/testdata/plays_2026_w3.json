@@ -1,0 +1,2289 @@
+[
+  {
+    "game_id": "202610306",
+    "metadata": {
+      "away_points": 7,
+      "away_used_timeouts": 0,
+      "description": "C.Keenum scrambles left end for 7 yards. C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-C.Keenum at PHI 42.",
+      "distance": 9,
+      "distance_end": 2,
+      "down": 3,
+      "down_end": 4,
+      "fantasy_description": "FUMBLE! Case Keenum 7 Yd run, fumble recovered by PHI",
+      "home_points": 20,
+      "home_used_timeouts": 0,
+      "is_scoring_play": false,
+      "opponent": "PHI",
+      "penalties": [],
+      "play_time": "2026-09-29T02:41:35+00:00",
+      "play_type": "rush_fumble",
+      "possession": "CHI",
+      "quarter_name": "4",
+      "sequence": 1790649710112,
+      "team": "CHI",
+      "time_remaining_minutes": 13,
+      "time_remaining_minutes_end": 12,
+      "time_remaining_seconds": 33,
+      "time_remaining_seconds_end": 48,
+      "topic_id": "1410490705486368768",
+      "type": "Rush",
+      "yard_line": 46,
+      "yard_line_end": 39,
+      "yard_line_territory": "PHI",
+      "yard_line_territory_end": "PHI",
+      "yards_gained": 7,
+      "yards_to_end_zone": 46
+    },
+    "play_id": "3591bb10-bbaf-11f1-a913-118d1c278a5a",
+    "play_stats": [
+      {
+        "player_id": "1737",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_yd": 7.0
+        },
+        "game_id": "202610306",
+        "play_id": "3591bb10-bbaf-11f1-a913-118d1c278a5a"
+      },
+      {
+        "player_id": "6900",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610306",
+        "play_id": "3591bb10-bbaf-11f1-a913-118d1c278a5a"
+      }
+    ],
+    "sequence": 1790649710112,
+    "updated_at": 1790870915115
+  },
+  {
+    "game_id": "202610306",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 0,
+      "description": "J.Hurts pass short right complete. Catch made by T.Bigsby for 5 yards. T.Bigsby FUMBLES, forced by A.Booker. Fumble RECOVERED by CHI-X.Woods at PHI 15.",
+      "distance": 20,
+      "distance_end": 10,
+      "down": 2,
+      "down_end": 1,
+      "fantasy_description": "Jalen Hurts 5 Yd pass complete to Tank Bigsby, FUMBLE recovered by CHI",
+      "home_points": 7,
+      "home_used_timeouts": 0,
+      "is_scoring_play": false,
+      "opponent": "CHI",
+      "penalties": [],
+      "play_time": "2026-09-29T00:46:57+00:00",
+      "play_type": "pass_catch_fumble",
+      "possession": "PHI",
+      "quarter_name": "1",
+      "rec_yar": 5.0,
+      "sequence": 1790642859194,
+      "team": "PHI",
+      "time_remaining_minutes": 1,
+      "time_remaining_minutes_end": 1,
+      "time_remaining_seconds": 13,
+      "time_remaining_seconds_end": 4,
+      "topic_id": "1410461854781677568",
+      "type": "Fumble",
+      "yard_line": 10,
+      "yard_line_end": 15,
+      "yard_line_territory": "PHI",
+      "yard_line_territory_end": "PHI",
+      "yards_gained": 5,
+      "yards_to_end_zone": 90
+    },
+    "play_id": "2bec0bc0-bb9f-11f1-add2-4f898f24c966",
+    "play_stats": [
+      {
+        "player_id": "11760",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610306",
+        "play_id": "2bec0bc0-bb9f-11f1-add2-4f898f24c966"
+      },
+      {
+        "player_id": "4238",
+        "stats": {
+          "idp_fum_rec": 1.0
+        },
+        "game_id": "202610306",
+        "play_id": "2bec0bc0-bb9f-11f1-add2-4f898f24c966"
+      },
+      {
+        "player_id": "5843",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610306",
+        "play_id": "2bec0bc0-bb9f-11f1-add2-4f898f24c966"
+      },
+      {
+        "player_id": "6904",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_cmp": 1.0,
+          "pass_yd": 5.0
+        },
+        "game_id": "202610306",
+        "play_id": "2bec0bc0-bb9f-11f1-add2-4f898f24c966"
+      },
+      {
+        "player_id": "9225",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_5_9": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yar": 5.0,
+          "rec_yd": 5.0
+        },
+        "game_id": "202610306",
+        "play_id": "2bec0bc0-bb9f-11f1-add2-4f898f24c966"
+      }
+    ],
+    "sequence": 1790642859194,
+    "updated_at": 1790870914605
+  },
+  {
+    "game_id": "202610310",
+    "metadata": {
+      "away_points": 16,
+      "away_used_timeouts": 3,
+      "description": "J.Dobbins rushed up the middle for 12 yards. J.Dobbins FUMBLES, forced by O.Speights. Fumble RECOVERED by DEN-P.Bryant at LA 41. Tackled by T.McDuffie at LA 34. ",
+      "distance": 5,
+      "distance_end": 10,
+      "down": 2,
+      "down_end": 1,
+      "fantasy_description": "FUMBLE! J.K. Dobbins 5 Yd run, fumble recovered by DEN",
+      "home_points": 8,
+      "home_used_timeouts": 2,
+      "is_scoring_play": false,
+      "opponent": "LAR",
+      "penalties": [],
+      "play_time": "2026-09-28T02:40:58+00:00",
+      "play_type": "rush_fumble",
+      "possession": "DEN",
+      "quarter_name": "3",
+      "sequence": 1790563293266,
+      "team": "DEN",
+      "time_remaining_minutes": 4,
+      "time_remaining_minutes_end": 3,
+      "time_remaining_seconds": 38,
+      "time_remaining_seconds_end": 57,
+      "topic_id": "1410128151933177856",
+      "type": "Rush",
+      "yard_line": 47,
+      "yard_line_end": 34,
+      "yard_line_territory": "LAR",
+      "yard_line_territory_end": "LAR",
+      "yards_gained": 12,
+      "yards_to_end_zone": 47
+    },
+    "play_id": "04a96210-bae6-11f1-bb78-6188d8bf4a98",
+    "play_stats": [
+      {
+        "player_id": "12140",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610310",
+        "play_id": "04a96210-bae6-11f1-bb78-6188d8bf4a98"
+      },
+      {
+        "player_id": "6806",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_fd": 1.0,
+          "rush_yac": 3.0,
+          "rush_yd": 5.0
+        },
+        "game_id": "202610310",
+        "play_id": "04a96210-bae6-11f1-bb78-6188d8bf4a98"
+      },
+      {
+        "player_id": "8364",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610310",
+        "play_id": "04a96210-bae6-11f1-bb78-6188d8bf4a98"
+      }
+    ],
+    "sequence": 1790563293266,
+    "updated_at": 1790870919433
+  },
+  {
+    "game_id": "202610322",
+    "metadata": {
+      "away_points": 35,
+      "away_used_timeouts": 1,
+      "description": "T.Shough pass short right complete. Catch made by J.Johnson for 0 yards. J.Johnson FUMBLES, forced by N.Dean. Fumble RECOVERED by LV-E.Stokes at NO 35.",
+      "distance": 10,
+      "distance_end": 10,
+      "down": 1,
+      "down_end": 1,
+      "fantasy_description": "Tyler Shough 0 Yd pass complete to Juwan Johnson, FUMBLE recovered by LV",
+      "home_points": 27,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "LV",
+      "penalties": [],
+      "play_time": "2026-09-27T23:40:41+00:00",
+      "play_type": "pass_catch_fumble",
+      "possession": "NO",
+      "quarter_name": "4",
+      "sequence": 1790552460128,
+      "team": "NO",
+      "time_remaining_minutes": 1,
+      "time_remaining_minutes_end": 0,
+      "time_remaining_seconds": 2,
+      "time_remaining_seconds_end": 53,
+      "topic_id": "1410082792888442880",
+      "type": "Fumble",
+      "yard_line": 40,
+      "yard_line_end": 35,
+      "yard_line_territory": "NO",
+      "yard_line_territory_end": "NO",
+      "yards_gained": 0,
+      "yards_to_end_zone": 60
+    },
+    "play_id": "cba13330-bacc-11f1-94e3-4de00e7f7d0d",
+    "play_stats": [
+      {
+        "player_id": "12545",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_cmp": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "cba13330-bacc-11f1-94e3-4de00e7f7d0d"
+      },
+      {
+        "player_id": "7002",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_0_4": 1.0,
+          "rec_tgt": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "cba13330-bacc-11f1-94e3-4de00e7f7d0d"
+      },
+      {
+        "player_id": "7628",
+        "stats": {
+          "idp_fum_rec": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "cba13330-bacc-11f1-94e3-4de00e7f7d0d"
+      },
+      {
+        "player_id": "8267",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "cba13330-bacc-11f1-94e3-4de00e7f7d0d"
+      }
+    ],
+    "sequence": 1790552460128,
+    "updated_at": 1790870927682
+  },
+  {
+    "game_id": "202610322",
+    "metadata": {
+      "away_points": 35,
+      "away_used_timeouts": 1,
+      "description": "K.Cousins steps back to pass. Sacked at LV 40 for -9 yards (C.Young). K.Cousins FUMBLES, forced by C.Young. Fumble RECOVERED by LV-C.Heyward at LV 40. ",
+      "distance": 5,
+      "distance_end": 14,
+      "down": 3,
+      "down_end": 4,
+      "fantasy_description": "FUMBLE! Kirk Cousins sacked, fumble recovered by LV",
+      "home_points": 27,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "NO",
+      "penalties": [],
+      "play_time": "2026-09-27T23:35:28+00:00",
+      "play_type": "pass_fumble",
+      "possession": "LV",
+      "quarter_name": "4",
+      "sequence": 1790552142414,
+      "team": "LV",
+      "time_remaining_minutes": 1,
+      "time_remaining_minutes_end": 1,
+      "time_remaining_seconds": 46,
+      "time_remaining_seconds_end": 39,
+      "topic_id": "1410081407572738048",
+      "type": "Sack",
+      "yard_line": 49,
+      "yard_line_end": 40,
+      "yard_line_territory": "LV",
+      "yard_line_territory_end": "LV",
+      "yards_gained": 0,
+      "yards_to_end_zone": 51
+    },
+    "play_id": "f821fb20-bacb-11f1-94e3-4de00e7f7d0d",
+    "play_stats": [
+      {
+        "player_id": "1166",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "pass_sack": 1.0,
+          "pass_sack_yds": -9.0
+        },
+        "game_id": "202610322",
+        "play_id": "f821fb20-bacb-11f1-94e3-4de00e7f7d0d"
+      },
+      {
+        "player_id": "6782",
+        "stats": {
+          "idp_qb_hit": 1.0,
+          "idp_sack": 1.0,
+          "idp_sack_yd": -9.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_loss": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "f821fb20-bacb-11f1-94e3-4de00e7f7d0d"
+      }
+    ],
+    "sequence": 1790552142414,
+    "updated_at": 1790870927650
+  },
+  {
+    "game_id": "202610322",
+    "metadata": {
+      "away_points": 35,
+      "away_used_timeouts": 1,
+      "description": "T.Shough steps back to pass. Sacked at LV 32 for -12 yards (J.Chinn). T.Shough FUMBLES, forced by M.Crosby. Fumble RECOVERED by LV-T.Johnson at LV 32. ",
+      "distance": 1,
+      "distance_end": 10,
+      "down": 4,
+      "down_end": 1,
+      "fantasy_description": "FUMBLE! Tyler Shough sacked, fumble recovered by LV",
+      "home_points": 27,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "LV",
+      "penalties": [],
+      "play_time": "2026-09-27T23:28:37+00:00",
+      "play_type": "pass_fumble",
+      "possession": "NO",
+      "quarter_name": "4",
+      "sequence": 1790551751620,
+      "team": "NO",
+      "time_remaining_minutes": 2,
+      "time_remaining_minutes_end": 2,
+      "time_remaining_seconds": 21,
+      "time_remaining_seconds_end": 15,
+      "topic_id": "1410079754270375936",
+      "type": "Fumble",
+      "yard_line": 20,
+      "yard_line_end": 32,
+      "yard_line_territory": "LV",
+      "yard_line_territory_end": "LV",
+      "yards_gained": 0,
+      "yards_to_end_zone": 20
+    },
+    "play_id": "ff5e0d30-baca-11f1-94e3-4de00e7f7d0d",
+    "play_stats": [
+      {
+        "player_id": "12545",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "pass_sack": 1.0,
+          "pass_sack_yds": -12.0
+        },
+        "game_id": "202610322",
+        "play_id": "ff5e0d30-baca-11f1-94e3-4de00e7f7d0d"
+      },
+      {
+        "player_id": "5341",
+        "stats": {
+          "idp_fum_rec": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "ff5e0d30-baca-11f1-94e3-4de00e7f7d0d"
+      },
+      {
+        "player_id": "5991",
+        "stats": null,
+        "game_id": "202610322",
+        "play_id": "ff5e0d30-baca-11f1-94e3-4de00e7f7d0d"
+      },
+      {
+        "player_id": "7016",
+        "stats": {
+          "idp_qb_hit": 1.0,
+          "idp_sack": 1.0,
+          "idp_sack_yd": -12.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_loss": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "ff5e0d30-baca-11f1-94e3-4de00e7f7d0d"
+      },
+      {
+        "player_id": "LV",
+        "stats": {
+          "def_4_and_stop": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "ff5e0d30-baca-11f1-94e3-4de00e7f7d0d"
+      }
+    ],
+    "sequence": 1790551751620,
+    "updated_at": 1790870927628
+  },
+  {
+    "game_id": "202610322",
+    "metadata": {
+      "away_points": 35,
+      "away_used_timeouts": 1,
+      "description": "K.Miller rushed right end for 5 yards. K.Miller FUMBLES, forced by J.Chinn. K.Miller FUMBLES, out of bounds. ",
+      "distance": 1,
+      "distance_end": 10,
+      "down": 3,
+      "down_end": 1,
+      "fantasy_description": "Kendre Miller 5 Yd run",
+      "home_points": 27,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "LV",
+      "penalties": [],
+      "play_time": "2026-09-27T23:23:29+00:00",
+      "play_type": "rush",
+      "possession": "NO",
+      "quarter_name": "4",
+      "sequence": 1790551441086,
+      "team": "NO",
+      "time_remaining_minutes": 4,
+      "time_remaining_minutes_end": 3,
+      "time_remaining_seconds": 30,
+      "time_remaining_seconds_end": 53,
+      "topic_id": "1410078465226530816",
+      "type": "Rush",
+      "yard_line": 44,
+      "yard_line_end": 49,
+      "yard_line_territory": "NO",
+      "yard_line_territory_end": "NO",
+      "yards_gained": 5,
+      "yards_to_end_zone": 56
+    },
+    "play_id": "601bf0c0-baca-11f1-94e3-4de00e7f7d0d",
+    "play_stats": [
+      {
+        "player_id": "7016",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "601bf0c0-baca-11f1-94e3-4de00e7f7d0d"
+      },
+      {
+        "player_id": "9757",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_fd": 1.0,
+          "rush_yd": 5.0
+        },
+        "game_id": "202610322",
+        "play_id": "601bf0c0-baca-11f1-94e3-4de00e7f7d0d"
+      }
+    ],
+    "sequence": 1790551441086,
+    "updated_at": 1790870927599
+  },
+  {
+    "game_id": "202610322",
+    "metadata": {
+      "away_points": 28,
+      "away_used_timeouts": 1,
+      "description": "T.Shough pass short left INTERCEPTED at NO 43 [M.Koonce]. Intercepted by H.Masses at NO 43. H.Masses FUMBLES, forced by J.Johnson. Fumble RECOVERED by LV-A.Butler at NO 4.",
+      "distance": 6,
+      "distance_end": 4,
+      "down": 3,
+      "down_end": 1,
+      "fantasy_description": "INTERCEPTION! Tyler Shough pass intercepted by Hezekiah Masses",
+      "home_points": 27,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "LV",
+      "penalties": [],
+      "play_time": "2026-09-27T23:14:11+00:00",
+      "play_type": "pass_interception",
+      "possession": "NO",
+      "quarter_name": "4",
+      "sequence": 1790550879568,
+      "team": "NO",
+      "time_remaining_minutes": 8,
+      "time_remaining_minutes_end": 7,
+      "time_remaining_seconds": 4,
+      "time_remaining_seconds_end": 48,
+      "topic_id": "1410076120702898176",
+      "type": "PassIntercepted",
+      "yard_line": 31,
+      "yard_line_end": 4,
+      "yard_line_territory": "NO",
+      "yard_line_territory_end": "NO",
+      "yards_gained": 0,
+      "yards_to_end_zone": 69
+    },
+    "play_id": "14419070-bac9-11f1-94e3-4de00e7f7d0d",
+    "play_stats": [
+      {
+        "player_id": "12545",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": 12.0,
+          "pass_inc": 1.0,
+          "pass_int": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "14419070-bac9-11f1-94e3-4de00e7f7d0d"
+      },
+      {
+        "player_id": "13420",
+        "stats": {
+          "rec_tgt": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "14419070-bac9-11f1-94e3-4de00e7f7d0d"
+      },
+      {
+        "player_id": "13508",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "idp_int": 1.0,
+          "idp_int_ret_yd": 35.0
+        },
+        "game_id": "202610322",
+        "play_id": "14419070-bac9-11f1-94e3-4de00e7f7d0d"
+      },
+      {
+        "player_id": "7002",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "14419070-bac9-11f1-94e3-4de00e7f7d0d"
+      },
+      {
+        "player_id": "7676",
+        "stats": {
+          "idp_qb_hit": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "14419070-bac9-11f1-94e3-4de00e7f7d0d"
+      }
+    ],
+    "sequence": 1790550879568,
+    "updated_at": 1790870927561
+  },
+  {
+    "game_id": "202610322",
+    "metadata": {
+      "away_points": 22,
+      "away_used_timeouts": 1,
+      "description": "T.Shough steps back to pass. Sacked at LV 39 for -10 yards (M.Koonce). T.Shough FUMBLES, forced by M.Koonce. Fumble RECOVERED by LV-M.Crosby at LV 45. ",
+      "distance": 4,
+      "distance_end": 10,
+      "down": 3,
+      "down_end": 1,
+      "fantasy_description": "FUMBLE! Tyler Shough sacked, fumble recovered by LV",
+      "home_points": 27,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "LV",
+      "penalties": [],
+      "play_time": "2026-09-27T23:02:10+00:00",
+      "play_type": "pass_fumble",
+      "possession": "NO",
+      "quarter_name": "4",
+      "sequence": 1790550208221,
+      "team": "NO",
+      "time_remaining_minutes": 13,
+      "time_remaining_minutes_end": 12,
+      "time_remaining_seconds": 6,
+      "time_remaining_seconds_end": 55,
+      "topic_id": "1410073098744545280",
+      "type": "Fumble",
+      "yard_line": 29,
+      "yard_line_end": 45,
+      "yard_line_territory": "LV",
+      "yard_line_territory_end": "LV",
+      "yards_gained": 0,
+      "yards_to_end_zone": 29
+    },
+    "play_id": "6a34f5f0-bac7-11f1-a197-e93e7fbc22f8",
+    "play_stats": [
+      {
+        "player_id": "12545",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "pass_sack": 1.0,
+          "pass_sack_yds": -10.0
+        },
+        "game_id": "202610322",
+        "play_id": "6a34f5f0-bac7-11f1-a197-e93e7fbc22f8"
+      },
+      {
+        "player_id": "5991",
+        "stats": {
+          "idp_fum_rec": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "6a34f5f0-bac7-11f1-a197-e93e7fbc22f8"
+      },
+      {
+        "player_id": "7676",
+        "stats": {
+          "idp_qb_hit": 1.0,
+          "idp_sack": 1.0,
+          "idp_sack_yd": -10.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_loss": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "6a34f5f0-bac7-11f1-a197-e93e7fbc22f8"
+      }
+    ],
+    "sequence": 1790550208221,
+    "updated_at": 1790870927505
+  },
+  {
+    "game_id": "202610322",
+    "metadata": {
+      "away_points": 16,
+      "away_used_timeouts": 1,
+      "description": "D.Carlson kicks 63 yards from NO 35 to the LV 2. D.Laube returns the kickoff. D.Laube FUMBLES, forced by A.Jennings. Fumble RECOVERED by NO-J.Howden at LV 32.",
+      "distance": 0,
+      "distance_end": 10,
+      "down": 0,
+      "down_end": 1,
+      "home_points": 20,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "LV",
+      "penalties": [],
+      "play_time": "2026-09-27T22:26:24+00:00",
+      "play_type": "kickoff",
+      "possession": "NO",
+      "quarter_name": "3",
+      "sequence": 1790548015260,
+      "team": "NO",
+      "time_remaining_minutes": 6,
+      "time_remaining_minutes_end": 6,
+      "time_remaining_seconds": 40,
+      "time_remaining_seconds_end": 33,
+      "topic_id": "1410064104533536768",
+      "type": "Fumble",
+      "yard_line": 35,
+      "yard_line_end": 32,
+      "yard_line_territory": "NO",
+      "yard_line_territory_end": "LV",
+      "yards_gained": 63,
+      "yards_to_end_zone": 65
+    },
+    "play_id": "0f4de160-bac2-11f1-a197-e93e7fbc22f8",
+    "play_stats": [
+      {
+        "player_id": "10985",
+        "stats": {
+          "st_fum_rec": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "0f4de160-bac2-11f1-a197-e93e7fbc22f8"
+      },
+      {
+        "player_id": "11574",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "kr": 1.0,
+          "kr_yd": 28.0
+        },
+        "game_id": "202610322",
+        "play_id": "0f4de160-bac2-11f1-a197-e93e7fbc22f8"
+      },
+      {
+        "player_id": "5095",
+        "stats": {
+          "kick_yds": 63.0,
+          "kicks": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "0f4de160-bac2-11f1-a197-e93e7fbc22f8"
+      },
+      {
+        "player_id": "6848",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "0f4de160-bac2-11f1-a197-e93e7fbc22f8"
+      },
+      {
+        "player_id": "NO",
+        "stats": {
+          "def_st_fum_rec": 1.0
+        },
+        "game_id": "202610322",
+        "play_id": "0f4de160-bac2-11f1-a197-e93e7fbc22f8"
+      }
+    ],
+    "sequence": 1790548015260,
+    "updated_at": 1790870927360
+  },
+  {
+    "game_id": "202610309",
+    "metadata": {
+      "quarter_name": "3",
+      "down": 1,
+      "possession": "DAL",
+      "time_remaining_seconds": 41,
+      "sequence": 1790547167809,
+      "yard_line_territory_end": "BAL",
+      "yard_line_end": 25,
+      "fantasy_description": "Dak Prescott -2 Yd pass complete to Jake Ferguson, FUMBLE recovered by BAL",
+      "description": "D.Prescott pass short middle complete. Catch made by J.Ferguson for -2 yards. J.Ferguson FUMBLES, forced by T.Jones. Fumble RECOVERED by BAL-T.Simpson at BAL 25. Tackled by at BAL 25. The Replay Official reviewed the pass completion and the play was upheld. ",
+      "time_remaining_seconds_end": 34,
+      "team": "DAL",
+      "distance": 10,
+      "opponent": "BAL",
+      "yards_to_end_zone": 23,
+      "is_scoring_play": false,
+      "time_remaining_minutes": 10,
+      "review_result": "upheld",
+      "play_type": "pass_catch_fumble",
+      "penalties": [],
+      "play_time": "2026-09-27T22:11:43+00:00",
+      "rec_yar": 1.0,
+      "home_used_timeouts": 3,
+      "away_points": 17,
+      "yard_line": 23,
+      "type": "Fumble",
+      "distance_end": 10,
+      "home_points": 13,
+      "review_type": "pass completion",
+      "time_remaining_minutes_end": 10,
+      "yards_gained": -2,
+      "yard_line_territory": "BAL",
+      "away_used_timeouts": 3,
+      "topic_id": "1410060406306709504",
+      "down_end": 1
+    },
+    "play_id": "6aaa5130-bac0-11f1-a28a-db4fb6b1e193",
+    "play_stats": [
+      {
+        "player_id": "10935",
+        "stats": {
+          "idp_fum_rec": 1.0
+        },
+        "game_id": "202610309",
+        "play_id": "6aaa5130-bac0-11f1-a28a-db4fb6b1e193"
+      },
+      {
+        "player_id": "3294",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": -2.0,
+          "pass_cmp": 1.0,
+          "pass_yd": -2.0
+        },
+        "game_id": "202610309",
+        "play_id": "6aaa5130-bac0-11f1-a28a-db4fb6b1e193"
+      },
+      {
+        "player_id": "8110",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yar": 1.0,
+          "rec_yd": -2.0
+        },
+        "game_id": "202610309",
+        "play_id": "6aaa5130-bac0-11f1-a28a-db4fb6b1e193"
+      },
+      {
+        "player_id": "8400",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_loss": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610309",
+        "play_id": "6aaa5130-bac0-11f1-a28a-db4fb6b1e193"
+      }
+    ],
+    "sequence": 1790547167809,
+    "updated_at": 1790870919376
+  },
+  {
+    "game_id": "202610309",
+    "metadata": {
+      "away_points": 14,
+      "away_used_timeouts": 3,
+      "description": "J.Williams rushed right tackle for -1 yards. J.Williams FUMBLES, forced by R.Smith. Fumble RECOVERED by DAL-J.Williams at DAL 43.",
+      "distance": 1,
+      "distance_end": 10,
+      "down": 4,
+      "down_end": 1,
+      "fantasy_description": "FUMBLE! Javonte Williams -1 Yd run, fumble recovered by DAL",
+      "home_points": 10,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "BAL",
+      "penalties": [],
+      "play_time": "2026-09-27T21:18:13+00:00",
+      "play_type": "rush_fumble",
+      "possession": "DAL",
+      "quarter_name": "2",
+      "sequence": 1790543906674,
+      "team": "DAL",
+      "time_remaining_minutes": 9,
+      "time_remaining_minutes_end": 9,
+      "time_remaining_seconds": 24,
+      "time_remaining_seconds_end": 18,
+      "topic_id": "1410046940015607808",
+      "type": "Rush",
+      "yard_line": 44,
+      "yard_line_end": 43,
+      "yard_line_territory": "DAL",
+      "yard_line_territory_end": "DAL",
+      "yards_gained": -1,
+      "yards_to_end_zone": 56
+    },
+    "play_id": "d411ef50-bab8-11f1-a28a-db4fb6b1e193",
+    "play_stats": [
+      {
+        "player_id": "4960",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610309",
+        "play_id": "d411ef50-bab8-11f1-a28a-db4fb6b1e193"
+      },
+      {
+        "player_id": "7588",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_yd": -1.0
+        },
+        "game_id": "202610309",
+        "play_id": "d411ef50-bab8-11f1-a28a-db4fb6b1e193"
+      },
+      {
+        "player_id": "BAL",
+        "stats": {
+          "def_4_and_stop": 1.0
+        },
+        "game_id": "202610309",
+        "play_id": "d411ef50-bab8-11f1-a28a-db4fb6b1e193"
+      }
+    ],
+    "sequence": 1790543906674,
+    "updated_at": 1790870919206
+  },
+  {
+    "game_id": "202610328",
+    "metadata": {
+      "away_points": 27,
+      "away_used_timeouts": 2,
+      "description": "J.Burrow steps back to pass. Sacked at CIN 49 for -13 yards (D.Harmon). J.Burrow FUMBLES, forced by D.Harmon. Fumble RECOVERED by PIT-S.Joseph-Day at CIN 49. ",
+      "distance": 10,
+      "distance_end": 10,
+      "down": 1,
+      "down_end": 1,
+      "fantasy_description": "FUMBLE! Joe Burrow sacked, fumble recovered by PIT",
+      "home_points": 30,
+      "home_used_timeouts": 2,
+      "is_scoring_play": false,
+      "opponent": "PIT",
+      "penalties": [],
+      "play_time": "2026-09-27T20:08:26+00:00",
+      "play_type": "pass_fumble",
+      "possession": "CIN",
+      "quarter_name": "4",
+      "sequence": 1790539766586,
+      "team": "CIN",
+      "time_remaining_minutes": 0,
+      "time_remaining_minutes_end": 0,
+      "time_remaining_seconds": 53,
+      "time_remaining_seconds_end": 44,
+      "topic_id": "1410029379530014720",
+      "type": "Fumble",
+      "yard_line": 38,
+      "yard_line_end": 49,
+      "yard_line_territory": "PIT",
+      "yard_line_territory_end": "CIN",
+      "yards_gained": 0,
+      "yards_to_end_zone": 38
+    },
+    "play_id": "27c7e190-baaf-11f1-87b4-033ee7e5972a",
+    "play_stats": [
+      {
+        "player_id": "12561",
+        "stats": {
+          "idp_qb_hit": 1.0,
+          "idp_sack": 1.0,
+          "idp_sack_yd": -13.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_loss": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610328",
+        "play_id": "27c7e190-baaf-11f1-87b4-033ee7e5972a"
+      },
+      {
+        "player_id": "5073",
+        "stats": {
+          "idp_fum_rec": 1.0
+        },
+        "game_id": "202610328",
+        "play_id": "27c7e190-baaf-11f1-87b4-033ee7e5972a"
+      },
+      {
+        "player_id": "6770",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "pass_sack": 1.0,
+          "pass_sack_yds": -13.0
+        },
+        "game_id": "202610328",
+        "play_id": "27c7e190-baaf-11f1-87b4-033ee7e5972a"
+      }
+    ],
+    "sequence": 1790539766586,
+    "updated_at": 1790870931160
+  },
+  {
+    "game_id": "202610304",
+    "metadata": {
+      "away_points": 13,
+      "away_used_timeouts": 3,
+      "description": "J.Herbert steps back to pass. Sacked at BUF 18 for 0 yards (E.Oliver). J.Herbert FUMBLES, forced by E.Oliver. Fumble RECOVERED by BUF-D.Alford at BUF 18. TOUCHDOWN. The Replay Official reviewed the fumble and the play was overturned. J.Herbert steps back to pass. Pass incomplete short left intended for [E.Oliver].",
+      "distance": 7,
+      "distance_end": 7,
+      "down": 2,
+      "down_end": 3,
+      "home_points": 24,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "BUF",
+      "penalties": [],
+      "play_time": "2026-09-27T20:01:26+00:00",
+      "play_type": "pass_incomplete_no_target",
+      "possession": "LAC",
+      "quarter_name": "4",
+      "review_result": "overturned",
+      "review_type": "fumble",
+      "sequence": 1790539278828,
+      "team": "LAC",
+      "time_remaining_minutes": 2,
+      "time_remaining_minutes_end": 2,
+      "time_remaining_seconds": 10,
+      "time_remaining_seconds_end": 7,
+      "topic_id": "1410027157614247936",
+      "type": "PassIncomplete",
+      "yard_line": 15,
+      "yard_line_end": 15,
+      "yard_line_territory": "BUF",
+      "yard_line_territory_end": "BUF",
+      "yards_gained": 0,
+      "yards_to_end_zone": 15
+    },
+    "play_id": "f377f6b0-baad-11f1-8057-a3e4ca18dd73",
+    "play_stats": [
+      {
+        "player_id": "2036",
+        "stats": {
+          "idp_tkl_loss": 1.0
+        },
+        "game_id": "202610304",
+        "play_id": "f377f6b0-baad-11f1-8057-a3e4ca18dd73"
+      },
+      {
+        "player_id": "5841",
+        "stats": {
+          "idp_qb_hit": 1.0
+        },
+        "game_id": "202610304",
+        "play_id": "f377f6b0-baad-11f1-8057-a3e4ca18dd73"
+      },
+      {
+        "player_id": "6797",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_inc": 1.0
+        },
+        "game_id": "202610304",
+        "play_id": "f377f6b0-baad-11f1-8057-a3e4ca18dd73"
+      }
+    ],
+    "sequence": 1790539278828,
+    "updated_at": 1790870915280
+  },
+  {
+    "game_id": "202610311",
+    "metadata": {
+      "away_points": 24,
+      "away_used_timeouts": 3,
+      "description": "G.Smith steps back to pass. Sacked at DET 45 for -17 yards (C.Clark). G.Smith FUMBLES, forced by C.Clark. Fumble RECOVERED by DET-J.Campbell at DET 45. Tackled by B.Allen at NYJ 43. ",
+      "distance": 10,
+      "distance_end": 10,
+      "down": 2,
+      "down_end": 1,
+      "fantasy_description": "FUMBLE! Geno Smith sacked, fumble recovered by DET",
+      "home_points": 31,
+      "home_used_timeouts": 0,
+      "is_scoring_play": false,
+      "opponent": "DET",
+      "penalties": [],
+      "play_time": "2026-09-27T19:55:30+00:00",
+      "play_type": "pass_fumble",
+      "possession": "NYJ",
+      "quarter_name": "4",
+      "sequence": 1790538978151,
+      "team": "NYJ",
+      "time_remaining_minutes": 0,
+      "time_remaining_minutes_end": 0,
+      "time_remaining_seconds": 51,
+      "time_remaining_seconds_end": 45,
+      "topic_id": "1410026124775374848",
+      "type": "Fumble",
+      "yard_line": 28,
+      "yard_line_end": 43,
+      "yard_line_territory": "DET",
+      "yard_line_territory_end": "NYJ",
+      "yards_gained": 0,
+      "yards_to_end_zone": 28
+    },
+    "play_id": "49e1f650-baad-11f1-95c4-d3c31b8c85b2",
+    "play_stats": [
+      {
+        "player_id": "10880",
+        "stats": {
+          "idp_fum_rec": 1.0,
+          "idp_fum_ret_yd": 12.0
+        },
+        "game_id": "202610311",
+        "play_id": "49e1f650-baad-11f1-95c4-d3c31b8c85b2"
+      },
+      {
+        "player_id": "11576",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610311",
+        "play_id": "49e1f650-baad-11f1-95c4-d3c31b8c85b2"
+      },
+      {
+        "player_id": "1373",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "pass_sack": 1.0,
+          "pass_sack_yds": -17.0
+        },
+        "game_id": "202610311",
+        "play_id": "49e1f650-baad-11f1-95c4-d3c31b8c85b2"
+      },
+      {
+        "player_id": "4224",
+        "stats": {
+          "idp_qb_hit": 1.0,
+          "idp_sack": 1.0,
+          "idp_sack_yd": -17.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_loss": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610311",
+        "play_id": "49e1f650-baad-11f1-95c4-d3c31b8c85b2"
+      }
+    ],
+    "sequence": 1790538978151,
+    "updated_at": 1790870919791
+  },
+  {
+    "game_id": "202610314",
+    "metadata": {
+      "away_points": 10,
+      "away_used_timeouts": 3,
+      "description": "D.Jones steps back to pass. Sacked at HOU 46 for -7 yards (W.Anderson). D.Jones FUMBLES, forced by D.Hunter. Fumble RECOVERED by HOU-T.Togiai at HOU 46. ",
+      "distance": 10,
+      "distance_end": 10,
+      "down": 2,
+      "down_end": 1,
+      "fantasy_description": "FUMBLE! Daniel Jones sacked, fumble recovered by HOU",
+      "home_points": 16,
+      "home_used_timeouts": 2,
+      "is_scoring_play": false,
+      "opponent": "HOU",
+      "penalties": [],
+      "play_time": "2026-09-27T19:42:41+00:00",
+      "play_type": "pass_fumble",
+      "possession": "IND",
+      "quarter_name": "4",
+      "sequence": 1790538215154,
+      "team": "IND",
+      "time_remaining_minutes": 4,
+      "time_remaining_minutes_end": 4,
+      "time_remaining_seconds": 45,
+      "time_remaining_seconds_end": 40,
+      "topic_id": "1410022894800584704",
+      "type": "Fumble",
+      "yard_line": 39,
+      "yard_line_end": 46,
+      "yard_line_territory": "HOU",
+      "yard_line_territory_end": "HOU",
+      "yards_gained": 0,
+      "yards_to_end_zone": 39
+    },
+    "play_id": "4d35c720-baab-11f1-8911-db1ba0679138",
+    "play_stats": [
+      {
+        "player_id": "10892",
+        "stats": {
+          "idp_qb_hit": 1.0,
+          "idp_sack": 1.0,
+          "idp_sack_yd": -7.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_loss": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610314",
+        "play_id": "4d35c720-baab-11f1-8911-db1ba0679138"
+      },
+      {
+        "player_id": "2393",
+        "stats": null,
+        "game_id": "202610314",
+        "play_id": "4d35c720-baab-11f1-8911-db1ba0679138"
+      },
+      {
+        "player_id": "5870",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "pass_sack": 1.0,
+          "pass_sack_yds": -7.0
+        },
+        "game_id": "202610314",
+        "play_id": "4d35c720-baab-11f1-8911-db1ba0679138"
+      },
+      {
+        "player_id": "7711",
+        "stats": {
+          "idp_fum_rec": 1.0
+        },
+        "game_id": "202610314",
+        "play_id": "4d35c720-baab-11f1-8911-db1ba0679138"
+      }
+    ],
+    "sequence": 1790538215154,
+    "updated_at": 1790870923791
+  },
+  {
+    "game_id": "202610304",
+    "metadata": {
+      "quarter_name": "4",
+      "down": 3,
+      "possession": "BUF",
+      "time_remaining_seconds": 0,
+      "sequence": 1790536697260,
+      "yard_line_territory_end": "BUF",
+      "yard_line_end": 28,
+      "fantasy_description": "FUMBLE! Josh Allen sacked, fumble recovered by LAC",
+      "description": "J.Allen steps back to pass. Sacked at BUF 34 for 0 yards (K.Mack). Los Angeles challenged the runner was down by contact and the play was overturned. J.Allen steps back to pass. Sacked at BUF 28 for -6 yards (K.Mack). J.Allen FUMBLES, forced by D.Henley. Fumble RECOVERED by LAC-D.Henley at BUF 28.",
+      "time_remaining_seconds_end": 52,
+      "team": "BUF",
+      "distance": 13,
+      "opponent": "LAC",
+      "yards_to_end_zone": 66,
+      "is_scoring_play": false,
+      "time_remaining_minutes": 15,
+      "review_result": "overturned",
+      "play_type": "pass_fumble",
+      "penalties": [],
+      "play_time": "2026-09-27T19:20:49+00:00",
+      "home_used_timeouts": 1,
+      "away_points": 13,
+      "yard_line": 34,
+      "type": "Fumble",
+      "distance_end": 10,
+      "home_points": 10,
+      "review_type": "runner was down by contact",
+      "time_remaining_minutes_end": 14,
+      "yards_gained": 0,
+      "yard_line_territory": "BUF",
+      "away_used_timeouts": 3,
+      "topic_id": "1410016712509636608",
+      "down_end": 1
+    },
+    "play_id": "235e2300-baa8-11f1-8057-a3e4ca18dd73",
+    "play_stats": [
+      {
+        "player_id": "10914",
+        "stats": {
+          "idp_fum_rec": 1.0
+        },
+        "game_id": "202610304",
+        "play_id": "235e2300-baa8-11f1-8057-a3e4ca18dd73"
+      },
+      {
+        "player_id": "2036",
+        "stats": {
+          "idp_qb_hit": 1.0,
+          "idp_sack": 1.0,
+          "idp_sack_yd": -6.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610304",
+        "play_id": "235e2300-baa8-11f1-8057-a3e4ca18dd73"
+      },
+      {
+        "player_id": "4984",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "pass_sack": 1.0,
+          "pass_sack_yds": -6.0
+        },
+        "game_id": "202610304",
+        "play_id": "235e2300-baa8-11f1-8057-a3e4ca18dd73"
+      }
+    ],
+    "sequence": 1790536697260,
+    "updated_at": 1790870915094
+  },
+  {
+    "game_id": "202610335",
+    "metadata": {
+      "quarter_name": "3",
+      "down": 1,
+      "possession": "SEA",
+      "time_remaining_seconds": 14,
+      "scoring_description": "Eric Saubert 13 Yd Pass from Sam Darnold",
+      "sequence": 1790536921712,
+      "yard_line_territory_end": "WAS",
+      "yard_line_end": 15,
+      "fantasy_description": "TOUCHDOWN! Sam Darnold 13 Yd pass complete to Eric Saubert, FUMBLE recovered by SEA",
+      "description": "S.Darnold pass short left complete. Catch made by E.Saubert for 13 yards. E.Saubert FUMBLES, forced by S.Styles. Fumble RECOVERED by SEA-E.Saubert at WAS End Zone. TOUCHDOWN.",
+      "time_remaining_seconds_end": 5,
+      "team": "SEA",
+      "distance": 10,
+      "opponent": "WAS",
+      "yards_to_end_zone": 13,
+      "is_scoring_play": true,
+      "time_remaining_minutes": 6,
+      "play_type": "pass_catch_fumble",
+      "penalties": [],
+      "play_time": "2026-09-27T19:20:47+00:00",
+      "rec_yar": 9.0,
+      "home_used_timeouts": 0,
+      "scoring_team": "SEA",
+      "away_points": 16,
+      "yard_line": 13,
+      "type": "PassCompleted",
+      "distance_end": 0,
+      "home_points": 24,
+      "time_remaining_minutes_end": 6,
+      "scoring_points": 6,
+      "yards_gained": 13,
+      "yard_line_territory": "WAS",
+      "away_used_timeouts": 3,
+      "topic_id": "1410017384349151232",
+      "down_end": 0
+    },
+    "play_id": "7a60c3b0-baa8-11f1-bcd0-4181778d8a33",
+    "play_stats": [
+      {
+        "player_id": "13375",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610335",
+        "play_id": "7a60c3b0-baa8-11f1-bcd0-4181778d8a33"
+      },
+      {
+        "player_id": "4189",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_10_19": 1.0,
+          "rec_td": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yar": 9.0,
+          "rec_yd": 13.0
+        },
+        "game_id": "202610335",
+        "play_id": "7a60c3b0-baa8-11f1-bcd0-4181778d8a33"
+      },
+      {
+        "player_id": "4943",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": 4.0,
+          "pass_cmp": 1.0,
+          "pass_td": 1.0,
+          "pass_yd": 13.0
+        },
+        "game_id": "202610335",
+        "play_id": "7a60c3b0-baa8-11f1-bcd0-4181778d8a33"
+      }
+    ],
+    "sequence": 1790536921712,
+    "updated_at": 1790870934759
+  },
+  {
+    "game_id": "202610304",
+    "metadata": {
+      "away_points": 13,
+      "away_used_timeouts": 3,
+      "description": "J.Allen pass short middle complete. Catch made by D.Kincaid for 24 yards. D.Kincaid FUMBLES, forced by T.Still. Fumble RECOVERED by LAC-T.Jefferson at LAC 17.",
+      "distance": 8,
+      "distance_end": 10,
+      "down": 3,
+      "down_end": 1,
+      "fantasy_description": "Josh Allen 24 Yd pass complete to Dalton Kincaid, FUMBLE recovered by LAC",
+      "home_points": 10,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "LAC",
+      "penalties": [],
+      "play_time": "2026-09-27T19:00:18+00:00",
+      "play_type": "pass_catch_fumble",
+      "possession": "BUF",
+      "quarter_name": "3",
+      "rec_yar": 14.0,
+      "sequence": 1790535665644,
+      "team": "BUF",
+      "time_remaining_minutes": 3,
+      "time_remaining_minutes_end": 3,
+      "time_remaining_seconds": 59,
+      "time_remaining_seconds_end": 50,
+      "topic_id": "1410012234251272192",
+      "type": "Fumble",
+      "yard_line": 48,
+      "yard_line_end": 17,
+      "yard_line_territory": "LAC",
+      "yard_line_territory_end": "LAC",
+      "yards_gained": 24,
+      "yards_to_end_zone": 48
+    },
+    "play_id": "9c875100-baa5-11f1-8057-a3e4ca18dd73",
+    "play_stats": [
+      {
+        "player_id": "10236",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "rec": 1.0,
+          "rec_20_29": 1.0,
+          "rec_tgt": 1.0,
+          "rec_yar": 14.0,
+          "rec_yd": 24.0
+        },
+        "game_id": "202610304",
+        "play_id": "9c875100-baa5-11f1-8057-a3e4ca18dd73"
+      },
+      {
+        "player_id": "11779",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610304",
+        "play_id": "9c875100-baa5-11f1-8057-a3e4ca18dd73"
+      },
+      {
+        "player_id": "13399",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610304",
+        "play_id": "9c875100-baa5-11f1-8057-a3e4ca18dd73"
+      },
+      {
+        "player_id": "1686",
+        "stats": {
+          "idp_fum_rec": 1.0
+        },
+        "game_id": "202610304",
+        "play_id": "9c875100-baa5-11f1-8057-a3e4ca18dd73"
+      },
+      {
+        "player_id": "4984",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": 10.0,
+          "pass_cmp": 1.0,
+          "pass_yd": 24.0
+        },
+        "game_id": "202610304",
+        "play_id": "9c875100-baa5-11f1-8057-a3e4ca18dd73"
+      }
+    ],
+    "sequence": 1790535665644,
+    "updated_at": 1790870915023
+  },
+  {
+    "game_id": "202610308",
+    "metadata": {
+      "away_points": 3,
+      "away_used_timeouts": 3,
+      "description": "R.Fitzgerald kicks 66 yards from CAR 30 to the CLE 4. M.Corley returns the kickoff. M.Corley FUMBLES, forced by M.Njongmeta. Fumble RECOVERED by CAR-T.Incoom at CLE 30. Tackled by at CLE 30.",
+      "distance": 0,
+      "distance_end": 10,
+      "down": 0,
+      "down_end": 1,
+      "home_points": 10,
+      "home_used_timeouts": 0,
+      "is_scoring_play": false,
+      "opponent": "CLE",
+      "penalties": [],
+      "play_time": "2026-09-27T18:50:30+00:00",
+      "play_type": "kickoff",
+      "possession": "CAR",
+      "quarter_name": "3",
+      "sequence": 1790535061296,
+      "team": "CAR",
+      "time_remaining_minutes": 14,
+      "time_remaining_minutes_end": 14,
+      "time_remaining_seconds": 56,
+      "time_remaining_seconds_end": 49,
+      "topic_id": "1410009775642587136",
+      "type": "Fumble",
+      "yard_line": 30,
+      "yard_line_end": 30,
+      "yard_line_territory": "CAR",
+      "yard_line_territory_end": "CLE",
+      "yards_gained": 66,
+      "yards_to_end_zone": 70
+    },
+    "play_id": "4155a210-baa4-11f1-8799-1b6015ea36c2",
+    "play_stats": [
+      {
+        "player_id": "11441",
+        "stats": {
+          "st_fum_rec": 1.0
+        },
+        "game_id": "202610308",
+        "play_id": "4155a210-baa4-11f1-8799-1b6015ea36c2"
+      },
+      {
+        "player_id": "11617",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "kr": 1.0,
+          "kr_yd": 23.0
+        },
+        "game_id": "202610308",
+        "play_id": "4155a210-baa4-11f1-8799-1b6015ea36c2"
+      },
+      {
+        "player_id": "12057",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610308",
+        "play_id": "4155a210-baa4-11f1-8799-1b6015ea36c2"
+      },
+      {
+        "player_id": "12961",
+        "stats": {
+          "kick_yds": 66.0,
+          "kicks": 1.0
+        },
+        "game_id": "202610308",
+        "play_id": "4155a210-baa4-11f1-8799-1b6015ea36c2"
+      },
+      {
+        "player_id": "CAR",
+        "stats": {
+          "def_st_fum_rec": 1.0
+        },
+        "game_id": "202610308",
+        "play_id": "4155a210-baa4-11f1-8799-1b6015ea36c2"
+      }
+    ],
+    "sequence": 1790535061296,
+    "updated_at": 1790870914930
+  },
+  {
+    "game_id": "202610323",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 1,
+      "description": "C.Skattebo rushed up the middle for 10 yards. C.Skattebo FUMBLES, forced by K.Winston. C.Skattebo FUMBLES, out of bounds. ",
+      "distance": 10,
+      "distance_end": 10,
+      "down": 1,
+      "down_end": 1,
+      "fantasy_description": "Cam Skattebo 10 Yd run",
+      "home_points": 9,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "TEN",
+      "penalties": [],
+      "play_time": "2026-09-27T18:44:28+00:00",
+      "play_type": "rush",
+      "possession": "NYG",
+      "quarter_name": "3",
+      "sequence": 1790534692050,
+      "team": "NYG",
+      "time_remaining_minutes": 14,
+      "time_remaining_minutes_end": 14,
+      "time_remaining_seconds": 54,
+      "time_remaining_seconds_end": 21,
+      "topic_id": "1410008246764208128",
+      "type": "Rush",
+      "yard_line": 30,
+      "yard_line_end": 40,
+      "yard_line_territory": "NYG",
+      "yard_line_territory_end": "NYG",
+      "yards_gained": 10,
+      "yards_to_end_zone": 70
+    },
+    "play_id": "6bc2cc40-baa3-11f1-990d-335f6135f415",
+    "play_stats": [
+      {
+        "player_id": "12481",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_fd": 1.0,
+          "rush_yac": 9.0,
+          "rush_yd": 10.0
+        },
+        "game_id": "202610323",
+        "play_id": "6bc2cc40-baa3-11f1-990d-335f6135f415"
+      },
+      {
+        "player_id": "12588",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610323",
+        "play_id": "6bc2cc40-baa3-11f1-990d-335f6135f415"
+      }
+    ],
+    "sequence": 1790534692050,
+    "updated_at": 1790870927217
+  },
+  {
+    "game_id": "202610315",
+    "metadata": {
+      "quarter_name": "2",
+      "down": 2,
+      "possession": "NE",
+      "time_remaining_seconds": 20,
+      "sequence": 1790533166787,
+      "yard_line_territory_end": "JAX",
+      "yard_line_end": 5,
+      "fantasy_description": "FUMBLE! Drake Maye 9 Yd run, fumble recovered by NE",
+      "description": "D.Maye scrambles up the middle for 9 yards. D.Maye FUMBLES, forced by D.Hamilton. Fumble RECOVERED by NE-D.Maye at JAC 5. The Replay Official reviewed the fumble and the play was upheld.",
+      "time_remaining_seconds_end": 20,
+      "team": "NE",
+      "distance": 6,
+      "opponent": "JAX",
+      "yards_to_end_zone": 14,
+      "is_scoring_play": false,
+      "time_remaining_minutes": 1,
+      "review_result": "upheld",
+      "play_type": "rush_fumble",
+      "penalties": [],
+      "play_time": "2026-09-27T18:19:11+00:00",
+      "home_used_timeouts": 2,
+      "away_points": 3,
+      "yard_line": 14,
+      "type": "Rush",
+      "distance_end": 5,
+      "home_points": 14,
+      "review_type": "fumble",
+      "time_remaining_minutes_end": 1,
+      "yards_gained": 9,
+      "yard_line_territory": "JAX",
+      "away_used_timeouts": 1,
+      "topic_id": "1410001884776787968",
+      "down_end": 1
+    },
+    "play_id": "dce1ada0-ba9f-11f1-9ff5-3524b1e84033",
+    "play_stats": [
+      {
+        "player_id": "11564",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_fd": 1.0,
+          "rush_yd": 9.0
+        },
+        "game_id": "202610315",
+        "play_id": "dce1ada0-ba9f-11f1-9ff5-3524b1e84033"
+      },
+      {
+        "player_id": "6972",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610315",
+        "play_id": "dce1ada0-ba9f-11f1-9ff5-3524b1e84033"
+      }
+    ],
+    "sequence": 1790533166787,
+    "updated_at": 1790870923517
+  },
+  {
+    "game_id": "202610319",
+    "metadata": {
+      "quarter_name": "2",
+      "down": 2,
+      "possession": "MIA",
+      "time_remaining_seconds": 14,
+      "sequence": 1790532338828,
+      "yard_line_territory_end": "KC",
+      "yard_line_end": 25,
+      "fantasy_description": "FUMBLE! Malik Willis 3 Yd run, fumble recovered by KC",
+      "description": "M.Willis scrambles up the middle for 3 yards. Tackled by L.Sneed at KC 28. Kansas City challenged the runner was down by contact and the play was overturned. M.Willis rushed up the middle for 3 yards. M.Willis FUMBLES, forced by L.Sneed. Fumble RECOVERED by KC-L.Sneed at KC 25.",
+      "time_remaining_seconds_end": 10,
+      "team": "MIA",
+      "distance": 9,
+      "opponent": "KC",
+      "yards_to_end_zone": 31,
+      "is_scoring_play": false,
+      "time_remaining_minutes": 3,
+      "review_result": "overturned",
+      "play_type": "rush_fumble",
+      "penalties": [],
+      "play_time": "2026-09-27T18:07:55+00:00",
+      "home_used_timeouts": 3,
+      "away_points": 14,
+      "yard_line": 31,
+      "type": "Fumble",
+      "distance_end": 10,
+      "home_points": 7,
+      "review_type": "runner was down by contact",
+      "time_remaining_minutes_end": 3,
+      "yards_gained": 3,
+      "yard_line_territory": "KC",
+      "away_used_timeouts": 1,
+      "topic_id": "1409998397519196160",
+      "down_end": 1
+    },
+    "play_id": "ee9351e0-ba9d-11f1-98a3-35151fef9533",
+    "play_stats": [
+      {
+        "player_id": "6141",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610319",
+        "play_id": "ee9351e0-ba9d-11f1-98a3-35151fef9533"
+      },
+      {
+        "player_id": "7117",
+        "stats": {
+          "idp_fum_rec": 1.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610319",
+        "play_id": "ee9351e0-ba9d-11f1-98a3-35151fef9533"
+      },
+      {
+        "player_id": "8161",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_yd": 3.0
+        },
+        "game_id": "202610319",
+        "play_id": "ee9351e0-ba9d-11f1-98a3-35151fef9533"
+      }
+    ],
+    "sequence": 1790532338828,
+    "updated_at": 1790870927077
+  },
+  {
+    "game_id": "202610314",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 3,
+      "description": "R.Sanchez kicks 62 yards from IND 35 to the HOU 3. T.Smith returns the kickoff. T.Smith FUMBLES, forced by C.Curry. Fumble RECOVERED by IND-J.Owens at HOU 33. Tackled by J.Wayne; D.Robinson at HOU 28. The Replay Official reviewed the fumble and the play was overturned. R.Sanchez kicks yards from IND 35 to the HOU 3. T.Smith returns the kickoff. Tackled by C.Curry at HOU 32. ",
+      "distance": 0,
+      "distance_end": 10,
+      "down": 0,
+      "down_end": 1,
+      "home_points": 10,
+      "home_used_timeouts": 2,
+      "is_scoring_play": false,
+      "opponent": "HOU",
+      "penalties": [],
+      "play_time": "2026-09-27T17:57:50+00:00",
+      "play_type": "kickoff",
+      "possession": "IND",
+      "quarter_name": "2",
+      "review_result": "overturned",
+      "review_type": "fumble",
+      "sequence": 1790531698264,
+      "team": "IND",
+      "time_remaining_minutes": 11,
+      "time_remaining_minutes_end": 11,
+      "time_remaining_seconds": 8,
+      "time_remaining_seconds_end": 4,
+      "topic_id": "1409995470809354240",
+      "type": "Kickoff",
+      "yard_line": 35,
+      "yard_line_end": 32,
+      "yard_line_territory": "IND",
+      "yard_line_territory_end": "HOU",
+      "yards_gained": 62,
+      "yards_to_end_zone": 65
+    },
+    "play_id": "f76cb5b0-ba9b-11f1-8911-db1ba0679138",
+    "play_stats": [
+      {
+        "player_id": "13373",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610314",
+        "play_id": "f76cb5b0-ba9b-11f1-8911-db1ba0679138"
+      },
+      {
+        "player_id": "4331",
+        "stats": {
+          "kick_yds": 62.0,
+          "kicks": 1.0
+        },
+        "game_id": "202610314",
+        "play_id": "f76cb5b0-ba9b-11f1-8911-db1ba0679138"
+      },
+      {
+        "player_id": "5328",
+        "stats": {
+          "kr": 1.0,
+          "kr_yd": 29.0
+        },
+        "game_id": "202610314",
+        "play_id": "f76cb5b0-ba9b-11f1-8911-db1ba0679138"
+      }
+    ],
+    "sequence": 1790531698264,
+    "updated_at": 1790870923315
+  },
+  {
+    "game_id": "202610335",
+    "metadata": {
+      "quarter_name": "1",
+      "down": 1,
+      "possession": "SEA",
+      "time_remaining_seconds": 6,
+      "sequence": 1790529368521,
+      "yard_line_territory_end": "SEA",
+      "yard_line_end": 21,
+      "fantasy_description": "FUMBLE! Jadarian Price 1 Yd run, fumble recovered by WAS",
+      "description": "J.Price rushed left end for 1 yard. Tackled by S.Styles at SEA 21. The Replay Official reviewed the fumble and the play was overturned. J.Price rushed left end for 1 yard. J.Price FUMBLES, forced by A.Robertson. Fumble RECOVERED by WAS-T.Settle at SEA 21. Tackled by at SEA 21.",
+      "time_remaining_seconds_end": 0,
+      "team": "SEA",
+      "distance": 10,
+      "opponent": "WAS",
+      "yards_to_end_zone": 80,
+      "is_scoring_play": false,
+      "time_remaining_minutes": 11,
+      "review_result": "overturned",
+      "play_type": "rush_fumble",
+      "penalties": [],
+      "play_time": "2026-09-27T17:16:59+00:00",
+      "home_used_timeouts": 0,
+      "away_points": 0,
+      "yard_line": 20,
+      "type": "Fumble",
+      "distance_end": 10,
+      "home_points": 0,
+      "review_type": "fumble",
+      "time_remaining_minutes_end": 11,
+      "yards_gained": 1,
+      "yard_line_territory": "SEA",
+      "away_used_timeouts": 3,
+      "topic_id": "1409985934430044160",
+      "down_end": 1
+    },
+    "play_id": "bb8b5f10-ba96-11f1-94fd-4f27991f1616",
+    "play_stats": [
+      {
+        "player_id": "13286",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_yd": 1.0
+        },
+        "game_id": "202610335",
+        "play_id": "bb8b5f10-ba96-11f1-94fd-4f27991f1616"
+      },
+      {
+        "player_id": "13375",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610335",
+        "play_id": "bb8b5f10-ba96-11f1-94fd-4f27991f1616"
+      },
+      {
+        "player_id": "5366",
+        "stats": {
+          "idp_fum_rec": 1.0
+        },
+        "game_id": "202610335",
+        "play_id": "bb8b5f10-ba96-11f1-94fd-4f27991f1616"
+      },
+      {
+        "player_id": "6896",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610335",
+        "play_id": "bb8b5f10-ba96-11f1-94fd-4f27991f1616"
+      }
+    ],
+    "sequence": 1790529368521,
+    "updated_at": 1790870934208
+  },
+  {
+    "game_id": "202610314",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 3,
+      "description": "D.Jones steps back to pass. Sacked at IND 44 for -3 yards (W.Anderson). D.Jones FUMBLES, forced by W.Anderson. Fumble RECOVERED by HOU-W.Anderson at IND 42. W.Anderson FUMBLES, forced by M.Alie-Cox. Fumble RECOVERED by HOU-K.Lassiter at IND 40. ",
+      "distance": 10,
+      "distance_end": 10,
+      "down": 1,
+      "down_end": 1,
+      "fantasy_description": "FUMBLE! Daniel Jones sacked, fumble recovered by HOU",
+      "home_points": 0,
+      "home_used_timeouts": 2,
+      "is_scoring_play": false,
+      "opponent": "HOU",
+      "penalties": [],
+      "play_time": "2026-09-27T17:10:35+00:00",
+      "play_type": "pass_fumble",
+      "possession": "IND",
+      "quarter_name": "1",
+      "sequence": 1790529095638,
+      "team": "IND",
+      "time_remaining_minutes": 11,
+      "time_remaining_minutes_end": 11,
+      "time_remaining_seconds": 28,
+      "time_remaining_seconds_end": 17,
+      "topic_id": "1409984620132352000",
+      "type": "Fumble",
+      "yard_line": 47,
+      "yard_line_end": 40,
+      "yard_line_territory": "IND",
+      "yard_line_territory_end": "IND",
+      "yards_gained": 0,
+      "yards_to_end_zone": 53
+    },
+    "play_id": "4ca72840-ba96-11f1-8911-db1ba0679138",
+    "play_stats": [
+      {
+        "player_id": "10892",
+        "stats": {
+          "fum": 1.0,
+          "idp_ff": 1.0,
+          "idp_fum_rec": 1.0,
+          "idp_fum_ret_yd": 2.0,
+          "idp_sack": 1.0,
+          "idp_sack_yd": -3.0,
+          "idp_tkl": 1.0,
+          "idp_tkl_loss": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610314",
+        "play_id": "4ca72840-ba96-11f1-8911-db1ba0679138"
+      },
+      {
+        "player_id": "4054",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610314",
+        "play_id": "4ca72840-ba96-11f1-8911-db1ba0679138"
+      },
+      {
+        "player_id": "5870",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "pass_sack": 1.0,
+          "pass_sack_yds": -3.0
+        },
+        "game_id": "202610314",
+        "play_id": "4ca72840-ba96-11f1-8911-db1ba0679138"
+      }
+    ],
+    "sequence": 1790529095638,
+    "updated_at": 1790870923007
+  },
+  {
+    "game_id": "202610304",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 3,
+      "description": "J.Cook rushed up the middle for 4 yards. J.Cook FUMBLES, forced by J.Eboigbe. Fumble RECOVERED by LAC-D.Henley at BUF 47.",
+      "distance": 10,
+      "distance_end": 10,
+      "down": 1,
+      "down_end": 1,
+      "fantasy_description": "FUMBLE! James Cook III 4 Yd run, fumble recovered by LAC",
+      "home_points": 0,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "LAC",
+      "penalties": [],
+      "play_time": "2026-09-27T17:03:45+00:00",
+      "play_type": "rush_fumble",
+      "possession": "BUF",
+      "quarter_name": "1",
+      "sequence": 1790528657684,
+      "team": "BUF",
+      "time_remaining_minutes": 14,
+      "time_remaining_minutes_end": 14,
+      "time_remaining_seconds": 53,
+      "time_remaining_seconds_end": 44,
+      "topic_id": "1409982900769685504",
+      "type": "Fumble",
+      "yard_line": 43,
+      "yard_line_end": 47,
+      "yard_line_territory": "BUF",
+      "yard_line_territory_end": "BUF",
+      "yards_gained": 4,
+      "yards_to_end_zone": 57
+    },
+    "play_id": "51839f70-ba95-11f1-ba77-573d4041d54a",
+    "play_stats": [
+      {
+        "player_id": "10914",
+        "stats": {
+          "idp_fum_rec": 1.0
+        },
+        "game_id": "202610304",
+        "play_id": "51839f70-ba95-11f1-ba77-573d4041d54a"
+      },
+      {
+        "player_id": "11743",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610304",
+        "play_id": "51839f70-ba95-11f1-ba77-573d4041d54a"
+      },
+      {
+        "player_id": "8138",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "rush_att": 1.0,
+          "rush_yd": 4.0
+        },
+        "game_id": "202610304",
+        "play_id": "51839f70-ba95-11f1-ba77-573d4041d54a"
+      }
+    ],
+    "sequence": 1790528657684,
+    "updated_at": 1790870914414
+  },
+  {
+    "game_id": "202610323",
+    "metadata": {
+      "away_points": 0,
+      "away_used_timeouts": 1,
+      "description": "D.Zvada kicks 63 yards from NYG 35 to the TEN 2. C.Dike returns the kickoff. C.Dike FUMBLES, forced by Z.Barnes. Fumble RECOVERED by NYG-M.Harrison at TEN 37. Tackled by at TEN 37.",
+      "distance": 0,
+      "distance_end": 10,
+      "down": 0,
+      "down_end": 1,
+      "home_points": 0,
+      "home_used_timeouts": 3,
+      "is_scoring_play": false,
+      "opponent": "TEN",
+      "penalties": [],
+      "play_time": "2026-09-27T17:03:03+00:00",
+      "play_type": "kickoff",
+      "possession": "NYG",
+      "quarter_name": "1",
+      "sequence": 1790528662774,
+      "team": "NYG",
+      "time_remaining_minutes": 15,
+      "time_remaining_minutes_end": 14,
+      "time_remaining_seconds": 0,
+      "time_remaining_seconds_end": 51,
+      "topic_id": "1409982740283060224",
+      "type": "Fumble",
+      "yard_line": 35,
+      "yard_line_end": 37,
+      "yard_line_territory": "NYG",
+      "yard_line_territory_end": "TEN",
+      "yards_gained": 63,
+      "yards_to_end_zone": 65
+    },
+    "play_id": "3cbf8f40-ba90-11f1-86ef-13c761fff291",
+    "play_stats": [
+      {
+        "player_id": "11000",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_ast": 1.0
+        },
+        "game_id": "202610323",
+        "play_id": "3cbf8f40-ba90-11f1-86ef-13c761fff291"
+      },
+      {
+        "player_id": "12540",
+        "stats": {
+          "fum": 1.0,
+          "fum_lost": 1.0,
+          "idp_ff": 1.0,
+          "kr": 1.0,
+          "kr_yd": 34.0
+        },
+        "game_id": "202610323",
+        "play_id": "3cbf8f40-ba90-11f1-86ef-13c761fff291"
+      },
+      {
+        "player_id": "13833",
+        "stats": {
+          "kick_yds": 63.0,
+          "kicks": 1.0
+        },
+        "game_id": "202610323",
+        "play_id": "3cbf8f40-ba90-11f1-86ef-13c761fff291"
+      },
+      {
+        "player_id": "6867",
+        "stats": {
+          "st_fum_rec": 1.0
+        },
+        "game_id": "202610323",
+        "play_id": "3cbf8f40-ba90-11f1-86ef-13c761fff291"
+      },
+      {
+        "player_id": "8396",
+        "stats": {
+          "idp_tkl": 1.0,
+          "idp_tkl_solo": 1.0
+        },
+        "game_id": "202610323",
+        "play_id": "3cbf8f40-ba90-11f1-86ef-13c761fff291"
+      },
+      {
+        "player_id": "NYG",
+        "stats": {
+          "def_st_fum_rec": 1.0
+        },
+        "game_id": "202610323",
+        "play_id": "3cbf8f40-ba90-11f1-86ef-13c761fff291"
+      }
+    ],
+    "sequence": 1790528662774,
+    "updated_at": 1790870926749
+  },
+  {
+    "game_id": "202610312",
+    "metadata": {
+      "away_points": 17,
+      "away_used_timeouts": 0,
+      "description": "J.Love pass short right complete. Catch made by T.Kraft for yards. T.Kraft FUMBLES, forced by J.Bates. The Replay Official reviewed the runner was in bounds and the play was overturned. J.Love steps back to pass. Pass incomplete short right intended for T.Kraft (J.Bates).",
+      "distance": 2,
+      "distance_end": 2,
+      "down": 3,
+      "down_end": 4,
+      "home_points": 7,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "ATL",
+      "penalties": [],
+      "play_time": "2026-09-25T01:42:51+00:00",
+      "play_type": "pass_incomplete",
+      "possession": "GB",
+      "quarter_name": "2",
+      "review_result": "overturned",
+      "review_type": "runner was in bounds",
+      "sequence": 1790300578960,
+      "team": "GB",
+      "time_remaining_minutes": 0,
+      "time_remaining_minutes_end": 0,
+      "time_remaining_seconds": 41,
+      "time_remaining_seconds_end": 38,
+      "topic_id": "1409026379286052864",
+      "type": "PassIncomplete",
+      "yard_line": 41,
+      "yard_line_end": 41,
+      "yard_line_territory": "GB",
+      "yard_line_territory_end": "GB",
+      "yards_gained": 0,
+      "yards_to_end_zone": 59
+    },
+    "play_id": "69297560-b882-11f1-93e9-47c1aa68aaa4",
+    "play_stats": [
+      {
+        "player_id": "6804",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_inc": 1.0
+        },
+        "game_id": "202610312",
+        "play_id": "69297560-b882-11f1-93e9-47c1aa68aaa4"
+      },
+      {
+        "player_id": "9484",
+        "stats": {
+          "rec_tgt": 1.0
+        },
+        "game_id": "202610312",
+        "play_id": "69297560-b882-11f1-93e9-47c1aa68aaa4"
+      }
+    ],
+    "sequence": 1790300578960,
+    "updated_at": 1790870923043
+  },
+  {
+    "game_id": "202610312",
+    "metadata": {
+      "away_points": 7,
+      "away_used_timeouts": 0,
+      "description": "J.Love steps back to pass. Sacked at GB 3 for -9 yards (D.Deablo). J.Love FUMBLES, forced by D.Deablo. Fumble RECOVERED by ATL-C.Henderson at GB 17. Tackled by S.Moore at GB 10. The Replay Official reviewed the fumble and the play was overturned. J.Love steps back to pass. Pass incomplete deep middle intended for S.Moore (D.Deablo) [D.Deablo].",
+      "distance": 9,
+      "distance_end": 9,
+      "down": 3,
+      "down_end": 4,
+      "home_points": 7,
+      "home_used_timeouts": 1,
+      "is_scoring_play": false,
+      "opponent": "ATL",
+      "penalties": [],
+      "play_time": "2026-09-25T01:14:12+00:00",
+      "play_type": "pass_incomplete",
+      "possession": "GB",
+      "quarter_name": "2",
+      "review_result": "overturned",
+      "review_type": "fumble",
+      "sequence": 1790298734712,
+      "team": "GB",
+      "time_remaining_minutes": 9,
+      "time_remaining_minutes_end": 9,
+      "time_remaining_seconds": 46,
+      "time_remaining_seconds_end": 37,
+      "topic_id": "1409018372858847232",
+      "type": "PassIncomplete",
+      "yard_line": 12,
+      "yard_line_end": 12,
+      "yard_line_territory": "GB",
+      "yard_line_territory_end": "GB",
+      "yards_gained": 0,
+      "yards_to_end_zone": 88
+    },
+    "play_id": "e8ef3690-b87d-11f1-93e9-47c1aa68aaa4",
+    "play_stats": [
+      {
+        "player_id": "6804",
+        "stats": {
+          "pass_att": 1.0,
+          "pass_att_yds": 5.0,
+          "pass_inc": 1.0
+        },
+        "game_id": "202610312",
+        "play_id": "e8ef3690-b87d-11f1-93e9-47c1aa68aaa4"
+      },
+      {
+        "player_id": "7677",
+        "stats": {
+          "idp_qb_hit": 1.0
+        },
+        "game_id": "202610312",
+        "play_id": "e8ef3690-b87d-11f1-93e9-47c1aa68aaa4"
+      },
+      {
+        "player_id": "8168",
+        "stats": {
+          "rec_tgt": 1.0
+        },
+        "game_id": "202610312",
+        "play_id": "e8ef3690-b87d-11f1-93e9-47c1aa68aaa4"
+      }
+    ],
+    "sequence": 1790298734712,
+    "updated_at": 1790870922892
+  }
+]

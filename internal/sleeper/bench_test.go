@@ -48,7 +48,7 @@ func grownPayload(t testing.TB) []byte {
 // BenchmarkTransform isolates the mapping from the fetch and the decode: this
 // is the cost the eager WeekStats pays that a lazy one would not.
 func BenchmarkTransform(b *testing.B) {
-	weekly, err := decodeWeekly(bytes.NewReader(grownPayload(b)))
+	weekly, _, err := decodeWeekly(bytes.NewReader(grownPayload(b)))
 	if err != nil {
 		b.Fatalf("decoding: %v", err)
 	}
@@ -71,7 +71,7 @@ func BenchmarkDecode(b *testing.B) {
 	body := grownPayload(b)
 
 	for b.Loop() {
-		if _, err := decodeWeekly(bytes.NewReader(body)); err != nil {
+		if _, _, err := decodeWeekly(bytes.NewReader(body)); err != nil {
 			b.Fatalf("decoding: %v", err)
 		}
 	}

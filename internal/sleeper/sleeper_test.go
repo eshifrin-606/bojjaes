@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -53,7 +54,7 @@ func jsonServer(t *testing.T, body string) *httptest.Server {
 func TestFetchWeekly(t *testing.T) {
 	srv := fixtureServer(t)
 
-	weekly, err := fetchWeekly(context.Background(), srv.URL, 2025, 14)
+	weekly, _, err := fetchWeekly(context.Background(), srv.URL, 2025, 14)
 	if err != nil {
 		t.Fatalf("fetchWeekly: %v", err)
 	}
@@ -71,7 +72,7 @@ func TestFetchWeekly(t *testing.T) {
 func TestFetchWeeklyEmptyPayload(t *testing.T) {
 	srv := jsonServer(t, `[]`)
 
-	weekly, err := fetchWeekly(context.Background(), srv.URL, 2026, 1)
+	weekly, _, err := fetchWeekly(context.Background(), srv.URL, 2026, 1)
 	if err != nil {
 		t.Fatalf("fetchWeekly: %v", err)
 	}
@@ -95,7 +96,7 @@ func TestFetchWeeklyContextCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	go func() {
-		_, err := fetchWeekly(ctx, srv.URL, 2025, 14)
+		_, _, err := fetchWeekly(ctx, srv.URL, 2025, 14)
 		done <- err
 	}()
 
@@ -142,7 +143,7 @@ func TestFetchWeeklyUpstreamFailures(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := fetchWeekly(context.Background(), tt.baseURL(t), 2025, 14)
+			_, _, err := fetchWeekly(context.Background(), tt.baseURL(t), 2025, 14)
 			if err == nil {
 				t.Fatal("fetchWeekly returned no error")
 			}
@@ -155,6 +156,20 @@ func TestFetchWeeklyUpstreamFailures(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestDecodeWeeklyIdentifiesPlayersByWeekTeam(t *testing.T) {
+	body := `[{"player_id":"5991","team":"LV","stats":null,
+		"player":{"first_name":"Maxx","last_name":"Crosby","team":"KC"}}]`
+
+	_, ids, err := decodeWeekly(strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want := (identities{"5991": {name: "m.crosby", team: "LV"}}); !reflect.DeepEqual(ids, want) {
+		t.Errorf("identities = %v, want %v", ids, want)
 	}
 }
 

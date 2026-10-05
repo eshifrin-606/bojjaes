@@ -61,6 +61,10 @@ type StatLine struct {
 	// own-team recoveries this field excludes.
 	FumRec int `json:"fum_rec_turnover"`
 
+	// FFTurnover counts only forced fumbles that resulted in a turnover; like
+	// FumRec it is qualified before it arrives, so Points pays it flat.
+	FFTurnover int `json:"ff_turnover"`
+
 	// Sack is credited in half-sack granularity, so it is fractional where
 	// every other count is whole.
 	Sack float64 `json:"sack"`
