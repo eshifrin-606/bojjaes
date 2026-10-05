@@ -9,7 +9,7 @@ keyed on both module files.
 
 This capability exists because the server reads almost nothing from its host. Lineups, templates,
 CSS, and the timezone database are compiled in, and the listen port comes from `PORT`. The one host
-dependency left is the CA roots that verify its only upstream, `https://api.sleeper.app`. The image
+dependency left is the CA roots that verify its only upstream, `https://api.sleeper.com`. The image
 carries exactly that, so a missed dependency fails visibly rather than being masked by a full
 userland.
 

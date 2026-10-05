@@ -97,8 +97,8 @@ sequenceDiagram
     W->>R: Read() ×2 → both lineups
     Note right of R: lineups read first —<br/>no point fetching a<br/>week we can't render
     W->>S: WeekStats(2025, 15)
-    S->>X: GET /v1/stats/nfl/regular/2025/15
-    X-->>S: ~0.5MB, every player in the league
+    S->>X: GET /stats/nfl/2025/15?season_type=regular
+    X-->>S: ~2.1MB (~280KB gzipped), every player in the league
     S-->>W: score.WeekStats
     W->>W: score both columns from ONE snapshot
     W-->>B: HTML + the refresh script
