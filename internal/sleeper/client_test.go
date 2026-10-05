@@ -2,10 +2,9 @@ package sleeper
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"sort"
 	"strings"
 	"testing"
 
@@ -27,23 +26,42 @@ func weekServer(t *testing.T, aggregate string, playsBody []byte) *httptest.Serv
 	return srv
 }
 
-func firstForcer(t *testing.T, credits map[string]int) (string, int) {
+const crosbyID = "5991"
+
+// w3Aggregate serves the recorded week 3 aggregate after edit has changed its
+// rows.
+func w3Aggregate(t *testing.T, edit func(rows []map[string]any) []map[string]any) string {
 	t.Helper()
-	ids := []string{}
-	for id := range credits {
-		ids = append(ids, id)
+	var rows []map[string]any
+	if err := json.Unmarshal(readFixture(t, "testdata/stats_2026_w3.json"), &rows); err != nil {
+		t.Fatal(err)
 	}
-	if len(ids) == 0 {
-		t.Fatal("fixture credits no forcer")
+	b, err := json.Marshal(edit(rows))
+	if err != nil {
+		t.Fatal(err)
 	}
-	sort.Strings(ids)
-	return ids[0], credits[ids[0]]
+	return string(b)
+}
+
+func unchanged(rows []map[string]any) []map[string]any { return rows }
+
+func editCrosby(edit func(row map[string]any) map[string]any) func([]map[string]any) []map[string]any {
+	return func(rows []map[string]any) []map[string]any {
+		var out []map[string]any
+		for _, r := range rows {
+			if r["player_id"] == crosbyID {
+				r = edit(r)
+			}
+			if r != nil {
+				out = append(out, r)
+			}
+		}
+		return out
+	}
 }
 
 func TestClientWeekStatsCreditsForcerFromPlays(t *testing.T) {
-	playsBody := readFixture(t, "testdata/plays_2026_w3.json")
-	forcer, want := firstForcer(t, forcedFumbleTurnovers(loadPlays(t, "testdata/plays_2026_w3.json"), noLog))
-	srv := weekServer(t, fmt.Sprintf(`[{"player_id":%q,"stats":{"rush_yd":10}}]`, forcer), playsBody)
+	srv := weekServer(t, w3Aggregate(t, unchanged), readFixture(t, "testdata/plays_2026_w3.json"))
 	c := Client{BaseURL: srv.URL, Plays: NewPlayStore(srv.URL, noLog)}
 
 	week, err := c.WeekStats(context.Background(), 2026, 3)
@@ -51,22 +69,21 @@ func TestClientWeekStatsCreditsForcerFromPlays(t *testing.T) {
 		t.Fatalf("WeekStats: %v", err)
 	}
 
-	line, ok := week.Player(forcer)
+	line, ok := week.Player(crosbyID)
 	if !ok {
-		t.Fatalf("Player(%s) absent", forcer)
+		t.Fatalf("Player(%s) absent", crosbyID)
 	}
-	if line.FFTurnover != want {
-		t.Errorf("FFTurnover = %d, want %d", line.FFTurnover, want)
+	if line.FFTurnover != 1 {
+		t.Errorf("FFTurnover = %d, want 1", line.FFTurnover)
 	}
-	if line.RushYd != 10 {
-		t.Errorf("RushYd = %d, want 10", line.RushYd)
+	if line.FumRec != 1 {
+		t.Errorf("FumRec = %d, want 1 from the aggregate", line.FumRec)
 	}
 }
 
-func TestClientWeekStatsAddsForcerAbsentFromAggregate(t *testing.T) {
-	playsBody := readFixture(t, "testdata/plays_2026_w3.json")
-	forcer, want := firstForcer(t, forcedFumbleTurnovers(loadPlays(t, "testdata/plays_2026_w3.json"), noLog))
-	srv := weekServer(t, `[]`, playsBody)
+func TestClientWeekStatsCreditsForcerWithNullAggregateStats(t *testing.T) {
+	nullStats := editCrosby(func(r map[string]any) map[string]any { r["stats"] = nil; return r })
+	srv := weekServer(t, w3Aggregate(t, nullStats), readFixture(t, "testdata/plays_2026_w3.json"))
 	c := Client{BaseURL: srv.URL, Plays: NewPlayStore(srv.URL, noLog)}
 
 	week, err := c.WeekStats(context.Background(), 2026, 3)
@@ -74,12 +91,31 @@ func TestClientWeekStatsAddsForcerAbsentFromAggregate(t *testing.T) {
 		t.Fatalf("WeekStats: %v", err)
 	}
 
-	line, ok := week.Player(forcer)
+	line, ok := week.Player(crosbyID)
 	if !ok {
-		t.Fatalf("Player(%s) absent", forcer)
+		t.Fatalf("Player(%s) absent", crosbyID)
 	}
-	if want := (score.StatLine{PlayerID: forcer, Season: 2026, Week: 3, FFTurnover: want}); line != want {
+	if want := (score.StatLine{PlayerID: crosbyID, Season: 2026, Week: 3, FFTurnover: 1}); line != want {
 		t.Errorf("line = %+v, want %+v", line, want)
+	}
+}
+
+func TestClientWeekStatsDoesNotCreditForcerMissingFromAggregate(t *testing.T) {
+	dropped := editCrosby(func(map[string]any) map[string]any { return nil })
+	srv := weekServer(t, w3Aggregate(t, dropped), readFixture(t, "testdata/plays_2026_w3.json"))
+	logs := &logRecorder{}
+	c := Client{BaseURL: srv.URL, Plays: NewPlayStore(srv.URL, logs.logf)}
+
+	week, err := c.WeekStats(context.Background(), 2026, 3)
+	if err != nil {
+		t.Fatalf("WeekStats: %v", err)
+	}
+
+	if line, ok := week.Player(crosbyID); ok {
+		t.Errorf("Player(%s) = %+v, want absent", crosbyID, line)
+	}
+	if !strings.Contains(logs.joined(), "ff5e0d30") {
+		t.Errorf("logs = %q, want Crosby's play", logs.joined())
 	}
 }
 

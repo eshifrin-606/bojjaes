@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"reflect"
 	"strings"
@@ -79,12 +80,27 @@ func TestAbbrevName(t *testing.T) {
 	}
 }
 
-func row(id, first, last, team string, stats map[string]float64) playRow {
-	return playRow{PlayerID: id, Stats: stats, Player: playPlayer{FirstName: first, LastName: last, Team: team}}
+type rosterRow struct {
+	row playRow
+	who identity
 }
 
-func fumblePlay(desc string, rows ...playRow) play {
-	return play{ID: "p1", Metadata: playMeta{Description: desc}, PlayStats: rows}
+func row(id, first, last, team string, stats map[string]float64) rosterRow {
+	return rosterRow{
+		row: playRow{PlayerID: id, Stats: stats},
+		who: identity{name: abbrevName(first, last), team: team},
+	}
+}
+
+// fumblePlay builds one play and the aggregate lookup that identifies its rows.
+func fumblePlay(desc string, rows ...rosterRow) ([]play, identities) {
+	p := play{ID: "p1", Metadata: playMeta{Description: desc}}
+	ids := identities{}
+	for _, r := range rows {
+		p.PlayStats = append(p.PlayStats, r.row)
+		ids[r.row.PlayerID] = r.who
+	}
+	return []play{p}, ids
 }
 
 func noLog(string, ...any) {}
@@ -93,10 +109,10 @@ func TestForcedFumbleTurnovers(t *testing.T) {
 	lostFumble := map[string]float64{"fum": 1, "fum_lost": 1, "idp_ff": 1}
 
 	t.Run("lost fumble credits the forcer, not the fumbler", func(t *testing.T) {
-		p := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-X.Y at PHI 42.",
+		plays, ids := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-X.Y at PHI 42.",
 			row("1737", "Case", "Keenum", "CHI", lostFumble),
 			row("6900", "Jonathan", "Greenard", "PHI", map[string]float64{"idp_tkl": 1}))
-		got := forcedFumbleTurnovers([]play{p}, noLog)
+		got := forcedFumbleTurnovers(plays, ids, noLog)
 		want := map[string]int{"6900": 1}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("got %v, want %v", got, want)
@@ -104,85 +120,99 @@ func TestForcedFumbleTurnovers(t *testing.T) {
 	})
 
 	t.Run("fumble that was not lost credits no one", func(t *testing.T) {
-		p := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by CHI-C.Keenum at CHI 42.",
+		plays, ids := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by CHI-C.Keenum at CHI 42.",
 			row("1737", "Case", "Keenum", "CHI", map[string]float64{"fum": 1, "idp_ff": 1}),
 			row("6900", "Jonathan", "Greenard", "PHI", nil))
-		assertCredits(t, forcedFumbleTurnovers([]play{p}, noLog), map[string]int{})
+		assertCredits(t, forcedFumbleTurnovers(plays, ids, noLog), map[string]int{})
 	})
 
 	t.Run("forced-by text without idp_ff credits no one", func(t *testing.T) {
-		p := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-X.Y at PHI 42.",
+		plays, ids := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-X.Y at PHI 42.",
 			row("1737", "Case", "Keenum", "CHI", map[string]float64{"fum": 1, "fum_lost": 1}),
 			row("6900", "Jonathan", "Greenard", "PHI", nil))
-		assertCredits(t, forcedFumbleTurnovers([]play{p}, noLog), map[string]int{})
+		assertCredits(t, forcedFumbleTurnovers(plays, ids, noLog), map[string]int{})
 	})
 
 	t.Run("forcer row with empty stats is credited", func(t *testing.T) {
-		p := fixturePlay(t, "testdata/plays_2026_w3.json", "ff5e0d30")
-		assertCredits(t, forcedFumbleTurnovers([]play{p}, noLog), map[string]int{"5991": 1})
+		plays := []play{fixturePlay(t, "testdata/plays_2026_w3.json", "ff5e0d30")}
+		ids := fixtureIdentities(t, "testdata/stats_2026_w3.json")
+		assertCredits(t, forcedFumbleTurnovers(plays, ids, noLog), map[string]int{"5991": 1})
 	})
 
 	t.Run("same-team namesake is not the forcer", func(t *testing.T) {
-		p := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-X.Y at PHI 42.",
+		plays, ids := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-X.Y at PHI 42.",
 			row("1737", "Case", "Keenum", "CHI", lostFumble),
 			row("111", "Jim", "Greenard", "CHI", nil),
 			row("6900", "Jonathan", "Greenard", "PHI", nil))
-		assertCredits(t, forcedFumbleTurnovers([]play{p}, noLog), map[string]int{"6900": 1})
+		assertCredits(t, forcedFumbleTurnovers(plays, ids, noLog), map[string]int{"6900": 1})
 	})
 
 	t.Run("team rows are neither fumbler nor forcer", func(t *testing.T) {
-		p := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-X.Y at PHI 42.",
+		plays, ids := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-X.Y at PHI 42.",
 			row("1737", "Case", "Keenum", "CHI", lostFumble),
-			playRow{PlayerID: "PHI", Stats: map[string]float64{"idp_ff": 1, "fum_lost": 1}, Player: playPlayer{FirstName: "J", LastName: "Greenard", Team: "PHI"}},
+			row("PHI", "J", "Greenard", "PHI", map[string]float64{"idp_ff": 1, "fum_lost": 1}),
 			row("6900", "Jonathan", "Greenard", "PHI", nil))
-		assertCredits(t, forcedFumbleTurnovers([]play{p}, noLog), map[string]int{"6900": 1})
+		assertCredits(t, forcedFumbleTurnovers(plays, ids, noLog), map[string]int{"6900": 1})
 	})
 
 	t.Run("team row flagged as fumbler credits no one", func(t *testing.T) {
-		p := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-X.Y at PHI 42.",
-			playRow{PlayerID: "CHI", Stats: lostFumble, Player: playPlayer{FirstName: "Case", LastName: "Keenum", Team: "CHI"}},
+		plays, ids := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-X.Y at PHI 42.",
+			row("CHI", "Case", "Keenum", "CHI", lostFumble),
 			row("6900", "Jonathan", "Greenard", "PHI", nil))
-		assertCredits(t, forcedFumbleTurnovers([]play{p}, noLog), map[string]int{})
+		assertCredits(t, forcedFumbleTurnovers(plays, ids, noLog), map[string]int{})
 	})
 
 	t.Run("double fumble is judged per fumble", func(t *testing.T) {
-		p := fixturePlay(t, "testdata/plays_2026_w3.json", "4ca72840")
-		assertCredits(t, forcedFumbleTurnovers([]play{p}, noLog), map[string]int{"10892": 1})
+		plays := []play{fixturePlay(t, "testdata/plays_2026_w3.json", "4ca72840")}
+		ids := fixtureIdentities(t, "testdata/stats_2026_w3.json")
+		assertCredits(t, forcedFumbleTurnovers(plays, ids, noLog), map[string]int{"10892": 1})
 	})
 
 	t.Run("sacker is not the forcer", func(t *testing.T) {
-		p := fixturePlay(t, "testdata/plays_2026_w3.json", "4d35c720")
-		assertCredits(t, forcedFumbleTurnovers([]play{p}, noLog), map[string]int{"2393": 1})
+		plays := []play{fixturePlay(t, "testdata/plays_2026_w3.json", "4d35c720")}
+		ids := fixtureIdentities(t, "testdata/stats_2026_w3.json")
+		assertCredits(t, forcedFumbleTurnovers(plays, ids, noLog), map[string]int{"2393": 1})
 	})
 
 	// No fixture play has a forcer before "overturned" that conflicts with the
 	// final version, so this one is built by hand.
 	t.Run("forcer named only before overturned is not credited", func(t *testing.T) {
-		p := fumblePlay("J.Allen FUMBLES, forced by K.Mack. Los Angeles challenged and the play was overturned. J.Allen FUMBLES, forced by D.Henley. Fumble RECOVERED by LAC-D.Henley at BUF 28.",
+		plays, ids := fumblePlay("J.Allen FUMBLES, forced by K.Mack. Los Angeles challenged and the play was overturned. J.Allen FUMBLES, forced by D.Henley. Fumble RECOVERED by LAC-D.Henley at BUF 28.",
 			row("4984", "Josh", "Allen", "BUF", lostFumble),
 			row("4", "Khalil", "Mack", "LAC", map[string]float64{"idp_sack": 1}),
 			row("5", "Daiyan", "Henley", "LAC", nil))
-		assertCredits(t, forcedFumbleTurnovers([]play{p}, noLog), map[string]int{"5": 1})
+		assertCredits(t, forcedFumbleTurnovers(plays, ids, noLog), map[string]int{"5": 1})
 	})
 
 	t.Run("ambiguous forcer credits no one and is logged", func(t *testing.T) {
-		p := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-X.Y at PHI 42.",
+		plays, ids := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-X.Y at PHI 42.",
 			row("1737", "Case", "Keenum", "CHI", lostFumble),
 			row("6900", "Jonathan", "Greenard", "PHI", nil),
 			row("6901", "Jake", "Greenard", "PHI", nil))
 		var logged []string
 		logf := func(format string, args ...any) { logged = append(logged, fmt.Sprintf(format, args...)) }
-		assertCredits(t, forcedFumbleTurnovers([]play{p}, logf), map[string]int{})
+		assertCredits(t, forcedFumbleTurnovers(plays, ids, logf), map[string]int{})
+		assertLoggedPlay(t, logged, "p1")
+	})
+
+	t.Run("forcer absent from the aggregate credits no one and is logged", func(t *testing.T) {
+		plays, ids := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-X.Y at PHI 42.",
+			row("1737", "Case", "Keenum", "CHI", lostFumble),
+			row("6900", "Jonathan", "Greenard", "PHI", nil))
+		delete(ids, "6900")
+		var logged []string
+		logf := func(format string, args ...any) { logged = append(logged, fmt.Sprintf(format, args...)) }
+		assertCredits(t, forcedFumbleTurnovers(plays, ids, logf), map[string]int{})
 		assertLoggedPlay(t, logged, "p1")
 	})
 
 	t.Run("no pair for the fumbler credits no one and is logged", func(t *testing.T) {
-		p := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-X.Y at PHI 42.",
+		plays, ids := fumblePlay("C.Keenum FUMBLES, forced by J.Greenard. Fumble RECOVERED by PHI-X.Y at PHI 42.",
 			row("2", "Sam", "Darnold", "CHI", lostFumble),
 			row("6900", "Jonathan", "Greenard", "PHI", nil))
 		var logged []string
 		logf := func(format string, args ...any) { logged = append(logged, fmt.Sprintf(format, args...)) }
-		assertCredits(t, forcedFumbleTurnovers([]play{p}, logf), map[string]int{})
+		assertCredits(t, forcedFumbleTurnovers(plays, ids, logf), map[string]int{})
 		assertLoggedPlay(t, logged, "p1")
 	})
 }
@@ -214,6 +244,22 @@ func loadPlays(t *testing.T, path string) []play {
 	return plays
 }
 
+// fixtureIdentities builds the lookup from a recorded aggregate the way the
+// client does.
+func fixtureIdentities(t *testing.T, path string) identities {
+	t.Helper()
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	_, ids, err := decodeWeekly(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ids
+}
+
 func fixturePlay(t *testing.T, path, idPrefix string) play {
 	t.Helper()
 	for _, p := range loadPlays(t, path) {
@@ -239,7 +285,9 @@ func TestForcedFumbleTurnoversOverturnedFixtures(t *testing.T) {
 	}
 	// Treadwell's OT fumble stood only before the overturn, so it has no idp_ff row.
 	want := map[string]int{"10914": 1, "7117": 1, "6896": 1}
-	assertCredits(t, forcedFumbleTurnovers(plays, noLog), want)
+	ids := fixtureIdentities(t, "testdata/stats_2026_w2.json")
+	maps.Copy(ids, fixtureIdentities(t, "testdata/stats_2026_w3.json"))
+	assertCredits(t, forcedFumbleTurnovers(plays, ids, noLog), want)
 }
 
 func TestForcedFumbleTurnoversMatchOfficialRecord(t *testing.T) {
@@ -266,6 +314,10 @@ func TestForcedFumbleTurnoversMatchOfficialRecord(t *testing.T) {
 		"2": loadPlays(t, "testdata/plays_2026_w2.json"),
 		"3": loadPlays(t, "testdata/plays_2026_w3.json"),
 	}
+	ids := map[string]identities{
+		"2": fixtureIdentities(t, "testdata/stats_2026_w2.json"),
+		"3": fixtureIdentities(t, "testdata/stats_2026_w3.json"),
+	}
 	for _, rec := range records[1:] {
 		id, team, qtr, clock := col(rec, "sleeper_id"), col(rec, "team"), col(rec, "qtr"), col(rec, "time")
 		t.Run(col(rec, "name"), func(t *testing.T) {
@@ -279,7 +331,7 @@ func TestForcedFumbleTurnoversMatchOfficialRecord(t *testing.T) {
 			if len(joined) == 0 {
 				t.Fatalf("no fixture play for %s Q%s %s", team, qtr, clock)
 			}
-			credited := forcedFumbleTurnovers(joined, noLog)[id] > 0
+			credited := forcedFumbleTurnovers(joined, ids[col(rec, "week")], noLog)[id] > 0
 			if want := col(rec, "ff_turnover") == "yes"; credited != want {
 				t.Errorf("player %s credited = %v, want %v", id, credited, want)
 			}

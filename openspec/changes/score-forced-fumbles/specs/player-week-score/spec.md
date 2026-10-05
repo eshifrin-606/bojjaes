@@ -115,8 +115,10 @@ A week's snapshot SHALL take every stat except forced fumbles from the provider'
 It SHALL take the turnover-qualified forced-fumble count from play-by-play attribution. The two
 sources SHALL be merged before the snapshot is returned, so the snapshot stays complete on return.
 
-A player credited with a forced fumble but absent from the aggregate SHALL appear in the snapshot with
-that count and otherwise zero stats.
+Attribution identifies players through the aggregate, so a credited forcer always has an aggregate
+entry. A credited forcer whose aggregate entry carries no stats SHALL appear in the snapshot with that
+count and otherwise zero stats. A forcer with no aggregate entry is not credited; see
+`forced-fumble-attribution`.
 
 When play-by-play is unavailable, the snapshot SHALL still be returned, built from the aggregate and
 whatever forced fumbles are already held. An aggregate failure SHALL still fail the fetch as before.
@@ -127,10 +129,15 @@ whatever forced fumbles are already held. An aggregate failure SHALL still fail 
   week
 - **THEN** that player's stat line read from the week's snapshot carries a count of 1
 
-#### Scenario: A forcer missing from the aggregate is still paid
+#### Scenario: A forcer with no aggregate stats is still paid
 
-- **WHEN** a player is credited with a forced fumble but has no entry in the weekly aggregate
+- **WHEN** a player is credited with a forced fumble and the player's aggregate entry has no stats
 - **THEN** the snapshot holds a stat line for that player carrying only the forced fumble
+
+#### Scenario: A forcer missing from the aggregate is not paid
+
+- **WHEN** the forcer named on a lost fumble has no entry in the weekly aggregate
+- **THEN** the snapshot holds no forced fumble for that player, and the play is logged
 
 #### Scenario: Play-by-play failure leaves the aggregate intact
 

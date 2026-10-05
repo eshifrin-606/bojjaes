@@ -10,8 +10,8 @@ not a build error.
 - [x] 1.2 With a throwaway script in the scratchpad, not the repo, trim the 2026 wk 2 and wk 3
       GraphQL recordings (`.../scratchpad/plays_w2.json`, `plays_w3.json`). Keep only plays with an
       `idp_ff` row or "forced by" in `metadata.description`, written in the `recent` shape, to
-      `internal/sleeper/testdata/plays_2026_w2.json` and `plays_2026_w3.json`. Keep `player` objects
-      and team rows.
+      `internal/sleeper/testdata/plays_2026_w2.json` and `plays_2026_w3.json`. Keep team rows. Drop
+      the GraphQL `player` objects, which live REST rows do not have (done in 9.1).
 
 ## 2. Domain: pay turnover-qualified forced fumbles
 
@@ -101,8 +101,8 @@ not a build error.
 
 - [x] 7.1 Red-green: `Client` with `Plays` set credits a fixture forcer's `FFTurnover` on the stat
       line read from `WeekStats`.
-- [x] 7.2 Red-green: a forcer absent from the aggregate appears in the snapshot with only
-      `FFTurnover`.
+- [x] 7.2 Red-green: a forcer absent from the aggregate is not credited and is logged (reworked in
+      9.8).
 - [x] 7.3 Confirm green: with `Plays` nil, `WeekStats` behaves as before (existing tests pass
       unchanged).
 - [x] 7.4 Red-green: play-by-play failure still returns the aggregate's stat lines; aggregate failure
@@ -122,3 +122,27 @@ not a build error.
       offensive player forcing a turnover after an interception. Do not edit
       `docs/adr/0003-sleeper-as-initial-stat-provider.md`.
 - [x] 8.3 Run `openspec validate score-forced-fumbles` and fix any findings.
+
+## 9. Identify players from the weekly aggregate
+
+Live `recent` rows carry only `player_id`, so attribution keyed on `player` objects credited no one.
+
+- [x] 9.1 Strip `player` objects from `plays_2026_w2.json` and `plays_2026_w3.json`. Add
+      `stats_2026_w2.json` and `stats_2026_w3.json`: the live aggregate rows for every player on a
+      fixture play, in the live shape.
+- [x] 9.2 Confirm red: the ground-truth test (4.13) credits no one against the stripped fixtures.
+- [x] 9.3 Stub: `forcedFumbleTurnovers` and `PlayStore.ForcedFumbles` take an `identities` lookup
+      (player ID → abbreviated name and week team), built in tests from the aggregate fixtures by the
+      production decode. Production ignores it, and `decodeWeekly` returns an empty one.
+- [x] 9.4 Red-green: `decodeWeekly` builds the lookup from every aggregate row, `null` stats
+      included, taking the top-level `team` rather than `player.team`.
+- [x] 9.5 Red-green: Crosby's fixture play (wk 3 LV@NO Q4 2:21) credits 5991 once, identified through
+      the lookup. Drop `playRow.Player` and `playPlayer`.
+- [x] 9.6 Confirm green: a forcer row absent from the lookup credits no one and is logged.
+- [x] 9.7 Confirm green: ground truth (4.13) and the other fixture tests pass again.
+- [x] 9.8 Red-green: `Client.WeekStats` builds the lookup from the aggregate it fetched and passes it
+      to `ForcedFumbles` (Crosby credited; with `null` aggregate stats he gets an `FFTurnover`-only
+      line). Confirm green: a forcer missing from the served aggregate is not credited and is logged.
+- [x] 9.9 Check, with a throwaway test outside the commit, live wk 3 (`recent` limit 5000 and the
+      aggregate): 17 credits including Crosby, no logs. Run the full suite, `go vet`, `gofmt -l`, and
+      `openspec validate`.

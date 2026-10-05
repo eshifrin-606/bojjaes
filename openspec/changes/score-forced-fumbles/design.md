@@ -13,10 +13,16 @@ Observed play-by-play facts that shape the design:
 
 - Sleeper's REST `GET https://api.sleeper.com/plays/nfl/recent?season_type=regular&season=S&week=W&limit=K`
   returns the K newest plays of the week, newest first. Each play has `play_id`, `game_id`,
-  `sequence`, `updated_at`, `metadata.description`, and `play_stats[{player_id, stats, player}]`.
-  Responses are CDN-cached for 300 s. `limit=5000` covers a whole week: 3.9 MB, 3–12 s.
-- `idp_ff` is on the fumbler's row. The forcer often has a row with empty `stats`. Team rows have
-  non-numeric IDs (`CAR`, `NO`).
+  `sequence`, `updated_at`, `metadata.description`, and `play_stats[{player_id, stats, game_id,
+  play_id}]`. Rows carry no name or team. Responses are CDN-cached for 300 s. `limit=5000` covers a
+  whole week: 3.9 MB, 3–12 s.
+- `idp_ff` is on the fumbler's row. The forcer often has a row with empty or `null` `stats`. Team
+  rows have non-numeric IDs (`CAR`, `NO`).
+- Names and teams come from the weekly aggregate, which the client already fetches. Each aggregate row
+  has `player_id`, `player.first_name`/`last_name`, and a top-level `team` that is the player's team
+  for that week's game. `player.team` is the current team and is not used. On live 2026 week 3, every
+  numeric row on a lost forced-fumble play had an aggregate entry, and all 17 lost forced fumbles were
+  attributed with the aggregate as the name source.
 - Reviewed plays repeat the original text, then "...the play was overturned.", then the final play.
   Both directions occur in the recordings: a fumble overturned away, and a fumble that exists only
   after "overturned".
@@ -51,8 +57,10 @@ per line, so it cannot live on a stat line.
 
 ### D2. Attribution is a pure function over decoded plays
 
-In `internal/sleeper`, `forcedFumbleTurnovers(plays []play, logf) map[string]int` maps player ID to
-count. It has no I/O and is fully tested against fixtures. For each play it works in four steps:
+In `internal/sleeper`, `forcedFumbleTurnovers(plays []play, ids identities, logf) map[string]int`
+maps player ID to count. `ids` maps player ID to identity (normalized abbreviated name and the week's
+team), built from the weekly aggregate. It has no I/O and is fully tested against fixtures. For each
+play it works in four steps:
 
 1. Collect rows with `idp_ff > 0` and numeric player IDs. These are the fumblers. Skip a fumbler whose
    `fum_lost` is not positive; only turnovers are attributed.
@@ -61,9 +69,12 @@ count. It has no I/O and is fully tested against fixtures. For each play it work
    fixture texts, including suffix names.
 3. Pick the fumbler's pair by normalized abbreviated name: `first initial + "." + last name`, with
    suffixes stripped and compared case-insensitively. Then find forcer rows by the same normalized
-   name among all numeric rows on the play whose `player.team` differs from the fumbler's.
+   name among all numeric rows on the play whose aggregate team differs from the fumbler's. Names and
+   teams are looked up in `ids` by `player_id`. The candidates are still the play's own rows; the
+   aggregate only identifies them. A row absent from `ids` cannot be identified and never matches.
 4. If exactly one pair and exactly one forcer row are found, add 1 to the forcer. Otherwise log the
-   play ID and description and award nothing.
+   play ID and description and award nothing. A forcer absent from the aggregate therefore ends here:
+   logged, not credited.
 
 *Alternative:* parse the description alone and ignore `idp_ff`. Rejected: overturned and no-play
 fumbles keep their text. `idp_ff` is the provider's signal that the fumble stands.
@@ -87,8 +98,9 @@ behavior the spec needs today.
 
 `Client.WeekStats(ctx, season, week)` runs these steps:
 
-1. Fetch the aggregate, as today. An error still returns an error.
-2. If `c.Plays` is non-nil, call `c.Plays.ForcedFumbles(ctx, season, week)`:
+1. Fetch the aggregate, as today. An error still returns an error. The same decode also builds the
+   `identities` lookup from every row, including rows whose `stats` is `null`.
+2. If `c.Plays` is non-nil, call `c.Plays.ForcedFumbles(ctx, season, week, ids)`:
    - Poll `recent` with `limit=300` under its own short timeout (~5 s). On success, merge the plays.
      On failure, log and continue with what is held.
    - If the store held nothing, or the poll's oldest play is newer than the newest held play, start a
@@ -97,8 +109,9 @@ behavior the spec needs today.
    - If the week is quiet (newest change > 1 h ago) and the last whole fetch predates newest change
      + 1 h, start the same background fetch. This is the post-game refresh.
    - Run attribution over a snapshot of the week's plays and return the counts.
-3. Merge counts into the players map before `score.NewWeekStats`. A forcer absent from the aggregate
-   gets a line with only `FFTurnover` set.
+3. Merge counts into the players map before `score.NewWeekStats`. A credited forcer is always in the
+   aggregate, but may have `null` stats and so no stat line; such a forcer gets a line with only
+   `FFTurnover` set.
 
 The poll piggybacks on `statscache`, so it runs at most once per TTL per week. The TTL matches the
 CDN's 300 s, so polling more often would gain nothing.
@@ -129,7 +142,9 @@ shape. One live `recent` call confirms the envelope before recording. Confirmed 
 bare JSON array of plays (no `data` wrapper). Each play has `play_id`, `game_id`, `sequence`, `updated_at`,
 `metadata` (`description`, `team`, `opponent`, `quarter_name`, `time_remaining_minutes`/`_seconds`) and
 `play_stats[{player_id, stats, game_id, play_id}]`. REST rows carry no `player` object, unlike GraphQL, so
-names must come from `description`, and the fixtures keep the GraphQL `player` objects as extra data. Ground-truth tests join
+the fixtures drop the GraphQL `player` objects, and names and teams come from the weekly aggregate (see
+D2). `stats_2026_w2.json` and `stats_2026_w3.json` are the live aggregate for those weeks, trimmed to
+the players on fixture plays and kept in the live row shape. Ground-truth tests join
 `ff-test-players.csv` to plays on `quarter_name` + `time_remaining_minutes:seconds`, filtered by the
 CSV team appearing as `metadata.team` or `metadata.opponent`. Sleeper `game_id` and nflverse
 `game_id` do not share a format.
@@ -141,10 +156,8 @@ Unresolved attributions and fetch failures are logged through an injectable `log
 
 ## Risks / Trade-offs
 
-- **`player.team` is the player's current team, not the team at the time of the play.** A player
-  traded after the week could make the opposing-team filter wrong for old weeks. → Accepted for now.
-  The fallback is an ambiguity log and no award, not a wrong award, unless the name collides. If this
-  shows up, take the fumbler's team from `metadata.team`/`possession` instead.
+- **A forcer missing from the aggregate is not paid.** The play rows name no one, so a forcer with no
+  aggregate entry cannot be identified. → Logged, not credited. Not observed on live week 3.
 - **Description format drift.** If Sleeper changes "FUMBLES, forced by", attribution silently goes to
   zero. → Every `idp_ff` turnover row without a resolved forcer is logged, so drift shows up as log
   noise rather than silence.

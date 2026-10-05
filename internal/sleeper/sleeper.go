@@ -25,6 +25,13 @@ var sleeperClient = &http.Client{Timeout: 15 * time.Second}
 type weeklyRow struct {
 	PlayerID string             `json:"player_id"`
 	Stats    map[string]float64 `json:"stats"`
+	// Team is the player's team in that week's game; player.team is their
+	// current one, which is wrong for a player traded since.
+	Team   string `json:"team"`
+	Player struct {
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
+	} `json:"player"`
 }
 
 // fetchWeekly reads Sleeper's regular-season weekly stats rows and indexes
@@ -35,44 +42,46 @@ type weeklyRow struct {
 // line is wanted or a whole roster.
 //
 // An empty payload is not an error — an unplayed week returns 200 with `[]`.
-func fetchWeekly(ctx context.Context, baseURL string, season, week int) (map[string]map[string]float64, error) {
+func fetchWeekly(ctx context.Context, baseURL string, season, week int) (map[string]map[string]float64, identities, error) {
 	url := fmt.Sprintf("%s/stats/nfl/%d/%d?season_type=regular", baseURL, season, week)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("building sleeper request for season %d week %d: %w", season, week, err)
+		return nil, nil, fmt.Errorf("building sleeper request for season %d week %d: %w", season, week, err)
 	}
 
 	resp, err := sleeperClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fetching sleeper stats for season %d week %d: %w", season, week, err)
+		return nil, nil, fmt.Errorf("fetching sleeper stats for season %d week %d: %w", season, week, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("fetching sleeper stats for season %d week %d: status %s", season, week, resp.Status)
+		return nil, nil, fmt.Errorf("fetching sleeper stats for season %d week %d: status %s", season, week, resp.Status)
 	}
 
 	// Sleeper sends every stat as a JSON number, so decode as float64 across
 	// the board and convert at the boundary.
-	weekly, err := decodeWeekly(resp.Body)
+	weekly, ids, err := decodeWeekly(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("decoding sleeper stats for season %d week %d: %w", season, week, err)
+		return nil, nil, fmt.Errorf("decoding sleeper stats for season %d week %d: %w", season, week, err)
 	}
-	return weekly, nil
+	return weekly, ids, nil
 }
 
-func decodeWeekly(r io.Reader) (map[string]map[string]float64, error) {
+func decodeWeekly(r io.Reader) (map[string]map[string]float64, identities, error) {
 	var rows []weeklyRow
 	if err := json.NewDecoder(r).Decode(&rows); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	weekly := make(map[string]map[string]float64, len(rows))
+	ids := make(identities, len(rows))
 	for _, row := range rows {
 		weekly[row.PlayerID] = row.Stats
+		ids[row.PlayerID] = identity{name: abbrevName(row.Player.FirstName, row.Player.LastName), team: row.Team}
 	}
-	return weekly, nil
+	return weekly, ids, nil
 }
 
 // statLineFrom maps one player out of a decoded weekly payload, reporting
@@ -157,17 +166,17 @@ func statLineFrom(weekly map[string]map[string]float64, playerID string, season,
 // ask for: that is what lets the decoded map's lifetime end in this function,
 // so no Sleeper shape escapes the package.
 func FetchWeekStats(ctx context.Context, baseURL string, season, week int) (score.WeekStats, error) {
-	players, err := fetchPlayers(ctx, baseURL, season, week)
+	players, _, err := fetchPlayers(ctx, baseURL, season, week)
 	if err != nil {
 		return score.WeekStats{}, err
 	}
 	return score.NewWeekStats(season, week, players), nil
 }
 
-func fetchPlayers(ctx context.Context, baseURL string, season, week int) (map[string]score.StatLine, error) {
-	weekly, err := fetchWeekly(ctx, baseURL, season, week)
+func fetchPlayers(ctx context.Context, baseURL string, season, week int) (map[string]score.StatLine, identities, error) {
+	weekly, ids, err := fetchWeekly(ctx, baseURL, season, week)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	players := make(map[string]score.StatLine, len(weekly))
@@ -180,7 +189,7 @@ func fetchPlayers(ctx context.Context, baseURL string, season, week int) (map[st
 		}
 		players[playerID] = line
 	}
-	return players, nil
+	return players, ids, nil
 }
 
 // Client is a handle on one Sleeper host. Its WeekStats method satisfies the
@@ -196,12 +205,12 @@ type Client struct {
 }
 
 func (c Client) WeekStats(ctx context.Context, season, week int) (score.WeekStats, error) {
-	players, err := fetchPlayers(ctx, c.BaseURL, season, week)
+	players, ids, err := fetchPlayers(ctx, c.BaseURL, season, week)
 	if err != nil {
 		return score.WeekStats{}, err
 	}
 	if c.Plays != nil {
-		for id, n := range c.Plays.ForcedFumbles(ctx, season, week) {
+		for id, n := range c.Plays.ForcedFumbles(ctx, season, week, ids) {
 			line, ok := players[id]
 			if !ok {
 				line = score.StatLine{PlayerID: id, Season: season, Week: week}

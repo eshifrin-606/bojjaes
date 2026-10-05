@@ -62,7 +62,12 @@ stands.
 The pair SHALL be selected by the fumbler's abbreviated name, built from first initial, a period, and
 last name. The forcer SHALL be the row on the same play whose abbreviated name matches the pair's
 forcer and whose team is not the fumbler's team. Every row on the play SHALL be searched, including
-rows with no stats, because the forcer's row can be empty. Generational suffixes (`Jr.`, `Sr.`,
+rows with no stats, because the forcer's row can be empty.
+
+Play rows carry only a player ID. A row's name and team SHALL be taken from that player's entry in
+the same week's weekly aggregate, keyed by player ID. The team SHALL be the aggregate entry's team for
+that week's game, not the player's current team. The candidates SHALL still be only the rows on the
+play; the aggregate identifies them but adds none. Generational suffixes (`Jr.`, `Sr.`,
 `II`, `III`, `IV`, `V`) SHALL be ignored on both sides of the comparison.
 
 The sacker is not necessarily the forcer. Credit SHALL follow the "forced by" name, not the sack.
@@ -100,11 +105,18 @@ The sacker is not necessarily the forcer. Credit SHALL follow the "forced by" na
 
 When a turnover fumble's forcer cannot be resolved to exactly one player, the system SHALL credit no
 one for that fumble and SHALL log the play. This covers a fumbler with no matching description pair or
-with more than one, and a forcer name matching no row on the opposing team or more than one.
+with more than one, and a forcer name matching no row on the opposing team or more than one. A row
+whose player is absent from the weekly aggregate cannot be identified, so a forcer absent from the
+aggregate is unresolved: logged and not credited.
 
 #### Scenario: No matching pair
 
 - **WHEN** a lost fumble's fumbler has no "FUMBLES, forced by" pair in the description
+- **THEN** no one is credited and the play is logged
+
+#### Scenario: Forcer absent from the aggregate
+
+- **WHEN** the forcer's row is on the play but the forcer has no entry in the week's aggregate
 - **THEN** no one is credited and the play is logged
 
 #### Scenario: Ambiguous forcer

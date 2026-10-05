@@ -109,7 +109,7 @@ func NewPlayStore(baseURL string, logf func(format string, args ...any)) *PlaySt
 	return &PlayStore{baseURL: baseURL, logf: logf, pollTimeout: 5 * time.Second, now: time.Now}
 }
 
-func (s *PlayStore) ForcedFumbles(ctx context.Context, season, week int) map[string]int {
+func (s *PlayStore) ForcedFumbles(ctx context.Context, season, week int, ids identities) map[string]int {
 	pollCtx, cancel := context.WithTimeout(ctx, s.pollTimeout)
 	defer cancel()
 	polled, err := fetchRecentPlays(pollCtx, s.baseURL, season, week, pollLimit)
@@ -120,7 +120,7 @@ func (s *PlayStore) ForcedFumbles(ctx context.Context, season, week int) map[str
 		s.startWholeFetch(season, week)
 	}
 	s.merge(season, week, polled)
-	return forcedFumbleTurnovers(s.snapshot(season, week), s.logf)
+	return forcedFumbleTurnovers(s.snapshot(season, week), ids, s.logf)
 }
 
 const (

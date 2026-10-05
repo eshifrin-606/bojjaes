@@ -23,6 +23,10 @@ func readFixture(t *testing.T, path string) []byte {
 	return b
 }
 
+func w3Identities(t *testing.T) identities {
+	return fixtureIdentities(t, "testdata/stats_2026_w3.json")
+}
+
 func TestFetchRecentPlaysRequestsAndDecodes(t *testing.T) {
 	body := readFixture(t, "testdata/plays_2026_w3.json")
 	var gotPath, gotQuery string
@@ -70,9 +74,9 @@ func TestForcedFumblesPollsMergesAndAttributes(t *testing.T) {
 	ps.pollBody = readFixture(t, "testdata/plays_2026_w3.json")
 	store := NewPlayStore(ps.URL, noLog)
 
-	got := store.ForcedFumbles(context.Background(), 2026, 3)
+	got := store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 
-	assertCredits(t, got, forcedFumbleTurnovers(loadPlays(t, "testdata/plays_2026_w3.json"), noLog))
+	assertCredits(t, got, forcedFumbleTurnovers(loadPlays(t, "testdata/plays_2026_w3.json"), w3Identities(t), noLog))
 }
 
 // playServer answers polls (limit 300) immediately and whole-week fetches
@@ -146,7 +150,7 @@ func TestForcedFumblesSeedsEmptyWeekInBackground(t *testing.T) {
 
 	returned := make(chan struct{})
 	go func() {
-		store.ForcedFumbles(context.Background(), 2026, 3)
+		store.ForcedFumbles(context.Background(), 2026, 3, nil)
 		close(returned)
 	}()
 
@@ -173,7 +177,7 @@ func TestForcedFumblesGapStartsWholeWeekFetch(t *testing.T) {
 	store.now = func() time.Time { return time.UnixMilli(200) } // live week, so only the gap can trigger
 	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
 
-	store.ForcedFumbles(context.Background(), 2026, 3)
+	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	store.wait()
 
 	if got := ps.wholeFetches(); got != 1 {
@@ -189,7 +193,7 @@ func TestForcedFumblesOverlappingPollSkipsWholeWeekFetch(t *testing.T) {
 	store.now = func() time.Time { return time.UnixMilli(200) }
 	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
 
-	store.ForcedFumbles(context.Background(), 2026, 3)
+	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	store.wait()
 
 	if got := ps.wholeFetches(); got != 0 {
@@ -201,9 +205,9 @@ func TestForcedFumblesConcurrentTriggersShareOneWholeWeekFetch(t *testing.T) {
 	ps := newPlayServer(t)
 	store := NewPlayStore(ps.URL, noLog)
 
-	store.ForcedFumbles(context.Background(), 2026, 3)
+	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	awaitSignal(t, ps.wholeStarted, "first whole-week fetch to start")
-	store.ForcedFumbles(context.Background(), 2026, 3)
+	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	ps.releaseWholeFetches()
 	store.wait()
 
@@ -217,14 +221,14 @@ func TestForcedFumblesAttributesWholeWeekPlaysOnNextCall(t *testing.T) {
 	ps.wholeBody = readFixture(t, "testdata/plays_2026_w3.json")
 	store := NewPlayStore(ps.URL, noLog)
 
-	first := store.ForcedFumbles(context.Background(), 2026, 3)
+	first := store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	awaitSignal(t, ps.wholeStarted, "whole-week fetch to start")
 	ps.releaseWholeFetches()
 	store.wait()
-	second := store.ForcedFumbles(context.Background(), 2026, 3)
+	second := store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 
 	assertCredits(t, first, map[string]int{})
-	assertCredits(t, second, forcedFumbleTurnovers(loadPlays(t, "testdata/plays_2026_w3.json"), noLog))
+	assertCredits(t, second, forcedFumbleTurnovers(loadPlays(t, "testdata/plays_2026_w3.json"), w3Identities(t), noLog))
 }
 
 type logRecorder struct {
@@ -251,7 +255,7 @@ func TestForcedFumblesPollFailureWithNothingHeld(t *testing.T) {
 	logs := &logRecorder{}
 	store := NewPlayStore(ps.URL, logs.logf)
 
-	got := store.ForcedFumbles(context.Background(), 2026, 3)
+	got := store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	store.wait()
 
 	assertCredits(t, got, map[string]int{})
@@ -268,10 +272,10 @@ func TestForcedFumblesPollFailureScoresHeldPlays(t *testing.T) {
 	store := NewPlayStore(ps.URL, logs.logf)
 	store.merge(2026, 3, loadPlays(t, "testdata/plays_2026_w3.json"))
 
-	got := store.ForcedFumbles(context.Background(), 2026, 3)
+	got := store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	store.wait()
 
-	assertCredits(t, got, forcedFumbleTurnovers(loadPlays(t, "testdata/plays_2026_w3.json"), noLog))
+	assertCredits(t, got, forcedFumbleTurnovers(loadPlays(t, "testdata/plays_2026_w3.json"), w3Identities(t), noLog))
 	if !strings.Contains(logs.joined(), "poll") {
 		t.Errorf("logs = %q, want the poll failure", logs.joined())
 	}
@@ -286,11 +290,11 @@ func TestForcedFumblesWholeWeekFailureKeepsHeldPlaysAndAllowsRetry(t *testing.T)
 	store := NewPlayStore(ps.URL, logs.logf)
 	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
 
-	store.ForcedFumbles(context.Background(), 2026, 3)
+	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	store.wait()
 	store.merge(2026, 3, []play{{ID: "newer", UpdatedAt: 300}})
 	ps.pollBody = jsonPlays(t, play{ID: "newest", UpdatedAt: 400})
-	store.ForcedFumbles(context.Background(), 2026, 3)
+	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	store.wait()
 
 	assertIDs(t, snapshotIDs(store, 2026, 3), "new", "newer", "newest", "old")
@@ -312,7 +316,7 @@ func TestForcedFumblesBoundsHungPoll(t *testing.T) {
 
 	returned := make(chan struct{})
 	go func() {
-		store.ForcedFumbles(context.Background(), 2026, 3)
+		store.ForcedFumbles(context.Background(), 2026, 3, nil)
 		close(returned)
 	}()
 
@@ -331,14 +335,14 @@ func TestForcedFumblesRefreshesQuietWeekOnce(t *testing.T) {
 	store.now = func() time.Time { return changed.Add(2 * time.Hour) }
 	store.merge(2026, 3, []play{{ID: "a", UpdatedAt: changed.UnixMilli()}})
 
-	store.ForcedFumbles(context.Background(), 2026, 3)
+	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	store.wait()
 
 	if got := ps.wholeFetches(); got != 1 {
 		t.Errorf("whole-week fetches = %d, want 1 post-game refresh", got)
 	}
 
-	store.ForcedFumbles(context.Background(), 2026, 3)
+	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	store.wait()
 
 	if got := ps.wholeFetches(); got != 1 {

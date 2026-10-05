@@ -37,24 +37,6 @@
     "play_id": "3591bb10-bbaf-11f1-a913-118d1c278a5a",
     "play_stats": [
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 11,
-          "first_name": "Case",
-          "last_name": "Keenum",
-          "sport": "nfl",
-          "team": "CHI",
-          "player_id": "1737",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 14,
-          "news_updated": 1791035719676
-        },
         "player_id": "1737",
         "stats": {
           "fum": 1.0,
@@ -66,25 +48,6 @@
         "play_id": "3591bb10-bbaf-11f1-a913-118d1c278a5a"
       },
       {
-        "player": {
-          "position": "DE",
-          "status": "Active",
-          "number": 52,
-          "first_name": "Jonathan",
-          "last_name": "Greenard",
-          "sport": "nfl",
-          "team": "PHI",
-          "player_id": "6900",
-          "fantasy_positions": [
-            "DL",
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": "Out",
-          "years_exp": 6,
-          "news_updated": 1791144912712
-        },
         "player_id": "6900",
         "stats": {
           "idp_tkl": 1.0,
@@ -136,24 +99,6 @@
     "play_id": "2bec0bc0-bb9f-11f1-add2-4f898f24c966",
     "play_stats": [
       {
-        "player": {
-          "position": "DL",
-          "status": "Active",
-          "number": 94,
-          "first_name": "Austin",
-          "last_name": "Booker",
-          "sport": "nfl",
-          "team": "CHI",
-          "player_id": "11760",
-          "fantasy_positions": [
-            "DL"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 2,
-          "news_updated": 1788996347381
-        },
         "player_id": "11760",
         "stats": {
           "idp_tkl": 1.0,
@@ -163,24 +108,6 @@
         "play_id": "2bec0bc0-bb9f-11f1-add2-4f898f24c966"
       },
       {
-        "player": {
-          "position": "DB",
-          "status": "Active",
-          "number": 32,
-          "first_name": "Xavier",
-          "last_name": "Woods",
-          "sport": "nfl",
-          "team": "CHI",
-          "player_id": "4238",
-          "fantasy_positions": [
-            "DB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 9,
-          "news_updated": 1789774250003
-        },
         "player_id": "4238",
         "stats": {
           "idp_fum_rec": 1.0
@@ -189,24 +116,6 @@
         "play_id": "2bec0bc0-bb9f-11f1-add2-4f898f24c966"
       },
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 12,
-          "first_name": "Devin",
-          "last_name": "Bush",
-          "sport": "nfl",
-          "team": "CHI",
-          "player_id": "5843",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 7,
-          "news_updated": 1790127910527
-        },
         "player_id": "5843",
         "stats": {
           "idp_tkl": 1.0,
@@ -216,24 +125,6 @@
         "play_id": "2bec0bc0-bb9f-11f1-add2-4f898f24c966"
       },
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 1,
-          "first_name": "Jalen",
-          "last_name": "Hurts",
-          "sport": "nfl",
-          "team": "PHI",
-          "player_id": "6904",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 6,
-          "news_updated": 1791148513393
-        },
         "player_id": "6904",
         "stats": {
           "pass_att": 1.0,
@@ -244,24 +135,6 @@
         "play_id": "2bec0bc0-bb9f-11f1-add2-4f898f24c966"
       },
       {
-        "player": {
-          "position": "RB",
-          "status": "Active",
-          "number": 8,
-          "first_name": "Tank",
-          "last_name": "Bigsby",
-          "sport": "nfl",
-          "team": "PHI",
-          "player_id": "9225",
-          "fantasy_positions": [
-            "RB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": "Questionable",
-          "years_exp": 3,
-          "news_updated": 1791144312729
-        },
         "player_id": "9225",
         "stats": {
           "fum": 1.0,
@@ -318,24 +191,6 @@
     "play_id": "04a96210-bae6-11f1-bb78-6188d8bf4a98",
     "play_stats": [
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 48,
-          "first_name": "Omar",
-          "last_name": "Speights",
-          "sport": "nfl",
-          "team": "LAR",
-          "player_id": "12140",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 2,
-          "news_updated": 1789851947628
-        },
         "player_id": "12140",
         "stats": {
           "idp_tkl": 1.0,
@@ -345,24 +200,6 @@
         "play_id": "04a96210-bae6-11f1-bb78-6188d8bf4a98"
       },
       {
-        "player": {
-          "position": "RB",
-          "status": "Active",
-          "number": 27,
-          "first_name": "J.K.",
-          "last_name": "Dobbins",
-          "sport": "nfl",
-          "team": "DEN",
-          "player_id": "6806",
-          "fantasy_positions": [
-            "RB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 6,
-          "news_updated": 1791028819074
-        },
         "player_id": "6806",
         "stats": {
           "fum": 1.0,
@@ -376,24 +213,6 @@
         "play_id": "04a96210-bae6-11f1-bb78-6188d8bf4a98"
       },
       {
-        "player": {
-          "position": "DB",
-          "status": "Active",
-          "number": 22,
-          "first_name": "Trent",
-          "last_name": "McDuffie",
-          "sport": "nfl",
-          "team": "LAR",
-          "player_id": "8364",
-          "fantasy_positions": [
-            "DB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 4,
-          "news_updated": 1789176016935
-        },
         "player_id": "8364",
         "stats": {
           "idp_tkl": 1.0,
@@ -444,24 +263,6 @@
     "play_id": "cba13330-bacc-11f1-94e3-4de00e7f7d0d",
     "play_stats": [
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 6,
-          "first_name": "Tyler",
-          "last_name": "Shough",
-          "sport": "nfl",
-          "team": "NO",
-          "player_id": "12545",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 1,
-          "news_updated": 1791077138494
-        },
         "player_id": "12545",
         "stats": {
           "pass_att": 1.0,
@@ -471,24 +272,6 @@
         "play_id": "cba13330-bacc-11f1-94e3-4de00e7f7d0d"
       },
       {
-        "player": {
-          "position": "TE",
-          "status": "Active",
-          "number": 83,
-          "first_name": "Juwan",
-          "last_name": "Johnson",
-          "sport": "nfl",
-          "team": "NO",
-          "player_id": "7002",
-          "fantasy_positions": [
-            "TE"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 6,
-          "news_updated": 1791081638913
-        },
         "player_id": "7002",
         "stats": {
           "fum": 1.0,
@@ -502,24 +285,6 @@
         "play_id": "cba13330-bacc-11f1-94e3-4de00e7f7d0d"
       },
       {
-        "player": {
-          "position": "CB",
-          "status": "Active",
-          "number": 5,
-          "first_name": "Eric",
-          "last_name": "Stokes",
-          "sport": "nfl",
-          "team": "LV",
-          "player_id": "7628",
-          "fantasy_positions": [
-            "DB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 5,
-          "news_updated": 1773075332269
-        },
         "player_id": "7628",
         "stats": {
           "idp_fum_rec": 1.0
@@ -528,24 +293,6 @@
         "play_id": "cba13330-bacc-11f1-94e3-4de00e7f7d0d"
       },
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 17,
-          "first_name": "Nakobe",
-          "last_name": "Dean",
-          "sport": "nfl",
-          "team": "LV",
-          "player_id": "8267",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 4,
-          "news_updated": 1790818830860
-        },
         "player_id": "8267",
         "stats": {
           "idp_tkl": 1.0,
@@ -596,24 +343,6 @@
     "play_id": "f821fb20-bacb-11f1-94e3-4de00e7f7d0d",
     "play_stats": [
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 8,
-          "first_name": "Kirk",
-          "last_name": "Cousins",
-          "sport": "nfl",
-          "team": "LV",
-          "player_id": "1166",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 14,
-          "news_updated": 1790974539624
-        },
         "player_id": "1166",
         "stats": {
           "fum": 1.0,
@@ -625,24 +354,6 @@
         "play_id": "f821fb20-bacb-11f1-94e3-4de00e7f7d0d"
       },
       {
-        "player": {
-          "position": "DE",
-          "status": "Active",
-          "number": 99,
-          "first_name": "Chase",
-          "last_name": "Young",
-          "sport": "nfl",
-          "team": "NO",
-          "player_id": "6782",
-          "fantasy_positions": [
-            "DL"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 6,
-          "news_updated": 1790302538173
-        },
         "player_id": "6782",
         "stats": {
           "idp_qb_hit": 1.0,
@@ -697,24 +408,6 @@
     "play_id": "ff5e0d30-baca-11f1-94e3-4de00e7f7d0d",
     "play_stats": [
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 6,
-          "first_name": "Tyler",
-          "last_name": "Shough",
-          "sport": "nfl",
-          "team": "NO",
-          "player_id": "12545",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 1,
-          "news_updated": 1791077138494
-        },
         "player_id": "12545",
         "stats": {
           "fum": 1.0,
@@ -727,24 +420,6 @@
         "play_id": "ff5e0d30-baca-11f1-94e3-4de00e7f7d0d"
       },
       {
-        "player": {
-          "position": "CB",
-          "status": "Active",
-          "number": 3,
-          "first_name": "Taron",
-          "last_name": "Johnson",
-          "sport": "nfl",
-          "team": "LV",
-          "player_id": "5341",
-          "fantasy_positions": [
-            "DB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 8,
-          "news_updated": 1779003356392
-        },
         "player_id": "5341",
         "stats": {
           "idp_fum_rec": 1.0
@@ -753,49 +428,12 @@
         "play_id": "ff5e0d30-baca-11f1-94e3-4de00e7f7d0d"
       },
       {
-        "player": {
-          "position": "DE",
-          "status": "Active",
-          "number": 98,
-          "first_name": "Maxx",
-          "last_name": "Crosby",
-          "sport": "nfl",
-          "team": "LV",
-          "player_id": "5991",
-          "fantasy_positions": [
-            "DL"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 7,
-          "news_updated": 1789528855834
-        },
         "player_id": "5991",
         "stats": null,
         "game_id": "202610322",
         "play_id": "ff5e0d30-baca-11f1-94e3-4de00e7f7d0d"
       },
       {
-        "player": {
-          "position": "DB",
-          "status": "Active",
-          "number": 11,
-          "first_name": "Jeremy",
-          "last_name": "Chinn",
-          "sport": "nfl",
-          "team": "LV",
-          "player_id": "7016",
-          "fantasy_positions": [
-            "DB",
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 6,
-          "news_updated": 1790819130992
-        },
         "player_id": "7016",
         "stats": {
           "idp_qb_hit": 1.0,
@@ -809,18 +447,6 @@
         "play_id": "ff5e0d30-baca-11f1-94e3-4de00e7f7d0d"
       },
       {
-        "player": {
-          "position": "DEF",
-          "first_name": "Las Vegas",
-          "last_name": "Raiders",
-          "sport": "nfl",
-          "team": "LV",
-          "player_id": "LV",
-          "fantasy_positions": [
-            "DEF"
-          ],
-          "injury_status": null
-        },
         "player_id": "LV",
         "stats": {
           "def_4_and_stop": 1.0
@@ -870,25 +496,6 @@
     "play_id": "601bf0c0-baca-11f1-94e3-4de00e7f7d0d",
     "play_stats": [
       {
-        "player": {
-          "position": "DB",
-          "status": "Active",
-          "number": 11,
-          "first_name": "Jeremy",
-          "last_name": "Chinn",
-          "sport": "nfl",
-          "team": "LV",
-          "player_id": "7016",
-          "fantasy_positions": [
-            "DB",
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 6,
-          "news_updated": 1790819130992
-        },
         "player_id": "7016",
         "stats": {
           "idp_tkl": 1.0,
@@ -898,24 +505,6 @@
         "play_id": "601bf0c0-baca-11f1-94e3-4de00e7f7d0d"
       },
       {
-        "player": {
-          "position": "RB",
-          "status": "Active",
-          "number": 5,
-          "first_name": "Kendre",
-          "last_name": "Miller",
-          "sport": "nfl",
-          "team": "NO",
-          "player_id": "9757",
-          "fantasy_positions": [
-            "RB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 3,
-          "news_updated": 1791078638572
-        },
         "player_id": "9757",
         "stats": {
           "fum": 1.0,
@@ -969,24 +558,6 @@
     "play_id": "14419070-bac9-11f1-94e3-4de00e7f7d0d",
     "play_stats": [
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 6,
-          "first_name": "Tyler",
-          "last_name": "Shough",
-          "sport": "nfl",
-          "team": "NO",
-          "player_id": "12545",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 1,
-          "news_updated": 1791077138494
-        },
         "player_id": "12545",
         "stats": {
           "pass_att": 1.0,
@@ -998,24 +569,6 @@
         "play_id": "14419070-bac9-11f1-94e3-4de00e7f7d0d"
       },
       {
-        "player": {
-          "position": "WR",
-          "status": "Active",
-          "number": 18,
-          "first_name": "Bryce",
-          "last_name": "Lance",
-          "sport": "nfl",
-          "team": "NO",
-          "player_id": "13420",
-          "fantasy_positions": [
-            "WR"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 0,
-          "news_updated": 1790131210922
-        },
         "player_id": "13420",
         "stats": {
           "rec_tgt": 1.0
@@ -1024,24 +577,6 @@
         "play_id": "14419070-bac9-11f1-94e3-4de00e7f7d0d"
       },
       {
-        "player": {
-          "position": "CB",
-          "status": "Active",
-          "number": 35,
-          "first_name": "Hezekiah",
-          "last_name": "Masses",
-          "sport": "nfl",
-          "team": "LV",
-          "player_id": "13508",
-          "fantasy_positions": [
-            "DB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 0,
-          "news_updated": 1790977240203
-        },
         "player_id": "13508",
         "stats": {
           "fum": 1.0,
@@ -1053,24 +588,6 @@
         "play_id": "14419070-bac9-11f1-94e3-4de00e7f7d0d"
       },
       {
-        "player": {
-          "position": "TE",
-          "status": "Active",
-          "number": 83,
-          "first_name": "Juwan",
-          "last_name": "Johnson",
-          "sport": "nfl",
-          "team": "NO",
-          "player_id": "7002",
-          "fantasy_positions": [
-            "TE"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 6,
-          "news_updated": 1791081638913
-        },
         "player_id": "7002",
         "stats": {
           "idp_tkl": 1.0,
@@ -1080,24 +597,6 @@
         "play_id": "14419070-bac9-11f1-94e3-4de00e7f7d0d"
       },
       {
-        "player": {
-          "position": "DE",
-          "status": "Active",
-          "number": 51,
-          "first_name": "Malcolm",
-          "last_name": "Koonce",
-          "sport": "nfl",
-          "team": "LV",
-          "player_id": "7676",
-          "fantasy_positions": [
-            "DL"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 5,
-          "news_updated": 1773157240019
-        },
         "player_id": "7676",
         "stats": {
           "idp_qb_hit": 1.0
@@ -1147,24 +646,6 @@
     "play_id": "6a34f5f0-bac7-11f1-a197-e93e7fbc22f8",
     "play_stats": [
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 6,
-          "first_name": "Tyler",
-          "last_name": "Shough",
-          "sport": "nfl",
-          "team": "NO",
-          "player_id": "12545",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 1,
-          "news_updated": 1791077138494
-        },
         "player_id": "12545",
         "stats": {
           "fum": 1.0,
@@ -1177,24 +658,6 @@
         "play_id": "6a34f5f0-bac7-11f1-a197-e93e7fbc22f8"
       },
       {
-        "player": {
-          "position": "DE",
-          "status": "Active",
-          "number": 98,
-          "first_name": "Maxx",
-          "last_name": "Crosby",
-          "sport": "nfl",
-          "team": "LV",
-          "player_id": "5991",
-          "fantasy_positions": [
-            "DL"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 7,
-          "news_updated": 1789528855834
-        },
         "player_id": "5991",
         "stats": {
           "idp_fum_rec": 1.0
@@ -1203,24 +666,6 @@
         "play_id": "6a34f5f0-bac7-11f1-a197-e93e7fbc22f8"
       },
       {
-        "player": {
-          "position": "DE",
-          "status": "Active",
-          "number": 51,
-          "first_name": "Malcolm",
-          "last_name": "Koonce",
-          "sport": "nfl",
-          "team": "LV",
-          "player_id": "7676",
-          "fantasy_positions": [
-            "DL"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 5,
-          "news_updated": 1773157240019
-        },
         "player_id": "7676",
         "stats": {
           "idp_qb_hit": 1.0,
@@ -1274,24 +719,6 @@
     "play_id": "0f4de160-bac2-11f1-a197-e93e7fbc22f8",
     "play_stats": [
       {
-        "player": {
-          "position": "DB",
-          "status": "Active",
-          "number": 31,
-          "first_name": "Jordan",
-          "last_name": "Howden",
-          "sport": "nfl",
-          "team": "NO",
-          "player_id": "10985",
-          "fantasy_positions": [
-            "DB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 3,
-          "news_updated": 1759809645625
-        },
         "player_id": "10985",
         "stats": {
           "st_fum_rec": 1.0
@@ -1300,24 +727,6 @@
         "play_id": "0f4de160-bac2-11f1-a197-e93e7fbc22f8"
       },
       {
-        "player": {
-          "position": "RB",
-          "status": "Active",
-          "number": 23,
-          "first_name": "Dylan",
-          "last_name": "Laube",
-          "sport": "nfl",
-          "team": "LV",
-          "player_id": "11574",
-          "fantasy_positions": [
-            "RB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 2,
-          "news_updated": 1789437308739
-        },
         "player_id": "11574",
         "stats": {
           "fum": 1.0,
@@ -1330,24 +739,6 @@
         "play_id": "0f4de160-bac2-11f1-a197-e93e7fbc22f8"
       },
       {
-        "player": {
-          "position": "K",
-          "status": "Active",
-          "number": 10,
-          "first_name": "Daniel",
-          "last_name": "Carlson",
-          "sport": "nfl",
-          "team": "NO",
-          "player_id": "5095",
-          "fantasy_positions": [
-            "K"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 8,
-          "news_updated": 1790638508719
-        },
         "player_id": "5095",
         "stats": {
           "kick_yds": 63.0,
@@ -1357,25 +748,6 @@
         "play_id": "0f4de160-bac2-11f1-a197-e93e7fbc22f8"
       },
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 33,
-          "first_name": "Anfernee",
-          "last_name": "Jennings",
-          "sport": "nfl",
-          "team": "NO",
-          "player_id": "6848",
-          "fantasy_positions": [
-            "DL",
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": "Out",
-          "years_exp": 6,
-          "news_updated": 1791071138319
-        },
         "player_id": "6848",
         "stats": {
           "idp_tkl": 1.0,
@@ -1385,18 +757,6 @@
         "play_id": "0f4de160-bac2-11f1-a197-e93e7fbc22f8"
       },
       {
-        "player": {
-          "position": "DEF",
-          "first_name": "New Orleans",
-          "last_name": "Saints",
-          "sport": "nfl",
-          "team": "NO",
-          "player_id": "NO",
-          "fantasy_positions": [
-            "DEF"
-          ],
-          "injury_status": null
-        },
         "player_id": "NO",
         "stats": {
           "def_st_fum_rec": 1.0
@@ -1449,24 +809,6 @@
     "play_id": "6aaa5130-bac0-11f1-a28a-db4fb6b1e193",
     "play_stats": [
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 32,
-          "first_name": "Trenton",
-          "last_name": "Simpson",
-          "sport": "nfl",
-          "team": "BAL",
-          "player_id": "10935",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 3,
-          "news_updated": 1788888052012
-        },
         "player_id": "10935",
         "stats": {
           "idp_fum_rec": 1.0
@@ -1475,24 +817,6 @@
         "play_id": "6aaa5130-bac0-11f1-a28a-db4fb6b1e193"
       },
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 4,
-          "first_name": "Dak",
-          "last_name": "Prescott",
-          "sport": "nfl",
-          "team": "DAL",
-          "player_id": "3294",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 10,
-          "news_updated": 1791152712649
-        },
         "player_id": "3294",
         "stats": {
           "pass_att": 1.0,
@@ -1504,24 +828,6 @@
         "play_id": "6aaa5130-bac0-11f1-a28a-db4fb6b1e193"
       },
       {
-        "player": {
-          "position": "TE",
-          "status": "Active",
-          "number": 87,
-          "first_name": "Jake",
-          "last_name": "Ferguson",
-          "sport": "nfl",
-          "team": "DAL",
-          "player_id": "8110",
-          "fantasy_positions": [
-            "TE"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 4,
-          "news_updated": 1791022218668
-        },
         "player_id": "8110",
         "stats": {
           "fum": 1.0,
@@ -1536,24 +842,6 @@
         "play_id": "6aaa5130-bac0-11f1-a28a-db4fb6b1e193"
       },
       {
-        "player": {
-          "position": "DL",
-          "status": "Active",
-          "number": 98,
-          "first_name": "Travis",
-          "last_name": "Jones",
-          "sport": "nfl",
-          "team": "BAL",
-          "player_id": "8400",
-          "fantasy_positions": [
-            "DL"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 4,
-          "news_updated": 1788834045760
-        },
         "player_id": "8400",
         "stats": {
           "idp_tkl": 1.0,
@@ -1605,24 +893,6 @@
     "play_id": "d411ef50-bab8-11f1-a28a-db4fb6b1e193",
     "play_stats": [
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 0,
-          "first_name": "Roquan",
-          "last_name": "Smith",
-          "sport": "nfl",
-          "team": "BAL",
-          "player_id": "4960",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 8,
-          "news_updated": 1790740812988
-        },
         "player_id": "4960",
         "stats": {
           "idp_tkl": 1.0,
@@ -1632,24 +902,6 @@
         "play_id": "d411ef50-bab8-11f1-a28a-db4fb6b1e193"
       },
       {
-        "player": {
-          "position": "RB",
-          "status": "Active",
-          "number": 33,
-          "first_name": "Javonte",
-          "last_name": "Williams",
-          "sport": "nfl",
-          "team": "DAL",
-          "player_id": "7588",
-          "fantasy_positions": [
-            "RB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 5,
-          "news_updated": 1791148813376
-        },
         "player_id": "7588",
         "stats": {
           "fum": 1.0,
@@ -1661,18 +913,6 @@
         "play_id": "d411ef50-bab8-11f1-a28a-db4fb6b1e193"
       },
       {
-        "player": {
-          "position": "DEF",
-          "first_name": "Baltimore",
-          "last_name": "Ravens",
-          "sport": "nfl",
-          "team": "BAL",
-          "player_id": "BAL",
-          "fantasy_positions": [
-            "DEF"
-          ],
-          "injury_status": null
-        },
         "player_id": "BAL",
         "stats": {
           "def_4_and_stop": 1.0
@@ -1722,24 +962,6 @@
     "play_id": "27c7e190-baaf-11f1-87b4-033ee7e5972a",
     "play_stats": [
       {
-        "player": {
-          "position": "DL",
-          "status": "Active",
-          "number": 99,
-          "first_name": "Derrick",
-          "last_name": "Harmon",
-          "sport": "nfl",
-          "team": "PIT",
-          "player_id": "12561",
-          "fantasy_positions": [
-            "DL"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": "Questionable",
-          "years_exp": 1,
-          "news_updated": 1791119443990
-        },
         "player_id": "12561",
         "stats": {
           "idp_qb_hit": 1.0,
@@ -1753,24 +975,6 @@
         "play_id": "27c7e190-baaf-11f1-87b4-033ee7e5972a"
       },
       {
-        "player": {
-          "position": "DT",
-          "status": "Active",
-          "number": 69,
-          "first_name": "Sebastian",
-          "last_name": "Joseph-Day",
-          "sport": "nfl",
-          "team": "PIT",
-          "player_id": "5073",
-          "fantasy_positions": [
-            "DL"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 8,
-          "news_updated": 1773450913713
-        },
         "player_id": "5073",
         "stats": {
           "idp_fum_rec": 1.0
@@ -1779,24 +983,6 @@
         "play_id": "27c7e190-baaf-11f1-87b4-033ee7e5972a"
       },
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 9,
-          "first_name": "Joe",
-          "last_name": "Burrow",
-          "sport": "nfl",
-          "team": "CIN",
-          "player_id": "6770",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 6,
-          "news_updated": 1791147913099
-        },
         "player_id": "6770",
         "stats": {
           "fum": 1.0,
@@ -1851,25 +1037,6 @@
     "play_id": "f377f6b0-baad-11f1-8057-a3e4ca18dd73",
     "play_stats": [
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 52,
-          "first_name": "Khalil",
-          "last_name": "Mack",
-          "sport": "nfl",
-          "team": "LAC",
-          "player_id": "2036",
-          "fantasy_positions": [
-            "DL",
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 12,
-          "news_updated": 1772976623049
-        },
         "player_id": "2036",
         "stats": {
           "idp_tkl_loss": 1.0
@@ -1878,24 +1045,6 @@
         "play_id": "f377f6b0-baad-11f1-8057-a3e4ca18dd73"
       },
       {
-        "player": {
-          "position": "DT",
-          "status": "Active",
-          "number": 91,
-          "first_name": "Ed",
-          "last_name": "Oliver",
-          "sport": "nfl",
-          "team": "BUF",
-          "player_id": "5841",
-          "fantasy_positions": [
-            "DL"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": "Questionable",
-          "years_exp": 7,
-          "news_updated": 1791143412376
-        },
         "player_id": "5841",
         "stats": {
           "idp_qb_hit": 1.0
@@ -1904,24 +1053,6 @@
         "play_id": "f377f6b0-baad-11f1-8057-a3e4ca18dd73"
       },
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 10,
-          "first_name": "Justin",
-          "last_name": "Herbert",
-          "sport": "nfl",
-          "team": "LAC",
-          "player_id": "6797",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 6,
-          "news_updated": 1791033619423
-        },
         "player_id": "6797",
         "stats": {
           "pass_att": 1.0,
@@ -1972,24 +1103,6 @@
     "play_id": "49e1f650-baad-11f1-95c4-d3c31b8c85b2",
     "play_stats": [
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 46,
-          "first_name": "Jack",
-          "last_name": "Campbell",
-          "sport": "nfl",
-          "team": "DET",
-          "player_id": "10880",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 3,
-          "news_updated": 1789788651608
-        },
         "player_id": "10880",
         "stats": {
           "idp_fum_rec": 1.0,
@@ -1999,24 +1112,6 @@
         "play_id": "49e1f650-baad-11f1-95c4-d3c31b8c85b2"
       },
       {
-        "player": {
-          "position": "RB",
-          "status": "Active",
-          "number": 0,
-          "first_name": "Braelon",
-          "last_name": "Allen",
-          "sport": "nfl",
-          "team": "NYJ",
-          "player_id": "11576",
-          "fantasy_positions": [
-            "RB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 2,
-          "news_updated": 1791150313556
-        },
         "player_id": "11576",
         "stats": {
           "idp_tkl": 1.0,
@@ -2026,24 +1121,6 @@
         "play_id": "49e1f650-baad-11f1-95c4-d3c31b8c85b2"
       },
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 7,
-          "first_name": "Geno",
-          "last_name": "Smith",
-          "sport": "nfl",
-          "team": "NYJ",
-          "player_id": "1373",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 13,
-          "news_updated": 1791150313566
-        },
         "player_id": "1373",
         "stats": {
           "fum": 1.0,
@@ -2056,24 +1133,6 @@
         "play_id": "49e1f650-baad-11f1-95c4-d3c31b8c85b2"
       },
       {
-        "player": {
-          "position": "DB",
-          "status": "Active",
-          "number": 36,
-          "first_name": "Chuck",
-          "last_name": "Clark",
-          "sport": "nfl",
-          "team": "DET",
-          "player_id": "4224",
-          "fantasy_positions": [
-            "DB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 9,
-          "news_updated": 1790739612785
-        },
         "player_id": "4224",
         "stats": {
           "idp_qb_hit": 1.0,
@@ -2128,25 +1187,6 @@
     "play_id": "4d35c720-baab-11f1-8911-db1ba0679138",
     "play_stats": [
       {
-        "player": {
-          "position": "DL",
-          "status": "Active",
-          "number": 51,
-          "first_name": "Will",
-          "last_name": "Anderson",
-          "sport": "nfl",
-          "team": "HOU",
-          "player_id": "10892",
-          "fantasy_positions": [
-            "DL",
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 3,
-          "news_updated": 1790974540644
-        },
         "player_id": "10892",
         "stats": {
           "idp_qb_hit": 1.0,
@@ -2160,49 +1200,12 @@
         "play_id": "4d35c720-baab-11f1-8911-db1ba0679138"
       },
       {
-        "player": {
-          "position": "DE",
-          "status": "Active",
-          "number": 55,
-          "first_name": "Danielle",
-          "last_name": "Hunter",
-          "sport": "nfl",
-          "team": "HOU",
-          "player_id": "2393",
-          "fantasy_positions": [
-            "DL",
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 11,
-          "news_updated": 1782303629451
-        },
         "player_id": "2393",
         "stats": null,
         "game_id": "202610314",
         "play_id": "4d35c720-baab-11f1-8911-db1ba0679138"
       },
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 17,
-          "first_name": "Daniel",
-          "last_name": "Jones",
-          "sport": "nfl",
-          "team": "IND",
-          "player_id": "5870",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 7,
-          "news_updated": 1791146113287
-        },
         "player_id": "5870",
         "stats": {
           "fum": 1.0,
@@ -2215,24 +1218,6 @@
         "play_id": "4d35c720-baab-11f1-8911-db1ba0679138"
       },
       {
-        "player": {
-          "position": "DT",
-          "status": "Active",
-          "number": 72,
-          "first_name": "Tommy",
-          "last_name": "Togiai",
-          "sport": "nfl",
-          "team": "HOU",
-          "player_id": "7711",
-          "fantasy_positions": [
-            "DL"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 5,
-          "news_updated": 1770428753113
-        },
         "player_id": "7711",
         "stats": {
           "idp_fum_rec": 1.0
@@ -2284,24 +1269,6 @@
     "play_id": "235e2300-baa8-11f1-8057-a3e4ca18dd73",
     "play_stats": [
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 0,
-          "first_name": "Daiyan",
-          "last_name": "Henley",
-          "sport": "nfl",
-          "team": "LAC",
-          "player_id": "10914",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 3,
-          "news_updated": 1790128510596
-        },
         "player_id": "10914",
         "stats": {
           "idp_fum_rec": 1.0
@@ -2310,25 +1277,6 @@
         "play_id": "235e2300-baa8-11f1-8057-a3e4ca18dd73"
       },
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 52,
-          "first_name": "Khalil",
-          "last_name": "Mack",
-          "sport": "nfl",
-          "team": "LAC",
-          "player_id": "2036",
-          "fantasy_positions": [
-            "DL",
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 12,
-          "news_updated": 1772976623049
-        },
         "player_id": "2036",
         "stats": {
           "idp_qb_hit": 1.0,
@@ -2341,24 +1289,6 @@
         "play_id": "235e2300-baa8-11f1-8057-a3e4ca18dd73"
       },
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 17,
-          "first_name": "Josh",
-          "last_name": "Allen",
-          "sport": "nfl",
-          "team": "BUF",
-          "player_id": "4984",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 8,
-          "news_updated": 1791153614390
-        },
         "player_id": "4984",
         "stats": {
           "fum": 1.0,
@@ -2416,24 +1346,6 @@
     "play_id": "7a60c3b0-baa8-11f1-bcd0-4181778d8a33",
     "play_stats": [
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 52,
-          "first_name": "Sonny",
-          "last_name": "Styles",
-          "sport": "nfl",
-          "team": "WAS",
-          "player_id": "13375",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 0,
-          "news_updated": 1790822731425
-        },
         "player_id": "13375",
         "stats": {
           "idp_tkl": 1.0,
@@ -2443,24 +1355,6 @@
         "play_id": "7a60c3b0-baa8-11f1-bcd0-4181778d8a33"
       },
       {
-        "player": {
-          "position": "TE",
-          "status": "Active",
-          "number": 81,
-          "first_name": "Eric",
-          "last_name": "Saubert",
-          "sport": "nfl",
-          "team": "SEA",
-          "player_id": "4189",
-          "fantasy_positions": [
-            "TE"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 9,
-          "news_updated": 1790560258965
-        },
         "player_id": "4189",
         "stats": {
           "fum": 1.0,
@@ -2476,24 +1370,6 @@
         "play_id": "7a60c3b0-baa8-11f1-bcd0-4181778d8a33"
       },
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 14,
-          "first_name": "Sam",
-          "last_name": "Darnold",
-          "sport": "nfl",
-          "team": "SEA",
-          "player_id": "4943",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 8,
-          "news_updated": 1790960122968
-        },
         "player_id": "4943",
         "stats": {
           "pass_att": 1.0,
@@ -2548,24 +1424,6 @@
     "play_id": "9c875100-baa5-11f1-8057-a3e4ca18dd73",
     "play_stats": [
       {
-        "player": {
-          "position": "TE",
-          "status": "Active",
-          "number": 86,
-          "first_name": "Dalton",
-          "last_name": "Kincaid",
-          "sport": "nfl",
-          "team": "BUF",
-          "player_id": "10236",
-          "fantasy_positions": [
-            "TE"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 3,
-          "news_updated": 1791154214637
-        },
         "player_id": "10236",
         "stats": {
           "fum": 1.0,
@@ -2581,24 +1439,6 @@
         "play_id": "9c875100-baa5-11f1-8057-a3e4ca18dd73"
       },
       {
-        "player": {
-          "position": "DB",
-          "status": "Active",
-          "number": 4,
-          "first_name": "Tarheeb",
-          "last_name": "Still",
-          "sport": "nfl",
-          "team": "LAC",
-          "player_id": "11779",
-          "fantasy_positions": [
-            "DB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 2,
-          "news_updated": 1768505705308
-        },
         "player_id": "11779",
         "stats": {
           "idp_tkl": 1.0,
@@ -2608,24 +1448,6 @@
         "play_id": "9c875100-baa5-11f1-8057-a3e4ca18dd73"
       },
       {
-        "player": {
-          "position": "DB",
-          "status": "Active",
-          "number": 22,
-          "first_name": "Genesis",
-          "last_name": "Smith",
-          "sport": "nfl",
-          "team": "LAC",
-          "player_id": "13399",
-          "fantasy_positions": [
-            "DB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 0,
-          "news_updated": 1790819731326
-        },
         "player_id": "13399",
         "stats": {
           "idp_tkl": 1.0,
@@ -2635,24 +1457,6 @@
         "play_id": "9c875100-baa5-11f1-8057-a3e4ca18dd73"
       },
       {
-        "player": {
-          "position": "DB",
-          "status": "Active",
-          "number": 23,
-          "first_name": "Tony",
-          "last_name": "Jefferson",
-          "sport": "nfl",
-          "team": "LAC",
-          "player_id": "1686",
-          "fantasy_positions": [
-            "DB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 13,
-          "news_updated": 1788207615179
-        },
         "player_id": "1686",
         "stats": {
           "idp_fum_rec": 1.0
@@ -2661,24 +1465,6 @@
         "play_id": "9c875100-baa5-11f1-8057-a3e4ca18dd73"
       },
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 17,
-          "first_name": "Josh",
-          "last_name": "Allen",
-          "sport": "nfl",
-          "team": "BUF",
-          "player_id": "4984",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 8,
-          "news_updated": 1791153614390
-        },
         "player_id": "4984",
         "stats": {
           "pass_att": 1.0,
@@ -2730,24 +1516,6 @@
     "play_id": "4155a210-baa4-11f1-8799-1b6015ea36c2",
     "play_stats": [
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 48,
-          "first_name": "Thomas",
-          "last_name": "Incoom",
-          "sport": "nfl",
-          "team": "CAR",
-          "player_id": "11441",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 3,
-          "news_updated": 1786153824355
-        },
         "player_id": "11441",
         "stats": {
           "st_fum_rec": 1.0
@@ -2756,24 +1524,6 @@
         "play_id": "4155a210-baa4-11f1-8799-1b6015ea36c2"
       },
       {
-        "player": {
-          "position": "WR",
-          "status": "Active",
-          "number": 11,
-          "first_name": "Malachi",
-          "last_name": "Corley",
-          "sport": "nfl",
-          "team": "CLE",
-          "player_id": "11617",
-          "fantasy_positions": [
-            "WR"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 2,
-          "news_updated": 1781310034068
-        },
         "player_id": "11617",
         "stats": {
           "fum": 1.0,
@@ -2786,24 +1536,6 @@
         "play_id": "4155a210-baa4-11f1-8799-1b6015ea36c2"
       },
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 45,
-          "first_name": "Maema",
-          "last_name": "Njongmeta",
-          "sport": "nfl",
-          "team": "CAR",
-          "player_id": "12057",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 2,
-          "news_updated": 1790446228701
-        },
         "player_id": "12057",
         "stats": {
           "idp_tkl": 1.0,
@@ -2813,24 +1545,6 @@
         "play_id": "4155a210-baa4-11f1-8799-1b6015ea36c2"
       },
       {
-        "player": {
-          "position": "K",
-          "status": "Active",
-          "number": 10,
-          "first_name": "Ryan",
-          "last_name": "Fitzgerald",
-          "sport": "nfl",
-          "team": "CAR",
-          "player_id": "12961",
-          "fantasy_positions": [
-            "K"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 1,
-          "news_updated": 1790602205318
-        },
         "player_id": "12961",
         "stats": {
           "kick_yds": 66.0,
@@ -2840,18 +1554,6 @@
         "play_id": "4155a210-baa4-11f1-8799-1b6015ea36c2"
       },
       {
-        "player": {
-          "position": "DEF",
-          "first_name": "Carolina",
-          "last_name": "Panthers",
-          "sport": "nfl",
-          "team": "CAR",
-          "player_id": "CAR",
-          "fantasy_positions": [
-            "DEF"
-          ],
-          "injury_status": null
-        },
         "player_id": "CAR",
         "stats": {
           "def_st_fum_rec": 1.0
@@ -2901,24 +1603,6 @@
     "play_id": "6bc2cc40-baa3-11f1-990d-335f6135f415",
     "play_stats": [
       {
-        "player": {
-          "position": "RB",
-          "status": "Active",
-          "number": 44,
-          "first_name": "Cam",
-          "last_name": "Skattebo",
-          "sport": "nfl",
-          "team": "NYG",
-          "player_id": "12481",
-          "fantasy_positions": [
-            "RB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 1,
-          "news_updated": 1791042320113
-        },
         "player_id": "12481",
         "stats": {
           "fum": 1.0,
@@ -2932,24 +1616,6 @@
         "play_id": "6bc2cc40-baa3-11f1-990d-335f6135f415"
       },
       {
-        "player": {
-          "position": "DB",
-          "status": "Active",
-          "number": 23,
-          "first_name": "Kevin",
-          "last_name": "Winston",
-          "sport": "nfl",
-          "team": "TEN",
-          "player_id": "12588",
-          "fantasy_positions": [
-            "DB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 1,
-          "news_updated": 1791130545743
-        },
         "player_id": "12588",
         "stats": {
           "idp_tkl": 1.0,
@@ -3002,24 +1668,6 @@
     "play_id": "dce1ada0-ba9f-11f1-9ff5-3524b1e84033",
     "play_stats": [
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 10,
-          "first_name": "Drake",
-          "last_name": "Maye",
-          "sport": "nfl",
-          "team": "NE",
-          "player_id": "11564",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 2,
-          "news_updated": 1791152414407
-        },
         "player_id": "11564",
         "stats": {
           "fum": 1.0,
@@ -3032,24 +1680,6 @@
         "play_id": "dce1ada0-ba9f-11f1-9ff5-3524b1e84033"
       },
       {
-        "player": {
-          "position": "DT",
-          "status": "Active",
-          "number": 52,
-          "first_name": "DaVon",
-          "last_name": "Hamilton",
-          "sport": "nfl",
-          "team": "JAX",
-          "player_id": "6972",
-          "fantasy_positions": [
-            "DL"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 6,
-          "news_updated": 1790374222647
-        },
         "player_id": "6972",
         "stats": {
           "idp_tkl": 1.0,
@@ -3102,24 +1732,6 @@
     "play_id": "ee9351e0-ba9d-11f1-98a3-35151fef9533",
     "play_stats": [
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 23,
-          "first_name": "Drue",
-          "last_name": "Tranquill",
-          "sport": "nfl",
-          "team": "KC",
-          "player_id": "6141",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 7,
-          "news_updated": 1789083629197
-        },
         "player_id": "6141",
         "stats": {
           "idp_tkl": 1.0,
@@ -3129,24 +1741,6 @@
         "play_id": "ee9351e0-ba9d-11f1-98a3-35151fef9533"
       },
       {
-        "player": {
-          "position": "CB",
-          "status": "Active",
-          "number": 38,
-          "first_name": "L'Jarius",
-          "last_name": "Sneed",
-          "sport": "nfl",
-          "team": "KC",
-          "player_id": "7117",
-          "fantasy_positions": [
-            "DB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 6,
-          "news_updated": 1790977540482
-        },
         "player_id": "7117",
         "stats": {
           "idp_fum_rec": 1.0,
@@ -3157,24 +1751,6 @@
         "play_id": "ee9351e0-ba9d-11f1-98a3-35151fef9533"
       },
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 2,
-          "first_name": "Malik",
-          "last_name": "Willis",
-          "sport": "nfl",
-          "team": "MIA",
-          "player_id": "8161",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 4,
-          "news_updated": 1791025219211
-        },
         "player_id": "8161",
         "stats": {
           "fum": 1.0,
@@ -3229,24 +1805,6 @@
     "play_id": "f76cb5b0-ba9b-11f1-8911-db1ba0679138",
     "play_stats": [
       {
-        "player": {
-          "position": "DL",
-          "status": "Active",
-          "number": 55,
-          "first_name": "Caden",
-          "last_name": "Curry",
-          "sport": "nfl",
-          "team": "IND",
-          "player_id": "13373",
-          "fantasy_positions": [
-            "DL"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 0,
-          "news_updated": 1777152931536
-        },
         "player_id": "13373",
         "stats": {
           "idp_tkl": 1.0,
@@ -3256,24 +1814,6 @@
         "play_id": "f76cb5b0-ba9b-11f1-8911-db1ba0679138"
       },
       {
-        "player": {
-          "position": "P",
-          "status": "Active",
-          "number": 8,
-          "first_name": "Rigoberto",
-          "last_name": "Sanchez",
-          "sport": "nfl",
-          "team": "IND",
-          "player_id": "4331",
-          "fantasy_positions": [
-            "P"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 9,
-          "news_updated": 1787877655194
-        },
         "player_id": "4331",
         "stats": {
           "kick_yds": 62.0,
@@ -3283,24 +1823,6 @@
         "play_id": "f76cb5b0-ba9b-11f1-8911-db1ba0679138"
       },
       {
-        "player": {
-          "position": "DB",
-          "status": "Active",
-          "number": 11,
-          "first_name": "Tremon",
-          "last_name": "Smith",
-          "sport": "nfl",
-          "team": "HOU",
-          "player_id": "5328",
-          "fantasy_positions": [
-            "DB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 8,
-          "news_updated": 1760843112627
-        },
         "player_id": "5328",
         "stats": {
           "kr": 1.0,
@@ -3353,24 +1875,6 @@
     "play_id": "bb8b5f10-ba96-11f1-94fd-4f27991f1616",
     "play_stats": [
       {
-        "player": {
-          "position": "RB",
-          "status": "Inactive",
-          "number": 8,
-          "first_name": "Jadarian",
-          "last_name": "Price",
-          "sport": "nfl",
-          "team": "SEA",
-          "player_id": "13286",
-          "fantasy_positions": [
-            "RB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": "IR",
-          "years_exp": 0,
-          "news_updated": 1791144311884
-        },
         "player_id": "13286",
         "stats": {
           "fum": 1.0,
@@ -3383,24 +1887,6 @@
         "play_id": "bb8b5f10-ba96-11f1-94fd-4f27991f1616"
       },
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 52,
-          "first_name": "Sonny",
-          "last_name": "Styles",
-          "sport": "nfl",
-          "team": "WAS",
-          "player_id": "13375",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 0,
-          "news_updated": 1790822731425
-        },
         "player_id": "13375",
         "stats": {
           "idp_tkl": 1.0,
@@ -3410,24 +1896,6 @@
         "play_id": "bb8b5f10-ba96-11f1-94fd-4f27991f1616"
       },
       {
-        "player": {
-          "position": "DT",
-          "status": "Active",
-          "number": 97,
-          "first_name": "Tim",
-          "last_name": "Settle",
-          "sport": "nfl",
-          "team": "WAS",
-          "player_id": "5366",
-          "fantasy_positions": [
-            "DL"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 8,
-          "news_updated": 1789005935559
-        },
         "player_id": "5366",
         "stats": {
           "idp_fum_rec": 1.0
@@ -3436,24 +1904,6 @@
         "play_id": "bb8b5f10-ba96-11f1-94fd-4f27991f1616"
       },
       {
-        "player": {
-          "position": "CB",
-          "status": "Active",
-          "number": 2,
-          "first_name": "Amik",
-          "last_name": "Robertson",
-          "sport": "nfl",
-          "team": "WAS",
-          "player_id": "6896",
-          "fantasy_positions": [
-            "DB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 6,
-          "news_updated": 1773081032741
-        },
         "player_id": "6896",
         "stats": {
           "idp_tkl": 1.0,
@@ -3504,25 +1954,6 @@
     "play_id": "4ca72840-ba96-11f1-8911-db1ba0679138",
     "play_stats": [
       {
-        "player": {
-          "position": "DL",
-          "status": "Active",
-          "number": 51,
-          "first_name": "Will",
-          "last_name": "Anderson",
-          "sport": "nfl",
-          "team": "HOU",
-          "player_id": "10892",
-          "fantasy_positions": [
-            "DL",
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 3,
-          "news_updated": 1790974540644
-        },
         "player_id": "10892",
         "stats": {
           "fum": 1.0,
@@ -3539,24 +1970,6 @@
         "play_id": "4ca72840-ba96-11f1-8911-db1ba0679138"
       },
       {
-        "player": {
-          "position": "TE",
-          "status": "Active",
-          "number": 81,
-          "first_name": "Mo",
-          "last_name": "Alie-Cox",
-          "sport": "nfl",
-          "team": "IND",
-          "player_id": "4054",
-          "fantasy_positions": [
-            "TE"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 9,
-          "news_updated": 1791115843481
-        },
         "player_id": "4054",
         "stats": {
           "idp_tkl": 1.0,
@@ -3566,24 +1979,6 @@
         "play_id": "4ca72840-ba96-11f1-8911-db1ba0679138"
       },
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 17,
-          "first_name": "Daniel",
-          "last_name": "Jones",
-          "sport": "nfl",
-          "team": "IND",
-          "player_id": "5870",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 7,
-          "news_updated": 1791146113287
-        },
         "player_id": "5870",
         "stats": {
           "fum": 1.0,
@@ -3637,24 +2032,6 @@
     "play_id": "51839f70-ba95-11f1-ba77-573d4041d54a",
     "play_stats": [
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 0,
-          "first_name": "Daiyan",
-          "last_name": "Henley",
-          "sport": "nfl",
-          "team": "LAC",
-          "player_id": "10914",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 3,
-          "news_updated": 1790128510596
-        },
         "player_id": "10914",
         "stats": {
           "idp_fum_rec": 1.0
@@ -3663,24 +2040,6 @@
         "play_id": "51839f70-ba95-11f1-ba77-573d4041d54a"
       },
       {
-        "player": {
-          "position": "DL",
-          "status": "Active",
-          "number": 92,
-          "first_name": "Justin",
-          "last_name": "Eboigbe",
-          "sport": "nfl",
-          "team": "LAC",
-          "player_id": "11743",
-          "fantasy_positions": [
-            "DL"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 2,
-          "news_updated": 1768504805334
-        },
         "player_id": "11743",
         "stats": {
           "idp_tkl": 1.0,
@@ -3690,24 +2049,6 @@
         "play_id": "51839f70-ba95-11f1-ba77-573d4041d54a"
       },
       {
-        "player": {
-          "position": "RB",
-          "status": "Active",
-          "number": 4,
-          "first_name": "James",
-          "last_name": "Cook",
-          "sport": "nfl",
-          "team": "BUF",
-          "player_id": "8138",
-          "fantasy_positions": [
-            "RB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 4,
-          "news_updated": 1791153614381
-        },
         "player_id": "8138",
         "stats": {
           "fum": 1.0,
@@ -3760,24 +2101,6 @@
     "play_id": "3cbf8f40-ba90-11f1-86ef-13c761fff291",
     "play_stats": [
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 46,
-          "first_name": "Zaire",
-          "last_name": "Barnes",
-          "sport": "nfl",
-          "team": "NYG",
-          "player_id": "11000",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 3,
-          "news_updated": 1773526820582
-        },
         "player_id": "11000",
         "stats": {
           "idp_tkl": 1.0,
@@ -3787,24 +2110,6 @@
         "play_id": "3cbf8f40-ba90-11f1-86ef-13c761fff291"
       },
       {
-        "player": {
-          "position": "WR",
-          "status": "Active",
-          "number": 17,
-          "first_name": "Chimere",
-          "last_name": "Dike",
-          "sport": "nfl",
-          "team": "TEN",
-          "player_id": "12540",
-          "fantasy_positions": [
-            "WR"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 1,
-          "news_updated": 1790477402113
-        },
         "player_id": "12540",
         "stats": {
           "fum": 1.0,
@@ -3817,24 +2122,6 @@
         "play_id": "3cbf8f40-ba90-11f1-86ef-13c761fff291"
       },
       {
-        "player": {
-          "position": "K",
-          "status": "Active",
-          "number": 34,
-          "first_name": "Dominic",
-          "last_name": "Zvada",
-          "sport": "nfl",
-          "team": "NYG",
-          "player_id": "13833",
-          "fantasy_positions": [
-            "K"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 0,
-          "news_updated": 1790610947105
-        },
         "player_id": "13833",
         "stats": {
           "kick_yds": 63.0,
@@ -3844,24 +2131,6 @@
         "play_id": "3cbf8f40-ba90-11f1-86ef-13c761fff291"
       },
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 54,
-          "first_name": "Malik",
-          "last_name": "Harrison",
-          "sport": "nfl",
-          "team": "NYG",
-          "player_id": "6867",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 6,
-          "news_updated": 1788851447882
-        },
         "player_id": "6867",
         "stats": {
           "st_fum_rec": 1.0
@@ -3870,24 +2139,6 @@
         "play_id": "3cbf8f40-ba90-11f1-86ef-13c761fff291"
       },
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 41,
-          "first_name": "Micah",
-          "last_name": "McFadden",
-          "sport": "nfl",
-          "team": "NYG",
-          "player_id": "8396",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 4,
-          "news_updated": 1790218233091
-        },
         "player_id": "8396",
         "stats": {
           "idp_tkl": 1.0,
@@ -3897,18 +2148,6 @@
         "play_id": "3cbf8f40-ba90-11f1-86ef-13c761fff291"
       },
       {
-        "player": {
-          "position": "DEF",
-          "first_name": "New York",
-          "last_name": "Giants",
-          "sport": "nfl",
-          "team": "NYG",
-          "player_id": "NYG",
-          "fantasy_positions": [
-            "DEF"
-          ],
-          "injury_status": null
-        },
         "player_id": "NYG",
         "stats": {
           "def_st_fum_rec": 1.0
@@ -3959,24 +2198,6 @@
     "play_id": "69297560-b882-11f1-93e9-47c1aa68aaa4",
     "play_stats": [
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 10,
-          "first_name": "Jordan",
-          "last_name": "Love",
-          "sport": "nfl",
-          "team": "GB",
-          "player_id": "6804",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 6,
-          "news_updated": 1791155114146
-        },
         "player_id": "6804",
         "stats": {
           "pass_att": 1.0,
@@ -3986,24 +2207,6 @@
         "play_id": "69297560-b882-11f1-93e9-47c1aa68aaa4"
       },
       {
-        "player": {
-          "position": "TE",
-          "status": "Active",
-          "number": 85,
-          "first_name": "Tucker",
-          "last_name": "Kraft",
-          "sport": "nfl",
-          "team": "GB",
-          "player_id": "9484",
-          "fantasy_positions": [
-            "TE"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 3,
-          "news_updated": 1791151813551
-        },
         "player_id": "9484",
         "stats": {
           "rec_tgt": 1.0
@@ -4054,24 +2257,6 @@
     "play_id": "e8ef3690-b87d-11f1-93e9-47c1aa68aaa4",
     "play_stats": [
       {
-        "player": {
-          "position": "QB",
-          "status": "Active",
-          "number": 10,
-          "first_name": "Jordan",
-          "last_name": "Love",
-          "sport": "nfl",
-          "team": "GB",
-          "player_id": "6804",
-          "fantasy_positions": [
-            "QB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 6,
-          "news_updated": 1791155114146
-        },
         "player_id": "6804",
         "stats": {
           "pass_att": 1.0,
@@ -4082,24 +2267,6 @@
         "play_id": "e8ef3690-b87d-11f1-93e9-47c1aa68aaa4"
       },
       {
-        "player": {
-          "position": "LB",
-          "status": "Active",
-          "number": 0,
-          "first_name": "Divine",
-          "last_name": "Deablo",
-          "sport": "nfl",
-          "team": "ATL",
-          "player_id": "7677",
-          "fantasy_positions": [
-            "LB"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": "Questionable",
-          "years_exp": 5,
-          "news_updated": 1791047721116
-        },
         "player_id": "7677",
         "stats": {
           "idp_qb_hit": 1.0
@@ -4108,24 +2275,6 @@
         "play_id": "e8ef3690-b87d-11f1-93e9-47c1aa68aaa4"
       },
       {
-        "player": {
-          "position": "WR",
-          "status": "Active",
-          "number": 23,
-          "first_name": "Skyy",
-          "last_name": "Moore",
-          "sport": "nfl",
-          "team": "GB",
-          "player_id": "8168",
-          "fantasy_positions": [
-            "WR"
-          ],
-          "team_abbr": null,
-          "team_changed_at": null,
-          "injury_status": null,
-          "years_exp": 4,
-          "news_updated": 1790787918587
-        },
         "player_id": "8168",
         "stats": {
           "rec_tgt": 1.0

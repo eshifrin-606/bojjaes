@@ -16,7 +16,9 @@ forced fumbles paid 0, and week 3's Will Anderson scored 13.5 = 7.5 (sacks) + 2 
   aggregate stays the source for every other stat.
 - Attribute each forced fumble per play, taking turnover status from the fumbler's own row
   (`fum_lost > 0`). The forcer is named in the play description and resolved to a player row on the
-  opposing team. Ambiguous or unmatched plays award nothing and are logged.
+  opposing team. Play rows carry only player IDs, so names and teams come from the weekly aggregate.
+  Ambiguous or unmatched plays, including a forcer absent from the aggregate, award nothing and are
+  logged.
 - A play-by-play failure never blocks or fails the page. Forced fumbles fall back to what is already
   held, which is zero if nothing is held, and the failure is logged. An award may arrive minutes to an
   hour late.
@@ -46,8 +48,8 @@ forced fumbles paid 0, and week 3's Will Anderson scored 13.5 = 7.5 (sacks) + 2 
 - `internal/sleeper`: new play-by-play fetch, per-week play store, description parser, and
   attribution. `Client` merges forced-fumble counts into the weekly snapshot.
 - `cmd/server/main.go`: wires the play store into the Sleeper client.
-- New upstream: `https://api.sleeper.com/plays/nfl/recent` (a different host from the stats API). It
+- New upstream: `https://api.sleeper.com/plays/nfl/recent` (the same host as the stats API). It
   is CDN-cached for 300 s. A whole-week fetch is about 3.9 MB and takes 3–12 s.
-- `internal/sleeper/testdata`: trimmed 2026 week 2 and week 3 play fixtures.
+- `internal/sleeper/testdata`: trimmed 2026 week 2 and week 3 play and weekly-aggregate fixtures.
 - `openspec/specs/player-week-score/spec.md` and `docs/scoring.md`: deviation text updated on
   archive. ADR 0003 is not edited by this change.
