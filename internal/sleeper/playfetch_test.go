@@ -349,3 +349,5 @@ func TestForcedFumblesRefreshesQuietWeekOnce(t *testing.T) {
 		t.Errorf("whole-week fetches after a second read = %d, want still 1", got)
 	}
 }
+
+func (s *PlayStore) wait() { s.bg.Wait() }

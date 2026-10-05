@@ -160,5 +160,3 @@ func (s *PlayStore) fetchWholeWeek(season, week int) {
 	s.merge(season, week, plays)
 	s.markWholeFetched(season, week, s.now())
 }
-
-func (s *PlayStore) wait() { s.bg.Wait() }
