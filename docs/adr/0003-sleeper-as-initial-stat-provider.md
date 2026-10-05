@@ -226,6 +226,32 @@ confirm the +4 side. Plays and Sleeper IDs are in
 [docs/probe-espn-sleeper.md](../probe-espn-sleeper.md) Tier 3 can run against the preseason slate
 instead of waiting for September.
 
+## Amendment 2026-10-04 — weekly stats moved to the `.com` endpoint
+
+Weekly stats now come from `https://api.sleeper.com/stats/nfl/{season}/{week}?season_type=regular`,
+not `api.sleeper.app/v1/stats/nfl/regular/{season}/{week}`. The `.com` response is a row array whose
+rows carry `team` (the team at game time) and `player{first_name, last_name, ...}`; the `.app` map
+carries only player IDs. Forced-fumble attribution needs both names and game-time teams. Moving
+endpoints first keeps a change that should move no scores apart from the one that does.
+
+- **Parity (checked live 2026-10-04):** 2026 wk 3 returns 2357 players from both, with identical
+  `stats` for every player; 2025 wk 14 is identical for every `.app` player. An unplayed week is
+  `{}` from `.app` and `[]` from `.com`.
+- **Cost:** ~2.1 MB raw / ~280 KB gzipped, against ~0.57 MB / ~85 KB. Latency differs by ~30 ms.
+- **Team caveat:** for 36 wk 3 rows the row's `team` differs from `player.team` (current team). Use
+  the row's.
+- **Cache headers** (`s-maxage` / `stale-while-revalidate`, seconds):
+
+  | Week | `.app` | `.com` |
+  |---|---|---|
+  | current (2026 wk 4) | 30 / 300 | 4 / 600 |
+  | last completed (2026 wk 3) | 600 / 300 | 300 / 600 |
+  | old (2025 wk 14) | 3600 / 300 | 3600 / 600 |
+
+  Fresher at the edge, but the longer stale-while-revalidate window means a rarely read week can be
+  served up to ~10 min stale once before it refreshes. This also supersedes the one-hour edge TTL
+  that the original Context recorded for old weeks only in part: current weeks were never an hour.
+
 ## Rationale
 
 - **Shipping beats optimizing.** A scoreboard that is right on 4.5 of 5 hard rules and honest

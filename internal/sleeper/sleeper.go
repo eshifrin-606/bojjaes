@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -15,22 +16,27 @@ import (
 )
 
 // BaseURL is the live REST host; tests pass an httptest.Server URL.
-const BaseURL = "https://api.sleeper.app"
+const BaseURL = "https://api.sleeper.com"
 
 // http.DefaultClient has no timeout, so a stalled upstream would hang the
 // request forever. The budget covers the whole exchange, body included.
 var sleeperClient = &http.Client{Timeout: 15 * time.Second}
 
-// fetchWeekly reads Sleeper's regular-season weekly stats aggregate, keyed by
-// player ID.
+type weeklyRow struct {
+	PlayerID string             `json:"player_id"`
+	Stats    map[string]float64 `json:"stats"`
+}
+
+// fetchWeekly reads Sleeper's regular-season weekly stats rows and indexes
+// them by player ID.
 //
 // One call serves any number of players: the endpoint returns every player in
-// the league regardless, roughly half a megabyte whether one line is wanted or
-// a whole roster.
+// the league regardless, roughly two megabytes (~280 KB gzipped) whether one
+// line is wanted or a whole roster.
 //
-// An empty payload is not an error — an unplayed week returns 200 with `{}`.
+// An empty payload is not an error — an unplayed week returns 200 with `[]`.
 func fetchWeekly(ctx context.Context, baseURL string, season, week int) (map[string]map[string]float64, error) {
-	url := fmt.Sprintf("%s/v1/stats/nfl/regular/%d/%d", baseURL, season, week)
+	url := fmt.Sprintf("%s/stats/nfl/%d/%d?season_type=regular", baseURL, season, week)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -49,9 +55,22 @@ func fetchWeekly(ctx context.Context, baseURL string, season, week int) (map[str
 
 	// Sleeper sends every stat as a JSON number, so decode as float64 across
 	// the board and convert at the boundary.
-	var weekly map[string]map[string]float64
-	if err := json.NewDecoder(resp.Body).Decode(&weekly); err != nil {
+	weekly, err := decodeWeekly(resp.Body)
+	if err != nil {
 		return nil, fmt.Errorf("decoding sleeper stats for season %d week %d: %w", season, week, err)
+	}
+	return weekly, nil
+}
+
+func decodeWeekly(r io.Reader) (map[string]map[string]float64, error) {
+	var rows []weeklyRow
+	if err := json.NewDecoder(r).Decode(&rows); err != nil {
+		return nil, err
+	}
+
+	weekly := make(map[string]map[string]float64, len(rows))
+	for _, row := range rows {
+		weekly[row.PlayerID] = row.Stats
 	}
 	return weekly, nil
 }

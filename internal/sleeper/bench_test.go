@@ -1,6 +1,7 @@
 package sleeper
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"strconv"
@@ -22,18 +23,18 @@ func grownPayload(t testing.TB) []byte {
 		t.Fatalf("reading fixture: %v", err)
 	}
 
-	var fixture map[string]map[string]float64
+	var fixture []weeklyRow
 	if err := json.Unmarshal(raw, &fixture); err != nil {
 		t.Fatalf("decoding fixture: %v", err)
 	}
 
-	grown := make(map[string]map[string]float64, realWeekPlayers)
+	grown := make([]weeklyRow, 0, realWeekPlayers)
 	for len(grown) < realWeekPlayers {
-		for id, stats := range fixture {
+		for _, row := range fixture {
 			if len(grown) >= realWeekPlayers {
 				break
 			}
-			grown[id+"-"+strconv.Itoa(len(grown))] = stats
+			grown = append(grown, weeklyRow{PlayerID: row.PlayerID + "-" + strconv.Itoa(len(grown)), Stats: row.Stats})
 		}
 	}
 
@@ -47,8 +48,8 @@ func grownPayload(t testing.TB) []byte {
 // BenchmarkTransform isolates the mapping from the fetch and the decode: this
 // is the cost the eager WeekStats pays that a lazy one would not.
 func BenchmarkTransform(b *testing.B) {
-	var weekly map[string]map[string]float64
-	if err := json.Unmarshal(grownPayload(b), &weekly); err != nil {
+	weekly, err := decodeWeekly(bytes.NewReader(grownPayload(b)))
+	if err != nil {
 		b.Fatalf("decoding: %v", err)
 	}
 
@@ -70,8 +71,7 @@ func BenchmarkDecode(b *testing.B) {
 	body := grownPayload(b)
 
 	for b.Loop() {
-		var weekly map[string]map[string]float64
-		if err := json.Unmarshal(body, &weekly); err != nil {
+		if _, err := decodeWeekly(bytes.NewReader(body)); err != nil {
 			b.Fatalf("decoding: %v", err)
 		}
 	}

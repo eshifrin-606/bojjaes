@@ -31,7 +31,7 @@ func TestFetchWeekStatsReturnsAPlayerFromTheFixture(t *testing.T) {
 // it into the snapshot would turn "we have nothing for this player" into a
 // scoreless week.
 func TestFetchWeekStatsSkipsNullEntries(t *testing.T) {
-	srv := jsonServer(t, `{"9493": null}`)
+	srv := jsonServer(t, `[{"player_id":"9493","stats":null}]`)
 
 	week, err := FetchWeekStats(context.Background(), srv.URL, 2025, 14)
 	if err != nil {
@@ -43,9 +43,9 @@ func TestFetchWeekStatsSkipsNullEntries(t *testing.T) {
 	}
 }
 
-// An unplayed week returns 200 with `{}`. That is an answer, not a failure.
+// An unplayed week returns 200 with `[]`. That is an answer, not a failure.
 func TestFetchWeekStatsEmptyPayloadIsNotAnError(t *testing.T) {
-	srv := jsonServer(t, `{}`)
+	srv := jsonServer(t, `[]`)
 
 	week, err := FetchWeekStats(context.Background(), srv.URL, 2025, 18)
 	if err != nil {

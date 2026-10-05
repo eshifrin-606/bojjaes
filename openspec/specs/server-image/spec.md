@@ -9,7 +9,7 @@ keyed on both module files.
 
 This capability exists because the server reads almost nothing from its host. Lineups, templates,
 CSS, and the timezone database are compiled in, and the listen port comes from `PORT`. The one host
-dependency left is the CA roots that verify its only upstream, `https://api.sleeper.app`. The image
+dependency left is the CA roots that verify its only upstream, `https://api.sleeper.com`. The image
 carries exactly that, so a missed dependency fails visibly rather than being masked by a full
 userland.
 
@@ -54,7 +54,7 @@ no shell and no package manager. It SHALL NOT contain the repository's source, i
 any other file the server reads at runtime.
 
 The server needs one thing from its host: CA roots to verify its only upstream,
-`https://api.sleeper.app`. Everything else it reads — lineups, templates, CSS, the timezone
+`https://api.sleeper.com`. Everything else it reads — lineups, templates, CSS, the timezone
 database — is compiled in. A base without CA roots breaks every stat fetch, and a base with a full
 userland adds attack surface and size and serves no purpose.
 

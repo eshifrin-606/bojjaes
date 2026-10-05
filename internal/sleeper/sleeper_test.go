@@ -18,16 +18,19 @@ import (
 const nacuaPlayerID = "9493"
 
 // fixtureServer serves testdata/week14.json, failing the test if the caller
-// asks for any path but the expected one.
+// asks for any path or season_type but the expected ones.
 func fixtureServer(t *testing.T) *httptest.Server {
 	t.Helper()
 
-	const wantPath = "/v1/stats/nfl/regular/2025/14"
+	const wantPath = "/stats/nfl/2025/14"
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != wantPath {
 			t.Errorf("requested %q, want %q", r.URL.Path, wantPath)
 			http.NotFound(w, r)
 			return
+		}
+		if got := r.URL.Query().Get("season_type"); got != "regular" {
+			t.Errorf("season_type = %q, want %q", got, "regular")
 		}
 		http.ServeFile(w, r, "testdata/week14.json")
 	}))
@@ -63,10 +66,10 @@ func TestFetchWeekly(t *testing.T) {
 	}
 }
 
-// An unplayed week returns 200 with an empty object, which is an answer rather
+// An unplayed week returns 200 with an empty array, which is an answer rather
 // than a failure.
 func TestFetchWeeklyEmptyPayload(t *testing.T) {
-	srv := jsonServer(t, `{}`)
+	srv := jsonServer(t, `[]`)
 
 	weekly, err := fetchWeekly(context.Background(), srv.URL, 2026, 1)
 	if err != nil {
@@ -165,9 +168,17 @@ func fixtureWeekly(t *testing.T) map[string]map[string]float64 {
 		t.Fatalf("reading fixture: %v", err)
 	}
 
-	var weekly map[string]map[string]float64
-	if err := json.Unmarshal(body, &weekly); err != nil {
+	var rows []struct {
+		PlayerID string             `json:"player_id"`
+		Stats    map[string]float64 `json:"stats"`
+	}
+	if err := json.Unmarshal(body, &rows); err != nil {
 		t.Fatalf("decoding fixture: %v", err)
+	}
+
+	weekly := make(map[string]map[string]float64, len(rows))
+	for _, row := range rows {
+		weekly[row.PlayerID] = row.Stats
 	}
 	return weekly
 }
