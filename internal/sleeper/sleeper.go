@@ -202,13 +202,16 @@ func fetchPlayers(ctx context.Context, baseURL string, season, week int) (map[st
 type Client struct {
 	BaseURL string
 	Plays   *PlayStore
+	Logf    func(format string, args ...any) // nil is silent
 }
 
 func (c Client) WeekStats(ctx context.Context, season, week int) (score.WeekStats, error) {
+	start := time.Now()
 	players, ids, err := fetchPlayers(ctx, c.BaseURL, season, week)
 	if err != nil {
 		return score.WeekStats{}, err
 	}
+	c.logf("sleeper stats %d w%d: %d rows in %s", season, week, len(ids), time.Since(start))
 	if c.Plays != nil {
 		for id, n := range c.Plays.ForcedFumbles(ctx, season, week, ids) {
 			line, ok := players[id]
@@ -220,4 +223,10 @@ func (c Client) WeekStats(ctx context.Context, season, week int) (score.WeekStat
 		}
 	}
 	return score.NewWeekStats(season, week, players), nil
+}
+
+func (c Client) logf(format string, args ...any) {
+	if c.Logf != nil {
+		c.Logf(format, args...)
+	}
 }
