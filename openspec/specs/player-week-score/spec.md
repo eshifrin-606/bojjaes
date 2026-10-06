@@ -6,9 +6,10 @@ Score NFL players' single-week production under the HMFFL rules, from a provider
 to a point total. Covers the passing, rushing, receiving, two-point-conversion, kicking, and
 defensive rules in `docs/scoring.md`.
 
-A score is therefore meaningful for every rostered player, kickers and defenders included. The one
-rule that needs play-by-play data, safeties, is absent from the calculation rather than rejected by
-it, so a defender's score is a number that may be low rather than an error. The 40+ yard bonus
+A score is therefore meaningful for every rostered player, kickers and defenders included. Forced
+fumbles are counted from play-by-play rather than the weekly aggregate. Safeties, which the aggregate
+cannot express, are absent from the calculation rather than rejected by it, so a defender's score is a
+number that may be low rather than an error. The 40+ yard bonus
 applies to offensive touchdowns only; it is not a rule for defensive or return touchdowns.
 
 ## Requirements
@@ -80,8 +81,9 @@ The touchdown stats mapped SHALL be exactly those credited to the scoring player
 passer-side touchdown stats SHALL NOT be mapped, per the requirement on provider stats that must not
 be scored.
 
-Forced fumble, safety, and defensive return yardage stats SHALL NOT be mapped, since the rules that
-would consume them are excluded at this stage.
+Safety and defensive return yardage stats SHALL NOT be mapped, since no scored rule consumes them.
+The aggregate forced-fumble stat SHALL NOT be mapped either: it is not turnover-qualified, and the
+stat line's forced-fumble count comes from play-by-play attribution instead.
 
 A player absent from the weekly payload SHALL be reported as absent rather than as an error. Absence does
 not identify its own cause: a player whose game has not kicked off, a player who was inactive, and an
@@ -142,7 +144,8 @@ Transport, status, and decode failures against the Sleeper request remain errors
 
 #### Scenario: Excluded stats are not mapped
 
-- **WHEN** the payload entry carries forced fumble, safety, or defensive return yardage stats
+- **WHEN** the payload entry carries the aggregate forced-fumble, safety, or defensive return yardage
+  stats
 - **THEN** none of them appears on the stat line
 
 #### Scenario: Player absent from the weekly payload
@@ -353,19 +356,22 @@ carry no penalty for them, so a miss pays nothing rather than costing anything.
 ### Requirement: Defensive fantasy points
 
 The system SHALL compute HMFFL fantasy points for individual defensive production from a domain stat
-line, using the subset of the defensive rules in `docs/scoring.md` that the provider's weekly
-aggregate can express:
+line, using these defensive rules from `docs/scoring.md`:
 
 - **6 points** per interception caught.
 - **3 points** per sack. Sacks are credited in half-sack granularity, and a half sack SHALL pay 1.5
   points. The award is proportional rather than tabulated, so any fractional credit the provider
   reports pays its proportional share.
 - **2 points** per fumble recovery that results in a turnover. The provider has no single
-  turnover-qualified recovery stat; the sum of its individual-defensive and special-teams recovery
+  turnover-qualified recovery stat. The sum of its individual-defensive and special-teams recovery
   keys reproduces the qualified set 268 of 269 times across a validated full season. The known miss
-  is a recovery credited on an interception return, where the interception was already the turnover
-  — it pays 2 that the rules may not owe. The term is accepted as inexact at this stage rather than
-  approximated further; see the open question on own-team recovery after an interception return.
+  is a recovery credited on an interception return, where the interception was already the turnover.
+  It pays 2 that the rules may not owe. The term is accepted as inexact rather than approximated
+  further; see the open question on own-team recovery after an interception return.
+- **4 points** per forced fumble that results in a turnover. The stat line carries a
+  provider-neutral count of turnover-qualified forced fumbles. A forced fumble that was not a turnover
+  never reaches that count, so the rule is a flat term over it. How the count is decided is specified
+  in `forced-fumble-attribution`.
 
 Interceptions caught SHALL be scored only for the defender who caught them. Interceptions thrown
 remain the passer's -3 penalty and SHALL NOT pay anyone 6.
@@ -373,7 +379,10 @@ remain the passer's -3 penalty and SHALL NOT pay anyone 6.
 Sacks recorded by a defender SHALL be the only sacks that pay. Sacks taken by a quarterback are a
 separate stat and SHALL NOT be scored.
 
-Forced fumbles and safeties are excluded from this requirement and are specified separately.
+The provider's aggregate forced-fumble stat SHALL NOT feed the forced-fumble count. It is not
+turnover-qualified.
+
+Safeties are excluded from this requirement and are specified separately.
 
 #### Scenario: Interception caught
 
@@ -404,6 +413,24 @@ Forced fumbles and safeties are excluded from this requirement and are specified
 
 - **WHEN** a quarterback is sacked 4 times in a week
 - **THEN** those sacks contribute nothing to that quarterback's score
+
+#### Scenario: Forced fumble resulting in a turnover
+
+- **WHEN** a defender is credited with one turnover-qualified forced fumble and has no other
+  production
+- **THEN** the score is 4
+
+#### Scenario: Forced fumbles pay per fumble
+
+- **WHEN** a defender is credited with two turnover-qualified forced fumbles and has no other
+  production
+- **THEN** the score is 8
+
+#### Scenario: Official week 3 total for Will Anderson
+
+- **WHEN** a defender records 2.5 sacks, one turnover-qualified fumble recovery, and one
+  turnover-qualified forced fumble
+- **THEN** the score is 13.5
 
 ### Requirement: Touchdowns scored on defense and special teams
 
@@ -450,26 +477,15 @@ quarterback 3 under the interception rule and pays the returning defender.
 
 ### Requirement: Scoring rules excluded at the aggregate stage
 
-The system SHALL NOT score forced fumbles, safeties, or the 40+ yard bonus on defensive and return
-touchdowns. Each of these is a real league rule, recorded in `docs/scoring.md`, that the provider's
-weekly aggregate cannot express correctly:
+The system SHALL NOT score safeties. Safety is a real league rule, recorded in `docs/scoring.md`, that
+the provider's weekly aggregate cannot express correctly. It pays only on solo credit. The aggregate
+carries a per-player safety stat but nothing that distinguishes solo credit from shared.
 
-- **Forced fumbles** pay only when the fumble results in a turnover. Turnover qualification is a
-  property of the play rather than of any player's aggregate stat line, so no aggregate stat can
-  carry it. Paying the unqualified count would overpay roughly 44% of forced fumbles.
-- **Safeties** pay only on solo credit. The aggregate carries a per-player safety stat but nothing
-  that distinguishes solo credit from shared.
-- **The 40+ yard bonus on defensive and return touchdowns** requires the distance of the scoring
-  play. The aggregate carries defensive return yardage only as a weekly sum, so a player with more
-  than one return has no attributable distance for the one that scored.
+This omission SHALL be visible rather than silent: a known gap is preferred to a knowingly wrong
+award, and it is documented as a stage-scoped deviation rather than a rules change.
 
-These omissions SHALL be visible rather than silent: a known gap is preferred to a knowingly wrong
-award, and each is documented as a stage-scoped deviation rather than a rules change.
-
-#### Scenario: Forced fumble pays nothing
-
-- **WHEN** a defender is credited with a forced fumble and has no other production
-- **THEN** the score is 0
+The 40+ yard bonus is not an exclusion. It applies to offensive touchdowns only, and defensive and
+return touchdowns never earn it at any distance.
 
 #### Scenario: Safety pays nothing
 
@@ -479,13 +495,13 @@ award, and each is documented as a stage-scoped deviation rather than a rules ch
 #### Scenario: A long defensive touchdown earns no distance bonus
 
 - **WHEN** a defender returns an interception 63 yards for a touchdown
-- **THEN** the score is 12 — the interception and the touchdown, with no 40+ yard bonus
+- **THEN** the score is 12: the interception and the touchdown, with no 40+ yard bonus, because the
+  rule does not pay one
 
 #### Scenario: The 40+ bonus still applies to offensive touchdowns
 
 - **WHEN** a player scores a receiving touchdown of 40+ yards
-- **THEN** the 40+ yard bonus is awarded, unaffected by its exclusion on defensive and return
-  touchdowns
+- **THEN** the 40+ yard bonus is awarded
 
 ### Requirement: Provider stats that must not be scored
 
@@ -571,6 +587,41 @@ requests.
 - **WHEN** the same player is read from the same snapshot twice, including from two concurrent
   requests
 - **THEN** both reads yield the same result
+
+### Requirement: The weekly snapshot carries forced fumbles from play-by-play
+
+A week's snapshot SHALL take every stat except forced fumbles from the provider's weekly aggregate.
+It SHALL take the turnover-qualified forced-fumble count from play-by-play attribution. The two
+sources SHALL be merged before the snapshot is returned, so the snapshot stays complete on return.
+
+Attribution identifies players through the aggregate, so a credited forcer always has an aggregate
+entry. A credited forcer whose aggregate entry carries no stats SHALL appear in the snapshot with that
+count and otherwise zero stats. A forcer with no aggregate entry is not credited; see
+`forced-fumble-attribution`.
+
+When play-by-play is unavailable, the snapshot SHALL still be returned, built from the aggregate and
+whatever forced fumbles are already held. An aggregate failure SHALL still fail the fetch as before.
+
+#### Scenario: A forced fumble reaches the stat line
+
+- **WHEN** play-by-play attribution credits a player with one turnover-qualified forced fumble in a
+  week
+- **THEN** that player's stat line read from the week's snapshot carries a count of 1
+
+#### Scenario: A forcer with no aggregate stats is still paid
+
+- **WHEN** a player is credited with a forced fumble and the player's aggregate entry has no stats
+- **THEN** the snapshot holds a stat line for that player carrying only the forced fumble
+
+#### Scenario: A forcer missing from the aggregate is not paid
+
+- **WHEN** the forcer named on a lost fumble has no entry in the weekly aggregate
+- **THEN** the snapshot holds no forced fumble for that player, and the play is logged
+
+#### Scenario: Play-by-play failure leaves the aggregate intact
+
+- **WHEN** play-by-play cannot be read and nothing is held for the week
+- **THEN** the snapshot is returned with every aggregate stat and no forced fumbles
 
 ### Requirement: Weekly stats are regular-season stats
 
