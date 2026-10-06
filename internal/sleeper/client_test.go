@@ -62,7 +62,7 @@ func editCrosby(edit func(row map[string]any) map[string]any) func([]map[string]
 
 func TestClientWeekStatsCreditsForcerFromPlays(t *testing.T) {
 	srv := weekServer(t, w3Aggregate(t, unchanged), readFixture(t, "testdata/plays_2026_w3.json"))
-	c := Client{BaseURL: srv.URL, Plays: NewPlayStore(srv.URL, noLog)}
+	c := Client{BaseURL: srv.URL, Plays: NewPlayStore(srv.URL, 0, noLog)}
 
 	week, err := c.WeekStats(context.Background(), 2026, 3)
 	if err != nil {
@@ -84,7 +84,7 @@ func TestClientWeekStatsCreditsForcerFromPlays(t *testing.T) {
 func TestClientWeekStatsCreditsForcerWithNullAggregateStats(t *testing.T) {
 	nullStats := editCrosby(func(r map[string]any) map[string]any { r["stats"] = nil; return r })
 	srv := weekServer(t, w3Aggregate(t, nullStats), readFixture(t, "testdata/plays_2026_w3.json"))
-	c := Client{BaseURL: srv.URL, Plays: NewPlayStore(srv.URL, noLog)}
+	c := Client{BaseURL: srv.URL, Plays: NewPlayStore(srv.URL, 0, noLog)}
 
 	week, err := c.WeekStats(context.Background(), 2026, 3)
 	if err != nil {
@@ -104,7 +104,7 @@ func TestClientWeekStatsDoesNotCreditForcerMissingFromAggregate(t *testing.T) {
 	dropped := editCrosby(func(map[string]any) map[string]any { return nil })
 	srv := weekServer(t, w3Aggregate(t, dropped), readFixture(t, "testdata/plays_2026_w3.json"))
 	logs := &logRecorder{}
-	c := Client{BaseURL: srv.URL, Plays: NewPlayStore(srv.URL, logs.logf)}
+	c := Client{BaseURL: srv.URL, Plays: NewPlayStore(srv.URL, 0, logs.logf)}
 
 	week, err := c.WeekStats(context.Background(), 2026, 3)
 	if err != nil {
@@ -128,7 +128,7 @@ func TestClientWeekStatsSurvivesPlayFailure(t *testing.T) {
 		w.Write([]byte(`[{"player_id":"9493","stats":{"rec_yd":167}}]`))
 	}))
 	t.Cleanup(srv.Close)
-	c := Client{BaseURL: srv.URL, Plays: NewPlayStore(srv.URL, noLog)}
+	c := Client{BaseURL: srv.URL, Plays: NewPlayStore(srv.URL, 0, noLog)}
 
 	week, err := c.WeekStats(context.Background(), 2026, 3)
 	if err != nil {
@@ -149,7 +149,7 @@ func TestClientWeekStatsAggregateFailureStillErrors(t *testing.T) {
 		http.Error(w, "boom", http.StatusInternalServerError)
 	}))
 	t.Cleanup(srv.Close)
-	c := Client{BaseURL: srv.URL, Plays: NewPlayStore(srv.URL, noLog)}
+	c := Client{BaseURL: srv.URL, Plays: NewPlayStore(srv.URL, 0, noLog)}
 
 	if _, err := c.WeekStats(context.Background(), 2026, 3); err == nil {
 		t.Fatal("want error")

@@ -26,11 +26,17 @@ import (
 const shutdownGrace = 15 * time.Second
 
 func main() {
+	coldWait, err := resolvePlaysColdWait(os.Getenv)
+	if err != nil {
+		log.Fatalf("config: %v", err)
+	}
+	log.Printf("plays cold-week wait: %v", coldWait)
+
 	// Wrapped once, here: the cache bounds upstream volume only if everything
 	// that reads a week reads through the same one.
 	stats := statscache.New(sleeper.Client{
 		BaseURL: sleeper.BaseURL,
-		Plays:   sleeper.NewPlayStore(sleeper.BaseURL, log.Printf),
+		Plays:   sleeper.NewPlayStore(sleeper.BaseURL, coldWait, log.Printf),
 	}, statscache.TTL)
 
 	addr := resolveAddr(os.Getenv)

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -72,7 +73,7 @@ func TestFetchRecentPlaysErrors(t *testing.T) {
 func TestForcedFumblesPollsMergesAndAttributes(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.pollBody = readFixture(t, "testdata/plays_2026_w3.json")
-	store := NewPlayStore(ps.URL, noLog)
+	store := NewPlayStore(ps.URL, 0, noLog)
 
 	got := store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 
@@ -146,7 +147,7 @@ func awaitSignal(t *testing.T, ch <-chan struct{}, what string) {
 func TestForcedFumblesSeedsEmptyWeekInBackground(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.pollBody = readFixture(t, "testdata/plays_2026_w3.json")
-	store := NewPlayStore(ps.URL, noLog)
+	store := NewPlayStore(ps.URL, 0, noLog)
 
 	returned := make(chan struct{})
 	go func() {
@@ -173,7 +174,7 @@ func TestForcedFumblesGapStartsWholeWeekFetch(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.releaseWholeFetches()
 	ps.pollBody = jsonPlays(t, play{ID: "new", UpdatedAt: 200})
-	store := NewPlayStore(ps.URL, noLog)
+	store := NewPlayStore(ps.URL, 0, noLog)
 	store.now = func() time.Time { return time.UnixMilli(200) } // live week, so only the gap can trigger
 	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
 
@@ -185,11 +186,28 @@ func TestForcedFumblesGapStartsWholeWeekFetch(t *testing.T) {
 	}
 }
 
+func TestForcedFumblesGapDoesNotWaitWhateverTheColdWait(t *testing.T) {
+	ps := newPlayServer(t)
+	ps.pollBody = jsonPlays(t, play{ID: "new", UpdatedAt: 200})
+	store := NewPlayStore(ps.URL, time.Minute, noLog)
+	store.now = func() time.Time { return time.UnixMilli(200) }
+	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
+
+	returned := make(chan struct{})
+	go func() {
+		store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
+		close(returned)
+	}()
+
+	awaitSignal(t, ps.wholeStarted, "gap's whole-week fetch to start")
+	awaitSignal(t, returned, "ForcedFumbles to return while the gap's whole-week fetch is blocked")
+}
+
 func TestForcedFumblesOverlappingPollSkipsWholeWeekFetch(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.releaseWholeFetches()
 	ps.pollBody = jsonPlays(t, play{ID: "old", UpdatedAt: 100}, play{ID: "new", UpdatedAt: 200})
-	store := NewPlayStore(ps.URL, noLog)
+	store := NewPlayStore(ps.URL, 0, noLog)
 	store.now = func() time.Time { return time.UnixMilli(200) }
 	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
 
@@ -203,7 +221,7 @@ func TestForcedFumblesOverlappingPollSkipsWholeWeekFetch(t *testing.T) {
 
 func TestForcedFumblesConcurrentTriggersShareOneWholeWeekFetch(t *testing.T) {
 	ps := newPlayServer(t)
-	store := NewPlayStore(ps.URL, noLog)
+	store := NewPlayStore(ps.URL, 0, noLog)
 
 	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	awaitSignal(t, ps.wholeStarted, "first whole-week fetch to start")
@@ -219,7 +237,7 @@ func TestForcedFumblesConcurrentTriggersShareOneWholeWeekFetch(t *testing.T) {
 func TestForcedFumblesAttributesWholeWeekPlaysOnNextCall(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.wholeBody = readFixture(t, "testdata/plays_2026_w3.json")
-	store := NewPlayStore(ps.URL, noLog)
+	store := NewPlayStore(ps.URL, 0, noLog)
 
 	first := store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	awaitSignal(t, ps.wholeStarted, "whole-week fetch to start")
@@ -229,6 +247,56 @@ func TestForcedFumblesAttributesWholeWeekPlaysOnNextCall(t *testing.T) {
 
 	assertCredits(t, first, map[string]int{})
 	assertCredits(t, second, forcedFumbleTurnovers(loadPlays(t, "testdata/plays_2026_w3.json"), w3Identities(t), noLog))
+}
+
+func TestForcedFumblesColdWeekWaitsForWholeWeekPlays(t *testing.T) {
+	ps := newPlayServer(t)
+	ps.releaseWholeFetches()
+	ps.wholeBody = readFixture(t, "testdata/plays_2026_w3.json")
+	store := NewPlayStore(ps.URL, 5*time.Second, noLog)
+
+	got := store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
+
+	assertCredits(t, got, forcedFumbleTurnovers(loadPlays(t, "testdata/plays_2026_w3.json"), w3Identities(t), noLog))
+}
+
+func TestForcedFumblesColdWaitRunsOut(t *testing.T) {
+	ps := newPlayServer(t)
+	ps.pollBody = readFixture(t, "testdata/plays_2026_w3.json")
+	ps.wholeBody = jsonPlays(t, play{ID: "whole-only", UpdatedAt: 1})
+	store := NewPlayStore(ps.URL, 10*time.Millisecond, noLog)
+
+	got := make(chan map[string]int)
+	go func() { got <- store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t)) }()
+
+	select {
+	case credits := <-got:
+		assertCredits(t, credits, forcedFumbleTurnovers(loadPlays(t, "testdata/plays_2026_w3.json"), w3Identities(t), noLog))
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for ForcedFumbles to stop waiting on the blocked whole-week fetch")
+	}
+	ps.releaseWholeFetches()
+	store.wait()
+	if !slices.Contains(snapshotIDs(store, 2026, 3), "whole-only") {
+		t.Error("store is missing the whole-week play merged after the wait ran out")
+	}
+}
+
+func TestForcedFumblesColdWaitEndsWithCallerContext(t *testing.T) {
+	ps := newPlayServer(t)
+	store := NewPlayStore(ps.URL, time.Minute, noLog)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	got := make(chan map[string]int)
+	go func() { got <- store.ForcedFumbles(ctx, 2026, 3, w3Identities(t)) }()
+
+	select {
+	case credits := <-got:
+		assertCredits(t, credits, map[string]int{})
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for ForcedFumbles to give up on a done context")
+	}
 }
 
 type logRecorder struct {
@@ -253,7 +321,7 @@ func TestForcedFumblesPollFailureWithNothingHeld(t *testing.T) {
 	ps.releaseWholeFetches()
 	ps.pollStatus = http.StatusBadGateway
 	logs := &logRecorder{}
-	store := NewPlayStore(ps.URL, logs.logf)
+	store := NewPlayStore(ps.URL, 0, logs.logf)
 
 	got := store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	store.wait()
@@ -269,7 +337,7 @@ func TestForcedFumblesPollFailureScoresHeldPlays(t *testing.T) {
 	ps.releaseWholeFetches()
 	ps.pollStatus = http.StatusBadGateway
 	logs := &logRecorder{}
-	store := NewPlayStore(ps.URL, logs.logf)
+	store := NewPlayStore(ps.URL, 0, logs.logf)
 	store.merge(2026, 3, loadPlays(t, "testdata/plays_2026_w3.json"))
 
 	got := store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
@@ -287,7 +355,7 @@ func TestForcedFumblesWholeWeekFailureKeepsHeldPlaysAndAllowsRetry(t *testing.T)
 	ps.wholeStatus = http.StatusBadGateway
 	ps.pollBody = jsonPlays(t, play{ID: "new", UpdatedAt: 200})
 	logs := &logRecorder{}
-	store := NewPlayStore(ps.URL, logs.logf)
+	store := NewPlayStore(ps.URL, 0, logs.logf)
 	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
 
 	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
@@ -306,12 +374,34 @@ func TestForcedFumblesWholeWeekFailureKeepsHeldPlaysAndAllowsRetry(t *testing.T)
 	}
 }
 
+func TestForcedFumblesColdWaitEndsWhenWholeWeekFetchFails(t *testing.T) {
+	ps := newPlayServer(t)
+	ps.releaseWholeFetches()
+	ps.wholeStatus = http.StatusBadGateway
+	ps.pollBody = readFixture(t, "testdata/plays_2026_w3.json")
+	logs := &logRecorder{}
+	store := NewPlayStore(ps.URL, time.Minute, logs.logf)
+
+	got := make(chan map[string]int)
+	go func() { got <- store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t)) }()
+
+	select {
+	case credits := <-got:
+		assertCredits(t, credits, forcedFumbleTurnovers(loadPlays(t, "testdata/plays_2026_w3.json"), w3Identities(t), noLog))
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out: ForcedFumbles kept waiting after the whole-week fetch failed")
+	}
+	if !strings.Contains(logs.joined(), "whole-week") {
+		t.Errorf("logs = %q, want the whole-week failure", logs.joined())
+	}
+}
+
 func TestForcedFumblesBoundsHungPoll(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.pollBlock = make(chan struct{})
 	t.Cleanup(func() { close(ps.pollBlock) })
 	logs := &logRecorder{}
-	store := NewPlayStore(ps.URL, logs.logf)
+	store := NewPlayStore(ps.URL, 0, logs.logf)
 	store.pollTimeout = 10 * time.Millisecond
 
 	returned := make(chan struct{})
@@ -331,7 +421,7 @@ func TestForcedFumblesRefreshesQuietWeekOnce(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.releaseWholeFetches()
 	ps.pollBody = jsonPlays(t, play{ID: "a", UpdatedAt: changed.UnixMilli()})
-	store := NewPlayStore(ps.URL, noLog)
+	store := NewPlayStore(ps.URL, 0, noLog)
 	store.now = func() time.Time { return changed.Add(2 * time.Hour) }
 	store.merge(2026, 3, []play{{ID: "a", UpdatedAt: changed.UnixMilli()}})
 

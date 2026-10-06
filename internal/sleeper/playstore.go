@@ -13,12 +13,13 @@ type PlayStore struct {
 	baseURL     string
 	logf        func(format string, args ...any)
 	pollTimeout time.Duration
+	coldWait    time.Duration
 	now         func() time.Time
 	bg          sync.WaitGroup // background fetches, so tests can wait for them
 
 	weeks          map[weekKey]map[string]play
 	lastWholeFetch map[weekKey]time.Time
-	wholeInFlight  map[weekKey]bool
+	wholeInFlight  map[weekKey]chan struct{}
 }
 
 func (s *PlayStore) merge(season, week int, plays []play) {
@@ -49,6 +50,12 @@ func (s *PlayStore) snapshot(season, week int) []play {
 		out = append(out, p)
 	}
 	return out
+}
+
+func (s *PlayStore) holdsPlays(season, week int) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.weeks[weekKey{season, week}]) > 0
 }
 
 func (s *PlayStore) needsWholeFetch(season, week int, polled []play) bool {
@@ -105,8 +112,8 @@ func (s *PlayStore) needsPostGameRefresh(season, week int, now time.Time) bool {
 
 const pollLimit = 300
 
-func NewPlayStore(baseURL string, logf func(format string, args ...any)) *PlayStore {
-	return &PlayStore{baseURL: baseURL, logf: logf, pollTimeout: 5 * time.Second, now: time.Now}
+func NewPlayStore(baseURL string, coldWait time.Duration, logf func(format string, args ...any)) *PlayStore {
+	return &PlayStore{baseURL: baseURL, coldWait: coldWait, logf: logf, pollTimeout: 5 * time.Second, now: time.Now}
 }
 
 func (s *PlayStore) ForcedFumbles(ctx context.Context, season, week int, ids identities) map[string]int {
@@ -116,10 +123,19 @@ func (s *PlayStore) ForcedFumbles(ctx context.Context, season, week int, ids ide
 	if err != nil {
 		s.logf("sleeper plays poll failed: %v", err)
 	}
+	cold := !s.holdsPlays(season, week)
+	var wholeDone <-chan struct{}
 	if s.needsWholeFetch(season, week, polled) || s.needsPostGameRefresh(season, week, s.now()) {
-		s.startWholeFetch(season, week)
+		wholeDone = s.startWholeFetch(season, week)
 	}
 	s.merge(season, week, polled)
+	if cold && s.coldWait > 0 {
+		select {
+		case <-wholeDone:
+		case <-time.After(s.coldWait):
+		case <-ctx.Done():
+		}
+	}
 	return forcedFumbleTurnovers(s.snapshot(season, week), ids, s.logf)
 }
 
@@ -128,27 +144,33 @@ const (
 	wholeFetchBudget = 30 * time.Second
 )
 
-// startWholeFetch runs at most one whole-week fetch per week at a time.
-func (s *PlayStore) startWholeFetch(season, week int) {
+// startWholeFetch runs at most one whole-week fetch per week at a time. The
+// returned channel closes when that fetch finishes, whether this call started
+// it or joined one already running.
+func (s *PlayStore) startWholeFetch(season, week int) <-chan struct{} {
 	k := weekKey{season, week}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.wholeInFlight[k] {
-		return
+	if done, ok := s.wholeInFlight[k]; ok {
+		return done
 	}
 	if s.wholeInFlight == nil {
-		s.wholeInFlight = map[weekKey]bool{}
+		s.wholeInFlight = map[weekKey]chan struct{}{}
 	}
-	s.wholeInFlight[k] = true
+	done := make(chan struct{})
+	s.wholeInFlight[k] = done
 	s.bg.Go(func() {
 		s.fetchWholeWeek(season, week)
 		s.mu.Lock()
 		delete(s.wholeInFlight, k)
 		s.mu.Unlock()
+		close(done)
 	})
+	return done
 }
 
-// fetchWholeWeek runs detached from any request: a page must never wait on it.
+// fetchWholeWeek runs detached from any request: a cold-week waiter only
+// observes it, so a waiter giving up never cancels it.
 func (s *PlayStore) fetchWholeWeek(season, week int) {
 	ctx, cancel := context.WithTimeout(context.Background(), wholeFetchBudget)
 	defer cancel()

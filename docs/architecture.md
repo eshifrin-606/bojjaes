@@ -185,6 +185,11 @@ read, so a week written while the server runs is served without a restart. An em
 volume reads exactly like the embedded tree alone. Sleeper is untouched: still one fetch per
 request.
 
+`PLAYS_COLD_WAIT` sits beside `LINEUP_VOLUME` in the environment. It bounds how long the first read
+of a week with no plays held waits for that week's whole-week play-by-play fetch, so turnover forced
+fumbles show on first load. Unset means `30s`, the local value; `fly.toml` sets `0`, so the deployed
+app never waits. A malformed or negative value stops the server at startup.
+
 ### What the volume holds (planned)
 
 `G` = the embedded tree's latest week. The app, not a human, keeps the volume to the one in-flight
