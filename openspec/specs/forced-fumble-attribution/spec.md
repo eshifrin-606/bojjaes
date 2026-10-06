@@ -288,7 +288,7 @@ without a wait. A wait of zero SHALL NOT wait at all.
 
 The cold-week wait SHALL be read from the `PLAYS_COLD_WAIT` environment variable as a Go duration
 string. When the variable is unset or empty, the wait SHALL be `30s`. The deployed configuration
-SHALL set it to `0`.
+SHALL set it to `3s`.
 
 A value that does not parse as a duration, or that is negative, SHALL stop the server at startup with
 an error naming the variable. The server SHALL NOT start with a guessed wait.
