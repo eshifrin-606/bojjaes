@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// The default is the local value because local runs set no environment;
-// fly.toml sets its own.
+// The fallback when nothing sets PLAYS_COLD_WAIT; config/local.env and
+// fly.toml each set their own.
 const defaultPlaysColdWait = 30 * time.Second
 
 func resolvePlaysColdWait(getenv func(string) string) (time.Duration, error) {

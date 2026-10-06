@@ -187,8 +187,9 @@ request.
 
 `PLAYS_COLD_WAIT` sits beside `LINEUP_VOLUME` in the environment. It bounds how long the first read
 of a week with no plays held waits for that week's whole-week play-by-play fetch, so turnover forced
-fumbles show on first load. Unset means `30s`, the local value; `fly.toml` sets `0`, so the deployed
-app never waits. A malformed or negative value stops the server at startup.
+fumbles show on first load. Unset means `30s`; `config/local.env` sets `10s` for local runs, and
+`fly.toml` sets `0`, so the deployed app never waits. A malformed or negative value stops the
+server at startup.
 
 ### What the volume holds (planned)
 

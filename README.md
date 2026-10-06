@@ -6,7 +6,17 @@ Bojjaes on top.
 
 ## Local setup
 
-Requires Go 1.26.5 (see `go.mod`). No other dependencies, env vars, or config.
+Requires Go 1.26.5 (see `go.mod`) and [direnv](https://direnv.net) to load
+local env vars:
+
+```bash
+brew install direnv
+printf '\neval "$(direnv hook zsh)"\n' >> ~/.zshrc   # then open a new shell
+direnv allow                                   # in the repo root; again whenever .envrc changes
+```
+
+`.envrc` loads the committed `config/local.env`, then the gitignored
+`.env.local` if present, so personal overrides go in `.env.local`.
 
 Run the server:
 
