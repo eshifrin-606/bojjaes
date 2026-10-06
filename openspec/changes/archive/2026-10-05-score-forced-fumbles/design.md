@@ -7,7 +7,7 @@ turnover-qualified (~44% of forced fumbles are not turnovers).
 
 Investigation of 2026 weeks 2–3 settled the rule, the data source, and the attribution algorithm (see
 proposal and specs). This design covers where the code lives and how fetching is staged so the page
-never waits.
+waits on play-by-play only within a bound (see D4).
 
 Observed play-by-play facts that shape the design:
 
@@ -124,8 +124,11 @@ so the play store fetches from the client's existing `BaseURL`. `main.go` wires
 *Alternative:* a background ticker that polls every live week. Rejected: it fetches with no readers,
 which `weekly-stats-cache` deliberately avoids, and it needs a definition of "live week".
 
-*Alternative:* block on the whole-week fetch for a cold week. Rejected: 3–12 s on the request path,
-and decided against.
+*Alternative:* block on the whole-week fetch for a cold week. Rejected as unbounded: 3–12 s on the
+request path. Amended by `plays-cold-wait`: a cold week now waits on its in-flight whole-week fetch
+for up to `PLAYS_COLD_WAIT` (default `30s` locally, `0` on Fly), so a fresh process scores turnover
+forced fumbles on first load instead of 5 minutes later. Gap fills and post-game refreshes still never
+wait.
 
 ### D5. The poll-failure fallback is "what is held", not zero
 
