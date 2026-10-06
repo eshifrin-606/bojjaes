@@ -441,3 +441,91 @@ func TestForcedFumblesRefreshesQuietWeekOnce(t *testing.T) {
 }
 
 func (s *PlayStore) wait() { s.bg.Wait() }
+
+func TestForcedFumblesLogsPoll(t *testing.T) {
+	ps := newPlayServer(t)
+	ps.pollBody = jsonPlays(t, play{ID: "old", UpdatedAt: 100}, play{ID: "new", UpdatedAt: 200})
+	logs := &logRecorder{}
+	store := NewPlayStore(ps.URL, 0, logs.logf)
+	store.now = func() time.Time { return time.UnixMilli(200) }
+	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
+
+	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
+
+	if !strings.Contains(logs.joined(), "sleeper plays poll 2026 w3: 2 plays in 0s") {
+		t.Errorf("logs = %q, want the poll line", logs.joined())
+	}
+}
+
+func TestForcedFumblesLogsColdWholeWeekStart(t *testing.T) {
+	ps := newPlayServer(t)
+	logs := &logRecorder{}
+	store := NewPlayStore(ps.URL, 0, logs.logf)
+
+	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
+
+	if !strings.Contains(logs.joined(), "sleeper whole-week 2026 w3: started (cold)") {
+		t.Errorf("logs = %q, want the cold start line", logs.joined())
+	}
+}
+
+func TestForcedFumblesLogsGapWholeWeekStart(t *testing.T) {
+	ps := newPlayServer(t)
+	ps.pollBody = jsonPlays(t, play{ID: "new", UpdatedAt: 200})
+	logs := &logRecorder{}
+	store := NewPlayStore(ps.URL, 0, logs.logf)
+	store.now = func() time.Time { return time.UnixMilli(200) }
+	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
+
+	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
+
+	if !strings.Contains(logs.joined(), "sleeper whole-week 2026 w3: started (gap)") {
+		t.Errorf("logs = %q, want the gap start line", logs.joined())
+	}
+}
+
+func TestForcedFumblesLogsPostGameWholeWeekStart(t *testing.T) {
+	changed := time.Date(2026, 9, 28, 20, 0, 0, 0, time.UTC)
+	ps := newPlayServer(t)
+	ps.pollBody = jsonPlays(t, play{ID: "a", UpdatedAt: changed.UnixMilli()})
+	logs := &logRecorder{}
+	store := NewPlayStore(ps.URL, 0, logs.logf)
+	store.now = func() time.Time { return changed.Add(2 * time.Hour) }
+	store.merge(2026, 3, []play{{ID: "a", UpdatedAt: changed.UnixMilli()}})
+
+	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
+
+	if !strings.Contains(logs.joined(), "sleeper whole-week 2026 w3: started (postgame)") {
+		t.Errorf("logs = %q, want the postgame start line", logs.joined())
+	}
+}
+
+func TestForcedFumblesJoiningWholeWeekFetchLogsNoStart(t *testing.T) {
+	ps := newPlayServer(t)
+	logs := &logRecorder{}
+	store := NewPlayStore(ps.URL, 0, logs.logf)
+
+	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
+	awaitSignal(t, ps.wholeStarted, "first whole-week fetch to start")
+	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
+
+	if got := strings.Count(logs.joined(), "started ("); got != 1 {
+		t.Errorf("start lines = %d, want 1; logs = %q", got, logs.joined())
+	}
+}
+
+func TestForcedFumblesLogsWholeWeekFetch(t *testing.T) {
+	ps := newPlayServer(t)
+	ps.releaseWholeFetches()
+	ps.wholeBody = jsonPlays(t, play{ID: "a", UpdatedAt: 100}, play{ID: "b", UpdatedAt: 200})
+	logs := &logRecorder{}
+	store := NewPlayStore(ps.URL, 0, logs.logf)
+	store.now = func() time.Time { return time.UnixMilli(200) }
+
+	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
+	store.wait()
+
+	if !strings.Contains(logs.joined(), "sleeper whole-week 2026 w3: 2 plays in 0s") {
+		t.Errorf("logs = %q, want the whole-week line", logs.joined())
+	}
+}

@@ -37,6 +37,7 @@ func main() {
 	stats := statscache.New(sleeper.Client{
 		BaseURL: sleeper.BaseURL,
 		Plays:   sleeper.NewPlayStore(sleeper.BaseURL, coldWait, log.Printf),
+		Logf:    log.Printf,
 	}, statscache.TTL)
 
 	addr := resolveAddr(os.Getenv)

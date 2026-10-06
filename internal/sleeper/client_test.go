@@ -155,3 +155,17 @@ func TestClientWeekStatsAggregateFailureStillErrors(t *testing.T) {
 		t.Fatal("want error")
 	}
 }
+
+func TestClientWeekStatsLogsAggregateFetch(t *testing.T) {
+	srv := weekServer(t, `[{"player_id":"1","stats":{}},{"player_id":"2","stats":{}}]`, []byte(`[]`))
+	logs := &logRecorder{}
+	c := Client{BaseURL: srv.URL, Logf: logs.logf}
+
+	if _, err := c.WeekStats(context.Background(), 2026, 3); err != nil {
+		t.Fatalf("WeekStats: %v", err)
+	}
+
+	if !strings.Contains(logs.joined(), "sleeper stats 2026 w3: 2 rows in ") {
+		t.Errorf("logs = %q, want the aggregate line", logs.joined())
+	}
+}
