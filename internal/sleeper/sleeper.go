@@ -139,18 +139,23 @@ func (c Client) WeekStats(ctx context.Context, season, week int) (score.WeekStat
 		return score.WeekStats{}, err
 	}
 	c.logf("sleeper stats %d w%d: %d rows in %s", season, week, len(ids), time.Since(start))
-	if c.PlayStore != nil {
-		forced := c.PlayStore.ForcedFumbles(ctx, season, week, ids)
-		for id, n := range forced {
-			line, ok := players[id]
-			if !ok {
-				line = score.StatLine{PlayerID: id, Season: season, Week: week}
-			}
-			line.FFTurnover = n
-			players[id] = line
-		}
-	}
+	c.addForcedFumbles(ctx, season, week, ids, players)
 	return score.NewWeekStats(season, week, players), nil
+}
+
+func (c Client) addForcedFumbles(ctx context.Context, season, week int, ids identities, players map[string]score.StatLine) {
+	if c.PlayStore == nil {
+		return
+	}
+	forced := c.PlayStore.ForcedFumbles(ctx, season, week, ids)
+	for id, n := range forced {
+		line, ok := players[id]
+		if !ok {
+			line = score.StatLine{PlayerID: id, Season: season, Week: week}
+		}
+		line.FFTurnover = n
+		players[id] = line
+	}
 }
 
 func (c Client) logf(format string, args ...any) {
