@@ -20,9 +20,12 @@ type PlayStore struct {
 	weeks          map[weekKey]map[string]play
 	lastWholeFetch map[weekKey]time.Time
 	wholeInFlight  map[weekKey]chan struct{}
+
+	onWholeWeekChanged func(season, week int)
 }
 
-func (s *PlayStore) merge(season, week int, plays []play) {
+// merge reports whether any play was added or replaced.
+func (s *PlayStore) merge(season, week int, plays []play) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -33,12 +36,15 @@ func (s *PlayStore) merge(season, week int, plays []play) {
 	if s.weeks[k] == nil {
 		s.weeks[k] = map[string]play{}
 	}
+	changed := false
 	for _, p := range plays {
 		if held, ok := s.weeks[k][p.ID]; ok && p.UpdatedAt <= held.UpdatedAt {
 			continue
 		}
 		s.weeks[k][p.ID] = p
+		changed = true
 	}
+	return changed
 }
 
 func (s *PlayStore) snapshot(season, week int) []play {
@@ -114,6 +120,12 @@ const pollLimit = 300
 
 func NewPlayStore(baseURL string, coldWait time.Duration, logf func(format string, args ...any)) *PlayStore {
 	return &PlayStore{baseURL: baseURL, coldWait: coldWait, logf: logf, pollTimeout: 5 * time.Second, now: time.Now}
+}
+
+// OnWholeWeekChanged registers fn to run after a whole-week fetch lands, so a
+// result scored before it can be dropped. Set it before the store is read.
+func (s *PlayStore) OnWholeWeekChanged(fn func(season, week int)) {
+	s.onWholeWeekChanged = fn
 }
 
 func (s *PlayStore) ForcedFumbles(ctx context.Context, season, week int, ids identities) map[string]int {
@@ -199,6 +211,9 @@ func (s *PlayStore) fetchWholeWeek(season, week int) {
 		return
 	}
 	s.logf("sleeper whole-week %d w%d: %d plays in %s", season, week, len(plays), s.now().Sub(start))
-	s.merge(season, week, plays)
+	changed := s.merge(season, week, plays)
 	s.markWholeFetched(season, week, s.now())
+	if changed && s.onWholeWeekChanged != nil {
+		s.onWholeWeekChanged(season, week)
+	}
 }
