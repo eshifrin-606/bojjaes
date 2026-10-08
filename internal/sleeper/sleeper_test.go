@@ -3,6 +3,7 @@ package sleeper
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -118,12 +119,14 @@ func TestFetchWeeklyUpstreamFailures(t *testing.T) {
 	unreachable.Close()
 
 	tests := []struct {
-		name    string
-		baseURL func(t *testing.T) string
+		name       string
+		baseURL    func(t *testing.T) string
+		wantPrefix string
 	}{
 		{
-			name:    "transport failure",
-			baseURL: func(*testing.T) string { return unreachableURL },
+			name:       "transport failure",
+			baseURL:    func(*testing.T) string { return unreachableURL },
+			wantPrefix: "fetching sleeper stats for season 2025 week 14: ",
 		},
 		{
 			name: "non-200 status",
@@ -134,10 +137,12 @@ func TestFetchWeeklyUpstreamFailures(t *testing.T) {
 				t.Cleanup(srv.Close)
 				return srv.URL
 			},
+			wantPrefix: "fetching sleeper stats for season 2025 week 14: status 500 Internal Server Error",
 		},
 		{
-			name:    "undecodable body",
-			baseURL: func(t *testing.T) string { return jsonServer(t, `not json`).URL },
+			name:       "undecodable body",
+			baseURL:    func(t *testing.T) string { return jsonServer(t, `not json`).URL },
+			wantPrefix: "decoding sleeper stats for season 2025 week 14: ",
 		},
 	}
 
@@ -150,13 +155,21 @@ func TestFetchWeeklyUpstreamFailures(t *testing.T) {
 
 			// The message has to identify what was looked up, or a rotted
 			// week is indistinguishable from a broken upstream.
-			for _, want := range []string{"2025", "14"} {
-				if !strings.Contains(err.Error(), want) {
-					t.Errorf("error %q does not mention %q", err, want)
-				}
+			if !strings.HasPrefix(err.Error(), tt.wantPrefix) {
+				t.Errorf("error %q, want prefix %q", err, tt.wantPrefix)
 			}
 		})
 	}
+}
+
+// decodeWeekly is fetchWeekly without the HTTP, for fixtures read from disk.
+func decodeWeekly(r io.Reader) (map[string]map[string]float64, identities, error) {
+	var rows []weeklyRow
+	if err := json.NewDecoder(r).Decode(&rows); err != nil {
+		return nil, nil, err
+	}
+	weekly, ids := indexWeekly(rows)
+	return weekly, ids, nil
 }
 
 func TestDecodeWeeklyIdentifiesPlayersByWeekTeam(t *testing.T) {

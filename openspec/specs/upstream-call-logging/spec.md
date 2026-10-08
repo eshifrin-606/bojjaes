@@ -5,8 +5,9 @@
 Make a cache miss traceable step by step. The miss line gives only a total duration. These lines
 show what happened inside it: each successful Sleeper aggregate fetch, each play poll and each
 whole-week play fetch, plus why a whole-week fetch started. That is enough to answer "why is a
-forced fumble missing or late?" from the logs. Failure logging, merge counts, attribution outcomes
-and cache hits are out of scope.
+forced fumble missing or late?" from the logs. A cache hit is also logged, with its age, so the
+logs show when a request was served without calling Sleeper and how stale that data was. Failure
+logging, merge counts and attribution outcomes are out of scope.
 
 ## Requirements
 
@@ -60,3 +61,12 @@ When a whole-week play fetch succeeds, the system SHALL log one line naming the 
 
 - **WHEN** a background whole-week fetch returns plays
 - **THEN** a line `sleeper whole-week {season} w{week}: {n} plays in {duration}` is logged
+
+### Requirement: Cache hits are logged with their age
+
+When a request is served from a fresh cache entry, the system SHALL log one line naming the season, the week and how long ago that entry was fetched.
+
+#### Scenario: Fresh entry served
+
+- **WHEN** a week's stats are requested and the cache holds an entry for that week younger than the TTL
+- **THEN** a line `statscache hit: {season} week {week}, {age} old` is logged

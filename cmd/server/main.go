@@ -35,9 +35,9 @@ func main() {
 	// Wrapped once, here: the cache bounds upstream volume only if everything
 	// that reads a week reads through the same one.
 	stats := statscache.New(sleeper.Client{
-		BaseURL: sleeper.BaseURL,
-		Plays:   sleeper.NewPlayStore(sleeper.BaseURL, coldWait, log.Printf),
-		Logf:    log.Printf,
+		BaseURL:   sleeper.BaseURL,
+		PlayStore: sleeper.NewPlayStore(sleeper.BaseURL, coldWait, log.Printf),
+		Logf:      log.Printf,
 	}, statscache.TTL)
 
 	addr := resolveAddr(os.Getenv)

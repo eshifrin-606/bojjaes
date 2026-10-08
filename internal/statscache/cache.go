@@ -78,7 +78,7 @@ type Cache struct {
 	now func() time.Time
 
 	// logf records each miss — one upstream call spent against the Sleeper
-	// budget. A test swaps it to read the lines back.
+	// budget — and each hit. A test swaps it to read the lines back.
 	logf func(format string, args ...any)
 
 	mu      sync.Mutex
@@ -137,7 +137,9 @@ func (c *Cache) WeekStatsAsOf(ctx context.Context, season, week int) (score.Week
 		}
 	}
 	if ok && !c.expired(cached) {
+		age := c.now().Sub(cached.fetchedAt)
 		c.mu.Unlock()
+		c.logf("statscache hit: %d week %d, %s old", season, week, age)
 		return cached.stats, cached.fetchedAt, nil
 	}
 	flight := &entry{done: make(chan struct{})}
@@ -159,7 +161,7 @@ func (c *Cache) WeekStatsAsOf(ctx context.Context, season, week int) (score.Week
 
 	// One line per miss: a miss is one upstream call spent, and misses arrive
 	// about once per week per TTL, so the log stays a readable record of the
-	// Sleeper budget. Hits are not logged — every reader's refresh is one.
+	// Sleeper budget. Hits are logged too, but cost nothing upstream.
 	c.logMiss(season, week, c.now().Sub(start), flight.err)
 
 	// A failure is never stored. Remembering one would turn a momentary

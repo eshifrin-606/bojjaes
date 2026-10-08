@@ -575,7 +575,7 @@ func TestARequestAfterTheFlightCompletesIsAHit(t *testing.T) {
 	}
 }
 
-// recordLogs redirects the cache's miss log to a slice the test can read back.
+// recordLogs redirects the cache's log to a slice the test can read back.
 func recordLogs(cache *Cache) *[]string {
 	var mu sync.Mutex
 	var lines []string
@@ -607,7 +607,7 @@ func TestAMissIsLogged(t *testing.T) {
 	}
 }
 
-func TestAHitIsNotLogged(t *testing.T) {
+func TestAHitIsLogged(t *testing.T) {
 	source := &fakeSource{}
 	cache, clock := newTestCache(source, testTTL)
 	logs := recordLogs(cache)
@@ -620,8 +620,35 @@ func TestAHitIsNotLogged(t *testing.T) {
 		t.Fatalf("second WeekStats: %v", err)
 	}
 
-	if len(*logs) != 1 {
-		t.Errorf("a hit added a log line: %q", *logs)
+	if len(*logs) != 2 {
+		t.Fatalf("miss then hit logged %d lines, want 2: %q", len(*logs), *logs)
+	}
+	line := (*logs)[1]
+	for _, want := range []string{"hit", "2025", "15"} {
+		if !strings.Contains(line, want) {
+			t.Errorf("hit log %q does not mention %q", line, want)
+		}
+	}
+}
+
+func TestTheHitLogReportsTheEntrysAge(t *testing.T) {
+	source := &fakeSource{}
+	cache, clock := newTestCache(source, testTTL)
+	logs := recordLogs(cache)
+
+	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+		t.Fatalf("first WeekStats: %v", err)
+	}
+	clock.advance(90 * time.Second)
+	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+		t.Fatalf("second WeekStats: %v", err)
+	}
+
+	if len(*logs) != 2 {
+		t.Fatalf("miss then hit logged %d lines, want 2: %q", len(*logs), *logs)
+	}
+	if !strings.Contains((*logs)[1], "1m30s") {
+		t.Errorf("hit log %q does not report the entry's 1m30s age", (*logs)[1])
 	}
 }
 
