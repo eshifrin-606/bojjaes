@@ -34,11 +34,15 @@ func main() {
 
 	// Wrapped once, here: the cache bounds upstream volume only if everything
 	// that reads a week reads through the same one.
+	plays := sleeper.NewPlayStore(sleeper.BaseURL, coldWait, log.Printf)
 	stats := statscache.New(sleeper.Client{
 		BaseURL:   sleeper.BaseURL,
-		PlayStore: sleeper.NewPlayStore(sleeper.BaseURL, coldWait, log.Printf),
+		PlayStore: plays,
 		Logf:      log.Printf,
 	}, statscache.TTL)
+	// A whole-week fetch that outlasts the cold wait lands after its week was
+	// cached from the poll alone; dropping the entry lets the next read see it.
+	plays.OnWholeWeekChanged(stats.Invalidate)
 
 	addr := resolveAddr(os.Getenv)
 	srv := newServer(addr, newMux(stats, lineup.New(lineupTree(resolveLineupVolume(os.Getenv)))))

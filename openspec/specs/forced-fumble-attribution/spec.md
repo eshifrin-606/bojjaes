@@ -6,7 +6,6 @@ Decide which defenders are credited with a turnover-qualified forced fumble each
 Sleeper play-by-play: which plays qualify, how the forcer is resolved from the play description, how
 plays are held and refreshed per week, how long a cold week may wait for its plays, and why
 play-by-play trouble never fails a page.
-
 ## Requirements
 ### Requirement: Only plays with a play-by-play forced fumble are considered
 
@@ -288,7 +287,7 @@ without a wait. A wait of zero SHALL NOT wait at all.
 
 The cold-week wait SHALL be read from the `PLAYS_COLD_WAIT` environment variable as a Go duration
 string. When the variable is unset or empty, the wait SHALL be `30s`. The deployed configuration
-SHALL set it to `3s`.
+SHALL set it to `1s`.
 
 A value that does not parse as a duration, or that is negative, SHALL stop the server at startup with
 an error naming the variable. The server SHALL NOT start with a guessed wait.
@@ -312,4 +311,35 @@ an error naming the variable. The server SHALL NOT start with a guessed wait.
 
 - **WHEN** `PLAYS_COLD_WAIT` holds `ten`, or `-5s`
 - **THEN** the server does not start, and the error names `PLAYS_COLD_WAIT`
+
+### Requirement: A whole-week fetch that changes plays invalidates the week's cached stats
+
+When a whole-week fetch for a season and week completes and its merge added a play to the store or
+replaced a held play, the system SHALL invalidate that season and week's cached stats. The next read
+of that week SHALL then be scored from the store's updated contents instead of serving a result
+scored before the fetch landed.
+
+A whole-week fetch that fails, or whose merge changed no play, SHALL NOT invalidate anything. This
+applies to every reason a whole-week fetch is started: a cold week, a gap, and the post-game refresh.
+
+#### Scenario: A cold week's late whole-week fetch is visible on the next read
+
+- **WHEN** a week is read cold, the cold-week wait runs out before the whole-week fetch completes,
+  and the whole-week fetch then adds a turnover forced fumble outside the poll
+- **THEN** the next read of that week, within the cache TTL, credits that forced fumble
+
+#### Scenario: A whole-week fetch that changes nothing does not invalidate
+
+- **WHEN** a post-game refresh returns only plays already held, with no newer `updated_at`
+- **THEN** the week's cached stats are not invalidated
+
+#### Scenario: A failed whole-week fetch does not invalidate
+
+- **WHEN** a whole-week fetch fails
+- **THEN** the week's cached stats are not invalidated
+
+#### Scenario: Poll merges do not invalidate
+
+- **WHEN** a read's recent-plays poll adds plays to the store
+- **THEN** that alone does not invalidate the week's cached stats
 

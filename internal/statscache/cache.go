@@ -169,7 +169,9 @@ func (c *Cache) WeekStatsAsOf(ctx context.Context, season, week int) (score.Week
 	// itself; dropping the entry costs one upstream call per arrival while
 	// the outage lasts, which single-flight already bounds.
 	c.mu.Lock()
-	if flight.err != nil {
+	// An invalidation may have removed this flight and a newer one may hold
+	// the key; that newer entry is not this flight's to remove.
+	if flight.err != nil && c.entries[k] == flight {
 		delete(c.entries, k)
 	} else {
 		flight.fetchedAt = c.now()
@@ -178,6 +180,14 @@ func (c *Cache) WeekStatsAsOf(ctx context.Context, season, week int) (score.Week
 	close(flight.done)
 
 	return flight.stats, flight.fetchedAt, flight.err
+}
+
+// Invalidate drops a week's entry so its next read fetches afresh. It makes no
+// upstream call itself: freshness stays pull-driven.
+func (c *Cache) Invalidate(season, week int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	delete(c.entries, key{season: season, week: week})
 }
 
 func (c *Cache) logMiss(season, week int, elapsed time.Duration, err error) {
