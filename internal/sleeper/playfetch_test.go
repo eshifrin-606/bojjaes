@@ -54,17 +54,40 @@ func TestFetchRecentPlaysRequestsAndDecodes(t *testing.T) {
 }
 
 func TestFetchRecentPlaysErrors(t *testing.T) {
-	tests := map[string]http.HandlerFunc{
-		"non-200":  func(w http.ResponseWriter, r *http.Request) { http.Error(w, `[]`, http.StatusBadGateway) },
-		"bad body": func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(`{"not":"an array"}`)) },
-	}
-	for name, h := range tests {
-		t.Run(name, func(t *testing.T) {
-			srv := httptest.NewServer(h)
-			defer srv.Close()
+	unreachable := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	unreachable.Close()
 
-			if _, err := fetchRecentPlays(context.Background(), srv.URL, 2026, 3, 300); err == nil {
+	tests := map[string]struct {
+		baseURL    func(t *testing.T) string
+		wantPrefix string
+	}{
+		"transport failure": {
+			baseURL:    func(*testing.T) string { return unreachable.URL },
+			wantPrefix: "fetching sleeper plays for season 2026 week 3: ",
+		},
+		"non-200": {
+			baseURL: func(t *testing.T) string {
+				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					http.Error(w, `[]`, http.StatusBadGateway)
+				}))
+				t.Cleanup(srv.Close)
+				return srv.URL
+			},
+			wantPrefix: "fetching sleeper plays for season 2026 week 3: status 502 Bad Gateway",
+		},
+		"bad body": {
+			baseURL:    func(t *testing.T) string { return jsonServer(t, `{"not":"an array"}`).URL },
+			wantPrefix: "decoding sleeper plays for season 2026 week 3: ",
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			_, err := fetchRecentPlays(context.Background(), tt.baseURL(t), 2026, 3, 300)
+			if err == nil {
 				t.Fatal("want error")
+			}
+			if !strings.HasPrefix(err.Error(), tt.wantPrefix) {
+				t.Errorf("error %q, want prefix %q", err, tt.wantPrefix)
 			}
 		})
 	}
