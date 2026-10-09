@@ -1,0 +1,11 @@
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+4984,Josh Allen,QB,BUF
+9493,Puka Nacua,WR,LAR
+7547,Amon-Ra St. Brown,WR,DET
+8112,Drake London,WR,ATL
+13330,Kenyon Sadiq,TE,NYJ
+8228,Jaylen Warren,RB,PIT
+12185,Spencer Shrader,K,IND
+5991,Maxx Crosby,DE,LV
+7626,Odafe Oweh,LB,WAS

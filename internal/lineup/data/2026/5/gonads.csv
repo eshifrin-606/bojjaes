@@ -1,0 +1,11 @@
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+6770,Joe Burrow,QB,CIN
+6801,Tee Higgins,WR,CIN
+7564,Ja'Marr Chase,WR,CIN
+9480,Brenton Strange,TE,JAX
+6813,Jonathan Taylor,RB,IND
+9221,Jahmyr Gibbs,RB,DET
+11786,Cam Little,K,JAX
+13457,Gabe Jacas,DE,NE
+10892,Will Anderson,DL,HOU
