@@ -12,7 +12,7 @@ primary_region = 'ord'
 
 [env]
   PORT = '8080'
-  PLAYS_COLD_WAIT = '1s'
+  PLAYS_COLD_WAIT = '500ms'
 
 [http_service]
   internal_port = 8080
