@@ -11,24 +11,36 @@ Fly volume, whose read side is built and whose write side and deployment are pla
 graph LR
     reader(["📱 reader"]) -->|"GET /2025/15"| server
     subgraph box["one Go process (one Fly machine)"]
-        server["cmd/server<br/><i>net/http, no background jobs</i>"]
+        server["cmd/server<br/><i>net/http, nothing scheduled</i>"]
         tree[("internal/lineup/data/<br/>2025/15/*.csv<br/><i>embedded in the binary</i>")]
         server --- tree
     end
-    server -->|"one fetch per request"| sleeper(["Sleeper REST API"])
+    server -->|"one fetch per week per 5 min"| sleeper(["Sleeper REST API"])
     server -.->|"HTML + inline JS"| reader
 ```
 
 Two things worth internalising:
 
 - **The server is boring.** Request in, response out. No cron, no scheduler, no per-viewer state,
-  no sockets held open. Between requests it's asleep in an accept loop.
-- **The clock lives in the browser.** The page that goes out carries ~15 lines of vanilla JS that
-  reload it on a timer. That's the entire "live" mechanism.
+  no sockets held open. Nothing starts work on its own: the one thing that outlives a request is a
+  whole-week play fetch that a page request started and did not wait for (at most one per week at a
+  time; see "The math" in section 3). With no requests arriving and none of those running, it's
+  asleep in an accept loop.
+- **The clock lives in the browser.** The page that goes out carries a short vanilla-JS script
+  that reloads it: on a five-minute timer, and sooner when a cheap check says the server no longer
+  holds the stats the page was rendered from. That's the entire "live" mechanism.
 
 ## 1. What the reader gets
 
-`GET /{season}/{week}` → two columns, nine starters each, a total per side. No margin, no leader
+Three routes, all `GET`:
+
+| Route | Answers |
+| --- | --- |
+| `/{season}/{week}` | the matchup page |
+| `/{season}/{week}/version` | which fetch the server holds for that week, as JSON; never fetches |
+| `/{season}` | a redirect to that season's latest week |
+
+The page is two columns, nine starters each, a total per side. No margin, no leader
 highlight, no win probability — [ADR 0004](adr/0004-web-frontend-stack.md) #8, and the refresh
 script is bound by it too (it never touches the previous page's values).
 
@@ -48,8 +60,10 @@ timeline
 The point isn't saving a click. **A stale page and a current page look identical** — nobody hits
 refresh on a page they don't suspect. Left alone, the page keeps itself honest.
 
-Known gap: if the timer breaks or bfcache leaves a tab weird, it's silently stale and still looks
-identical. The as-of timestamp is the answer and it isn't built yet.
+For the case where the timer breaks or bfcache leaves a tab weird, the page says how old it is: one
+line under the columns, "Sleeper stats fetched Sun, Oct 11 2026 1:24 PM CDT". That is the instant
+the stats were fetched from Sleeper, not the instant the page was requested, so a page served from
+the cache dates itself honestly.
 
 ## 2. The refresh loop
 
@@ -78,15 +92,66 @@ stateDiagram-v2
 Deliberately **not** fetch-and-swap: `location.reload()` re-runs the server path we already trust,
 and the document is two short lists. The cost of that choice is section 4.
 
+### The version check
+
+The timer answers "this page is old". It cannot answer "this page has been superseded": when a
+whole-week play fetch lands after the cold wait, the server drops the week's cached stats seconds
+after the first render, and the timer would not notice for five minutes. The check closes that gap,
+and it reacts to any invalidation, not to that one cause.
+
+```mermaid
+sequenceDiagram
+    participant B as browser
+    participant W as internal/web
+    participant C as statscache
+
+    Note over B: page carries data-version="…"<br/>and data-next-check="10"
+    loop while the tab is visible, every stated delay
+        B->>W: GET /2026/5/version
+        W->>C: FetchedAt(2026, 5)
+        Note right of C: a map lookup —<br/>no fetch, no wait, no log line
+        C-->>W: instant, or nothing held
+        W-->>B: {"version": "…", "nextCheckSeconds": 10}
+        alt version equals the page's
+            B->>B: wait nextCheckSeconds, ask again
+        else anything else, including empty
+            B->>B: location.reload()
+        end
+    end
+```
+
+- **The version is the fetch instant**, in Unix nanoseconds, as an opaque token. The script compares
+  it for equality and never parses it. One Go function formats it for both the page and the
+  endpoint; two formatters that disagreed would reload every check.
+- **Empty means "nothing held"**: never fetched, invalidated, a fetch in flight, or a restarted
+  machine. Each of those is a mismatch, so the page reloads into whatever the server would serve now.
+- **Age is not a change.** An entry past its TTL still reports its instant. "Old" stays the timer's
+  job and "superseded" the check's, so the two never fight.
+- **The server sets the pace.** The page states the first delay and every response states the next;
+  `0` means stop until the next load. Today it is ten seconds everywhere, from one constant.
+- **A failed check never reloads.** An error status, an unreadable body, a route that does not exist
+  on an older build: the page stays as it is and asks again after the delay it last used.
+- **A hidden tab asks nothing**, as with the timer; it waits the same delay again, so a returning
+  reader is checked within one delay.
+
+The check's response is never written into the document. Its one effect is the same reload of the
+same URL the timer makes, which is why the "no fetch-and-swap" rule above still holds.
+
+The cost: a visible tab now makes a small request every ten seconds, so the Fly machine stays
+running while someone is watching (ceiling: the machine running all month, about $2). None of those
+requests reaches Sleeper.
+
 ## 3. Where the traffic goes
 
-One page load = one Sleeper call. Every time.
+One page load is at most one upstream fetch, and usually none: a week's stats are held in memory
+for five minutes and shared by every reader.
 
 ```mermaid
 sequenceDiagram
     participant B as browser
     participant W as internal/web
     participant R as internal/lineup
+    participant C as internal/statscache
     participant S as internal/sleeper
     participant X as Sleeper API
 
@@ -96,10 +161,17 @@ sequenceDiagram
     W->>R: Matchup(2025, 15) → two teams
     W->>R: Read() ×2 → both lineups
     Note right of R: lineups read first —<br/>no point fetching a<br/>week we can't render
-    W->>S: WeekStats(2025, 15)
-    S->>X: GET /stats/nfl/2025/15?season_type=regular
-    X-->>S: ~2.1MB (~280KB gzipped), every player in the league
-    S-->>W: score.WeekStats
+    W->>C: WeekStatsAsOf(2025, 15)
+    alt held and younger than 5 min
+        C-->>W: score.WeekStats + the instant it was fetched
+    else miss
+        C->>S: WeekStats(2025, 15)
+        S->>X: GET /stats/nfl/2025/15?season_type=regular
+        X-->>S: ~2.1MB (~280KB gzipped), every player in the league
+        S->>X: plays, for forced fumbles
+        S-->>C: score.WeekStats
+        C-->>W: score.WeekStats + the instant it was fetched
+    end
     W->>W: score both columns from ONE snapshot
     W-->>B: HTML + the refresh script
 ```
@@ -111,19 +183,29 @@ scored from a single fetch so the two sides can never come from different snapsh
 
 ```mermaid
 graph LR
-    t1["tab 1"] --> S["Sleeper"]
-    t2["tab 2"] --> S
-    t3["tab 3"] --> S
-    S -.->|"3 tabs × 12/hr = ~1 call/min at peak"| S
+    t1["tab 1"] --> C["statscache<br/><i>(season, week) → stats, 5 min</i>"]
+    t2["tab 2"] --> C
+    t3["tab 3"] --> C
+    C -->|"≤ 12 fetches/hr per week,<br/>however many tabs"| S["Sleeper"]
 ```
 
-**There is no cache.** Not browser-side, not server-side. New tab → Sleeper. Reopen the app →
-Sleeper. Timer fires → Sleeper. Load scales with open visible tabs, which is why the visibility
-guard matters: it bounds cost by who's actually *looking*, not by how many tabs exist.
+**One cache, server-side and shared.** It is keyed by `(season, week)`, so it is the same entry for
+every tab on every device, and clearing your browser cache does nothing to it. There is no
+browser-side cache.
 
-At three viewers this is fine. Before this is public, the TTL + single-flight cache goes in — and
-that one is server-side and shared, keyed by `(season, week)`, so it's the same entry for every tab
-on every device, and clearing your browser cache does nothing to it.
+- **TTL of five minutes**, the same as the refresh timer. Upstream volume is bounded by the TTL and
+  the number of weeks being read, not by the number of readers.
+- **Single-flight.** Readers who arrive during a fetch wait on it instead of starting their own.
+  The fetch is detached from whoever started it, so the first reader closing their tab does not
+  fail the others.
+- **Pull-driven.** Nothing sweeps and nothing polls; an expired entry is refetched only when someone
+  asks for it. The visibility guard still matters for that reason: a hidden tab never asks.
+- **Failures are not stored.** A failed fetch is returned to the readers waiting on it and dropped,
+  so the next request tries again.
+- **Invalidation.** Forced fumbles come from plays. A cold week's whole-week play fetch is waited on
+  only briefly (`PLAYS_COLD_WAIT`); when it lands later and changes anything, the week's entry is
+  dropped so the next read is fresh. The version check in section 2 is what brings an open page back
+  for that read.
 
 ## 4. The sharp edge
 
@@ -137,9 +219,12 @@ graph LR
     C -.->|"no way back but manual reload"| A
 ```
 
-This is the real cost of reload-over-swap. Not mitigated today. The TTL cache makes it much rarer
-by absorbing brief blips; fetch-and-swap would kill it entirely at a complexity cost we said no to.
-Worth revisiting after one live Sunday.
+The version check can do this too: a check that finds the week invalidated reloads the page, and if
+that reload's fetch fails the reader gets the same 502.
+
+This is the real cost of reload-over-swap. The cache makes it rarer, since an outage shorter than
+what is left of an entry's five minutes is never seen, but a reload that needs a fetch during an
+outage still gets the 502. Fetch-and-swap would kill it entirely at a complexity cost we said no to.
 
 Also live: Sleeper revises stats, so a total can go *down* across a refresh with nothing on the page
 explaining why. Pre-existing, but refreshing turns it into something the reader watches happen.
@@ -171,7 +256,7 @@ graph LR
         server --- tree
         server ---|"atomic write: temp + rename"| vol
     end
-    server -->|"one fetch per request"| sleeper(["Sleeper REST API"])
+    server -->|"one fetch per week per 5 min"| sleeper(["Sleeper REST API"])
 ```
 
 The read is two layers, and is built. `LINEUP_VOLUME` names the mount; the server reads only

@@ -899,7 +899,7 @@ func TestTheAsOfLineIsLabelledAsFetchedAndDoesNotOverclaimCurrency(t *testing.T)
 	}
 }
 
-var asOfLinePattern = regexp.MustCompile(`(?s)<p class="as-of">(.*?)</p>`)
+var asOfLinePattern = regexp.MustCompile(`(?s)<p class="as-of"[^>]*>(.*?)</p>`)
 
 // The as-of line states a fetch time and nothing about the game: the no-winner
 // rule that governs the two columns governs this element too.
@@ -924,7 +924,7 @@ func TestTheAsOfLineImpliesNoWinner(t *testing.T) {
 	}
 
 	// The element is a sibling of <main>, not a descendant of a column.
-	if strings.Index(body, `<p class="as-of">`) < strings.Index(body, "</main>") {
+	if strings.Index(body, `<p class="as-of"`) < strings.Index(body, "</main>") {
 		t.Errorf("the as-of line is inside <main>; it must sit outside both columns")
 	}
 	afterMain := body[strings.Index(body, "</main>"):]
@@ -1345,11 +1345,14 @@ func TestReturningToTheTabRefreshesOnlyWhenStale(t *testing.T) {
 // Keeping them out of the script keeps every one of them in the HTML text
 // contexts the escaping requirement already covers.
 func TestNoLineupTextReachesTheScript(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
+	rec := serve(Handler(lineup.New(fixtureWeek()), source), http.MethodGet, "/2025/15")
 
 	body := rec.Body.String()
 	script := renderedScript(t, body)
-	names := []string{"bojjaes", "wood"}
+	// The stats version is page data too: the script reads it from the as-of
+	// line rather than carrying it.
+	names := []string{"bojjaes", "wood", renderedVersion(t, body)}
 	for _, line := range renderedStarters(body) {
 		names = append(names, strings.Split(line, "=")[0])
 	}

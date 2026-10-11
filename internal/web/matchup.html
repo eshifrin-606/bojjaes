@@ -200,7 +200,7 @@
   </section>
   {{end}}
 </main>
-<p class="as-of">Sleeper stats fetched <time datetime="{{.FetchedAtRFC3339}}">{{.FetchedAtText}}</time></p>
+<p class="as-of" data-version="{{.Version}}" data-next-check="{{.NextCheckSeconds}}">Sleeper stats fetched <time datetime="{{.FetchedAtRFC3339}}">{{.FetchedAtText}}</time></p>
 <script>
   // How often a page left open during a game re-fetches its scores.
   var refreshInterval = 5 * 60 * 1000;
@@ -221,4 +221,53 @@
       location.reload();
     }
   });
+
+  // What this page was rendered from, as the server stated it on the as-of
+  // line. The version is only ever compared for equality, never parsed.
+  var asOf = document.querySelector(".as-of");
+  var version = asOf.dataset.version;
+  var firstDelay = Number(asOf.dataset.nextCheck);
+  var checkUrl = location.pathname + "/version";
+
+  // Asks whether the server still holds what this page was rendered from.
+  // The answer is never written into the document: its one effect is the
+  // same reload the timer above makes.
+  function check(delay) {
+    if (document.visibilityState === "visible") {
+      fetch(checkUrl)
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("version check answered " + response.status);
+          }
+          return response.json();
+        })
+        .then(function (held) {
+          if (typeof held.version !== "string" || typeof held.nextCheckSeconds !== "number") {
+            throw new Error("version check answered an unknown shape");
+          }
+          if (held.version !== version) {
+            location.reload();
+            return;
+          }
+          scheduleCheck(held.nextCheckSeconds);
+        })
+        .catch(function () {
+          scheduleCheck(delay);
+        });
+    } else {
+      scheduleCheck(delay);
+    }
+  }
+
+  // The server sets the pace: each wait is the one it last stated, and a
+  // delay of zero means no further check until the next load.
+  function scheduleCheck(delay) {
+    if (delay > 0) {
+      setTimeout(function () {
+        check(delay);
+      }, delay * 1000);
+    }
+  }
+
+  scheduleCheck(firstDelay);
 </script>

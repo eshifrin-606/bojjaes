@@ -58,6 +58,26 @@ type matchup struct {
 	// Chicago wall-clock time for a reader.
 	FetchedAtRFC3339 string
 	FetchedAtText    string
+
+	// Version and NextCheckSeconds are what the script reads from the as-of
+	// paragraph's attributes; nothing is interpolated into the script itself.
+	Version          string
+	NextCheckSeconds int
+}
+
+// checkDelaySeconds is how long a visible page waits between version checks.
+// It bounds how late a superseded page reloads. The page and the version
+// endpoint both state it, so the script holds no cadence of its own.
+const checkDelaySeconds = 10
+
+// versionToken names the fetch a week's stats came from. The page and the
+// version endpoint must both format through here: the browser compares the two
+// as strings, and a second formatter that disagreed would reload every check.
+//
+// Nanoseconds, not the RFC 3339 second the <time> element shows: two fetches in
+// one second must not look like the same one.
+func versionToken(fetchedAt time.Time) string {
+	return strconv.FormatInt(fetchedAt.UnixNano(), 10)
 }
 
 // fetchedAtLayout renders the fetch instant with weekday, date, 12-hour time,
@@ -91,24 +111,35 @@ type StatsSource interface {
 	WeekStatsAsOf(ctx context.Context, season, week int) (score.WeekStats, time.Time, error)
 }
 
+// seasonWeek reads the season and week from the request path. When either is
+// not a number or is out of range it answers 400 itself and reports false, so
+// every route keyed on a week refuses the same paths.
+func seasonWeek(w http.ResponseWriter, r *http.Request) (season, week int, ok bool) {
+	season, err := strconv.Atoi(r.PathValue("season"))
+	if err != nil {
+		http.Error(w, "season and week must be numbers", http.StatusBadRequest)
+		return 0, 0, false
+	}
+	week, err = strconv.Atoi(r.PathValue("week"))
+	if err != nil {
+		http.Error(w, "season and week must be numbers", http.StatusBadRequest)
+		return 0, 0, false
+	}
+	if err := score.ValidateSeasonWeek(season, week); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return 0, 0, false
+	}
+	return season, week, true
+}
+
 // Handler renders the matchup page for the season and week in the request path.
 func Handler(tree *lineup.Tree, source StatsSource) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Both segments are validated before the lineup tree is opened and
 		// before the provider is called: a typo in a URL must not reach
 		// Sleeper, and a stranger guessing paths must not make us fetch.
-		season, err := strconv.Atoi(r.PathValue("season"))
-		if err != nil {
-			http.Error(w, "season and week must be numbers", http.StatusBadRequest)
-			return
-		}
-		week, err := strconv.Atoi(r.PathValue("week"))
-		if err != nil {
-			http.Error(w, "season and week must be numbers", http.StatusBadRequest)
-			return
-		}
-		if err := score.ValidateSeasonWeek(season, week); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		season, week, ok := seasonWeek(w, r)
+		if !ok {
 			return
 		}
 		ours, theirs, err := tree.Matchup(season, week)
@@ -176,6 +207,8 @@ func Handler(tree *lineup.Tree, source StatsSource) http.Handler {
 			NextWeek:         nextWeek,
 			FetchedAtRFC3339: fetchedAt.Format(time.RFC3339),
 			FetchedAtText:    fetchedAt.In(chicagoLoc).Format(fetchedAtLayout),
+			Version:          versionToken(fetchedAt),
+			NextCheckSeconds: checkDelaySeconds,
 		}
 		for i, team := range teams {
 			view.Columns[i] = scoreColumn(team, lineups[i], weekStats)
