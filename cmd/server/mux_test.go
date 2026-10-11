@@ -17,6 +17,10 @@ func (stubStats) WeekStatsAsOf(context.Context, int, int) (score.WeekStats, time
 	return score.WeekStats{}, time.Now(), nil
 }
 
+func (stubStats) FetchedAt(int, int) (time.Time, bool) {
+	return time.Time{}, false
+}
+
 func testMux() *http.ServeMux {
 	return newMux(stubStats{}, lineup.New(lineup.Embedded))
 }
@@ -67,5 +71,44 @@ func TestMuxCanBeBuiltTwice(t *testing.T) {
 		if rec.Code == http.StatusNotFound {
 			t.Errorf("GET /2025/15 = %d, want the matchup handler to answer", rec.Code)
 		}
+	}
+}
+
+func TestMuxServesTheVersionEndpoint(t *testing.T) {
+	rec := httptest.NewRecorder()
+
+	testMux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/2025/15/version", nil))
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("GET /2025/15/version = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if got := rec.Header().Get("Content-Type"); got != "application/json" {
+		t.Errorf("Content-Type = %q, want the version handler's JSON", got)
+	}
+}
+
+func TestMuxRejectsTheWrongMethodOnTheVersionRoute(t *testing.T) {
+	rec := httptest.NewRecorder()
+
+	testMux().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/2025/15/version", nil))
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("POST /2025/15/version = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+	}
+}
+
+// A third route beside these two must not capture either: each is told apart
+// by something only its own handler does.
+func TestMuxStillRoutesThePageAndTheSeason(t *testing.T) {
+	page := httptest.NewRecorder()
+	testMux().ServeHTTP(page, httptest.NewRequest(http.MethodGet, "/2025/15", nil))
+	if got := page.Header().Get("Content-Type"); page.Code != http.StatusOK || got != "text/html; charset=utf-8" {
+		t.Errorf("GET /2025/15 = %d %q, want the matchup page's 200 HTML", page.Code, got)
+	}
+
+	season := httptest.NewRecorder()
+	testMux().ServeHTTP(season, httptest.NewRequest(http.MethodGet, "/2025", nil))
+	if got := season.Header().Get("Location"); season.Code != http.StatusFound || got != "/2025/16" {
+		t.Errorf("GET /2025 = %d to %q, want the season redirect to /2025/16", season.Code, got)
 	}
 }

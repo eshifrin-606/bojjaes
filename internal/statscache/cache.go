@@ -207,3 +207,22 @@ func (c *Cache) logMiss(season, week int, elapsed time.Duration, err error) {
 func (c *Cache) expired(e *entry) bool {
 	return c.now().Sub(e.fetchedAt) >= c.ttl
 }
+
+// FetchedAt reports the instant the week's held entry finished fetching, and
+// false when no completed entry is held: never fetched, invalidated, or still
+// in flight. It is a pure lookup — no fetch, no wait, no log line — because it
+// is asked far more often than a week is fetched.
+//
+// The clock is deliberately not consulted: an entry past its TTL still reports
+// its instant. Expiry decides when the next read fetches, not whether the last
+// fetch happened.
+func (c *Cache) FetchedAt(season, week int) (time.Time, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	e, ok := c.entries[key{season: season, week: week}]
+	if !ok || e.inFlight() {
+		return time.Time{}, false
+	}
+	return e.fetchedAt, true
+}
