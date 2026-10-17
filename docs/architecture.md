@@ -151,7 +151,7 @@ sequenceDiagram
     participant B as browser
     participant W as internal/web
     participant R as internal/lineup
-    participant C as internal/statscache
+    participant C as internal/weekcache
     participant S as internal/sleeper
     participant X as Sleeper API
 
@@ -161,7 +161,7 @@ sequenceDiagram
     W->>R: Matchup(2025, 15) → two teams
     W->>R: Read() ×2 → both lineups
     Note right of R: lineups read first —<br/>no point fetching a<br/>week we can't render
-    W->>C: WeekStatsAsOf(2025, 15)
+    W->>C: AsOf(2025, 15)
     alt held and younger than 5 min
         C-->>W: score.WeekStats + the instant it was fetched
     else miss

@@ -22,7 +22,7 @@ graph TD
     end
     subgraph adapters["internal — adapters + transport"]
         sleeperpkg["internal/sleeper"]
-        statscache["internal/statscache"]
+        weekcache["internal/weekcache"]
         web["internal/web"]
     end
     subgraph ext["outside the binary"]
@@ -30,15 +30,14 @@ graph TD
     end
 
     main --> web
-    main --> statscache
+    main --> weekcache
     main --> sleeperpkg
     main --> lineup
     web --> score
     web --> lineup
     sleeperpkg --> score
     sleeperpkg --> sleeper
-    statscache --> score
-    statscache -. wraps at runtime .-> sleeperpkg
+    weekcache -. wraps at runtime .-> sleeperpkg
     lineup --> files
 ```
 
@@ -59,10 +58,10 @@ serialization decision. Read the direction of the arrows, not the length of the 
 
 | Package | Role | Imports (first-party) | Imports (stdlib) | Imported by |
 | --- | --- | --- | --- | --- |
-| `cmd/server` | Process entrypoint and composition root. Constructs the provider, wraps it in the cache, constructs the lineup tree, builds the mux, and owns the process lifecycle: listen address, connection timeouts, and the drain on `SIGTERM`. | `internal/lineup`, `internal/sleeper`, `internal/statscache`, `internal/web` | `context`, `errors`, `log`, `net`, `net/http`, `os`, `os/signal`, `syscall`, `time` | — |
+| `cmd/server` | Process entrypoint and composition root. Constructs the provider, wraps it in the cache, constructs the lineup tree, builds the mux, and owns the process lifecycle: listen address, connection timeouts, and the drain on `SIGTERM`. | `internal/lineup`, `internal/sleeper`, `internal/web`, `internal/weekcache` | `context`, `errors`, `log`, `net`, `net/http`, `os`, `os/signal`, `syscall`, `time` | — |
 | `internal/score` | The scoring domain: `StatLine`, `Points`, `WeekStats`, and the season/week bounds. | none | `fmt` | `internal/sleeper`, `internal/web` |
 | `internal/sleeper` | The Sleeper adapter: the HTTP client, the base URL, the stat-key transform. | `internal/score` | `context`, `encoding/json`, `fmt`, `net/http`, `time` | `cmd/server` |
-| `internal/statscache` | A caching decorator over a weekly stat fetch: TTL expiry, single-flight, the `TTL` constant. | `internal/score` | `context`, `log`, `sync`, `time` | `cmd/server` |
+| `internal/weekcache` | A caching decorator over any weekly fetch, generic over its value: TTL expiry, single-flight, the `TTL` constant. | none | `context`, `log`, `sync`, `time` | `cmd/server` |
 | `internal/web` | The HTML transport: `GET /{season}/{week}`, its view model, its template. | `internal/lineup`, `internal/score` | `bytes`, `context`, `embed`, `errors`, `html/template`, `log`, `net/http`, `strconv`, `time`, `time/tzdata` | `cmd/server` |
 | `internal/lineup` | Lineup knowledge: file format, tree layout, matchup resolution, starters/bench split, and the embedded tree itself. | none | `bufio`, `embed`, `errors`, `fmt`, `io`, `io/fs`, `path`, `path/filepath`, `strings` | `cmd/server`, `internal/web` |
 
@@ -70,7 +69,7 @@ serialization decision. Read the direction of the arrows, not the length of the 
 
 Thin by design, and the only place the provider and the transport meet: it constructs a
 `sleeper.Client` and a `lineup.Tree` and hands them to `web.Handler`, which knows only the
-one-method `WeekStatsAsOf` interface it declares for itself, satisfied by the wrapped cache. If
+one-method `AsOf` interface it declares for itself, satisfied by the wrapped cache. If
 logic starts appearing here, it belongs in a package instead — `main()` should stay readable as a
 table of contents for the service.
 
@@ -78,8 +77,8 @@ The tree served is named here and only here: `main` hands `lineup.New` the embed
 `lineup.Embedded`, so no path relative to the working directory survives. Serving a
 different tree — a live one off disk, say — is a different `fs.FS` at this one call site.
 
-Because the wiring is here, the TTL cache landed as pure addition: `statscache.New` wraps the
-`sleeper.Client` in this file and the wrapped value goes to both handlers, with no consumer edited
+Because the wiring is here, the TTL cache landed as pure addition: `weekcache.New` wraps the
+`sleeper.Client`'s `WeekStats` method value in this file and the wrapped value goes to both handlers, with no consumer edited
 and no handler file touched. Wrapping once matters — a cache per handler would be two upstream
 budgets for one league — and it is the kind of thing only a composition root can guarantee.
 
@@ -154,13 +153,16 @@ package and nowhere else.
 
 `internal/web` is its one consumer, which is what it was built for.
 
-### `internal/statscache`
+### `internal/weekcache`
 
-A decorator, not a layer: it declares the `StatsSource` interface it wraps rather than naming a
-provider, and it is itself a `StatsSource` for `web`, which asks for
-`WeekStatsAsOf(ctx, season, week) (score.WeekStats, time.Time, error)` so a served page can date its
-stats to the fetch. Installing it is `main` wrapping one value in another; removing it is
-deleting that wrap.
+A decorator, not a layer. `Cache[V]` wraps a `Source[V]`, a plain function
+`func(ctx, season, week) (V, error)`, so `main` hands it a provider's method value and the cache
+names neither a provider nor a domain type. `*Cache[score.WeekStats]` is a `StatsSource` for `web`
+as it stands, because `web` asks for `AsOf(ctx, season, week) (score.WeekStats, time.Time, error)`
+and Go matches the method's shape, so no adapter sits between them and a served page can date its
+stats to the fetch. Installing it is `main` wrapping one value in another; removing it is deleting
+that wrap. `New` takes a label that opens each hit and miss log line; the stats cache's is
+`statscache`.
 
 It holds one entry per `(season, week)` — a fetch returns the whole league, so there is no partial
 hit — and it does two things to bound upstream volume. The TTL caps how often a week is refetched;
@@ -208,9 +210,9 @@ before it could fail.
 - **A few tests add first-party edges the map does not show.** Every test is in-package, and there
   are still no third-party dependencies anywhere in `go.mod`. `cmd/server` has tests now, and they
   add a test-only edge to `internal/score`: the stub that stands in for the cache has to return a
-  `score.WeekStats`. But `internal/statscache`'s tests import `internal/web` to assert at compile
-  time that `*Cache` satisfies its `StatsSource`, and `internal/web`'s tests now import
-  `internal/statscache` to serve a
+  `score.WeekStats`. But `internal/weekcache`'s tests import `internal/web` and `internal/score` to
+  assert at compile time that `*Cache[score.WeekStats]` satisfies its `StatsSource`, and
+  `internal/web`'s tests now import `internal/weekcache` to serve a
   page end to end over a real cache and check that a cache hit dates its stats to the fetch. Those
   edges are deliberate and test-only: the substitutability and the freshness attribution are the
   whole point of the decorator, so they are better checked in the packages' own tests than

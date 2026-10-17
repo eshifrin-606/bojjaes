@@ -1,10 +1,12 @@
-// Package weekcache holds a short-lived cache over a weekly stat fetch, so
-// that upstream volume is bounded by the time-to-live and the number of weeks
-// being read rather than by the number of readers.
+// Package weekcache holds a short-lived cache over a weekly fetch, so that
+// upstream volume is bounded by the time-to-live and the number of weeks being
+// read rather than by the number of readers.
 //
-// It declares the StatsSource interface it wraps, exactly as the transports
-// do, so no provider package is named here and the cache is a StatsSource
-// itself: it is installed by wrapping, and nothing downstream is edited.
+// It wraps a Source function and is generic over what that function returns,
+// so no provider or domain package is named here. A provider's method is
+// passed as a method value, and the cache's AsOf matches the interface its
+// consumer declares: it is installed by wrapping, and nothing downstream is
+// edited.
 package weekcache
 
 import (
