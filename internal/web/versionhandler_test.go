@@ -2,6 +2,7 @@ package web
 
 import (
 	"encoding/json"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -173,5 +174,131 @@ func TestTheEndpointFollowsTheCacheThePageIsServedFrom(t *testing.T) {
 	}
 	if got := upstream.callCount(); got != 2 {
 		t.Errorf("upstream called %d times, want 2", got)
+	}
+}
+
+func serveSeasonVersion(h http.Handler, path string) *httptest.ResponseRecorder {
+	mux := http.NewServeMux()
+	mux.Handle("GET /{season}/version", h)
+
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+	return rec
+}
+
+func TestTheSeasonFormReportsTheVersionTheSeasonPageCarries(t *testing.T) {
+	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2)))
+	upstream := &countingStatsSource{weekStats: fixtureStats()}
+	cache := weekcache.New("statscache", upstream.WeekStats, 5*time.Minute)
+
+	page := renderedVersion(t, serveSeason(SeasonHandler(tree, cache, noGames{}), Handler(tree, cache, noGames{}), http.MethodGet, "/2026").Body.String())
+	body := versionBody(t, serveSeasonVersion(SeasonVersionHandler(tree, cache), "/2026/version"))
+
+	if got := body["version"]; got != page {
+		t.Errorf("version = %#v, want the season page's %q", got, page)
+	}
+}
+
+// The tree is mutable under the handler, as the volume is under the server:
+// the season form must resolve the latest week per request, not once.
+func TestTheSeasonFormFollowsANewWeek(t *testing.T) {
+	fsys := treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2))
+	tree := lineup.New(fsys)
+	upstream := &countingStatsSource{weekStats: fixtureStats()}
+	clock := &webFakeClock{t: asOfInstant}
+	cache := weekcache.New("statscache", upstream.WeekStats, 5*time.Minute, weekcache.WithClock(clock.now))
+	endpoint := SeasonVersionHandler(tree, cache)
+	reported := func() any {
+		t.Helper()
+		return versionBody(t, serveSeasonVersion(endpoint, "/2026/version"))["version"]
+	}
+	seasonPage := func() string {
+		t.Helper()
+		return renderedVersion(t, serveSeason(SeasonHandler(tree, cache, noGames{}), Handler(tree, cache, noGames{}), http.MethodGet, "/2026").Body.String())
+	}
+
+	weekTwo := seasonPage()
+	maps.Copy(fsys, matchupWeek(2026, 3))
+
+	if got := reported(); got != "" {
+		t.Errorf("with week 3 unfetched the endpoint reports %#v, want an empty version", got)
+	}
+
+	clock.advance(3 * time.Second)
+	weekThree := seasonPage()
+	if weekThree == weekTwo {
+		t.Fatalf("week 3's page carries week 2's version %q", weekTwo)
+	}
+	if got := reported(); got != weekThree {
+		t.Errorf("the endpoint reports %#v, want week 3's version %q", got, weekThree)
+	}
+}
+
+type fakeLatestWeek struct {
+	week int
+	ok   bool
+
+	asked []int
+}
+
+func (f *fakeLatestWeek) LatestWeek(season int) (int, bool) {
+	f.asked = append(f.asked, season)
+	return f.week, f.ok
+}
+
+func TestTheSeasonFormRefusesASeasonWithNoWeeks(t *testing.T) {
+	source := &fakeVersions{fetchedAt: asOfInstant, held: true}
+
+	rec := serveSeasonVersion(SeasonVersionHandler(&fakeLatestWeek{}, source), "/2026/version")
+
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("GET /2026/version = %d, want %d", rec.Code, http.StatusNotFound)
+	}
+	if len(source.asked) != 0 {
+		t.Errorf("the handler asked the source for %v; a refusal must not reach it", source.asked)
+	}
+}
+
+func TestTheSeasonFormRefusesAMalformedSeason(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+	}{
+		{name: "non-numeric season", path: "/twentytwentysix/version"},
+		{name: "season before the provider's records", path: "/1998/version"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			weeks := &fakeLatestWeek{week: 2, ok: true}
+			source := &fakeVersions{fetchedAt: asOfInstant, held: true}
+
+			rec := serveSeasonVersion(SeasonVersionHandler(weeks, source), tt.path)
+
+			if rec.Code != http.StatusBadRequest {
+				t.Errorf("GET %s = %d, want %d", tt.path, rec.Code, http.StatusBadRequest)
+			}
+			if len(weeks.asked) != 0 {
+				t.Errorf("GET %s resolved the latest week of %v; a refusal must not reach the resolver", tt.path, weeks.asked)
+			}
+			if len(source.asked) != 0 {
+				t.Errorf("GET %s asked the source for %v; a refusal must not reach it", tt.path, source.asked)
+			}
+		})
+	}
+}
+
+func TestTheSeasonFormsResponseIsNotStoredAndCallsNoProvider(t *testing.T) {
+	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2)))
+	upstream := &countingStatsSource{weekStats: fixtureStats()}
+	cache := weekcache.New("statscache", upstream.WeekStats, 5*time.Minute)
+
+	rec := serveSeasonVersion(SeasonVersionHandler(tree, cache), "/2026/version")
+
+	if got := rec.Header().Get("Cache-Control"); got != "no-store" {
+		t.Errorf("Cache-Control = %q, want %q", got, "no-store")
+	}
+	if got := upstream.callCount(); got != 0 {
+		t.Errorf("upstream called %d times by the endpoint, want 0", got)
 	}
 }

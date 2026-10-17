@@ -213,9 +213,9 @@
   }
 </style>
 <nav class="weeks">
-  <span class="prev">{{with .PrevWeek}}<a href="/{{$.Season}}/{{.}}" rel="prev">‹ Week {{.}}</a>{{end}}</span>
+  <span class="prev">{{if .PrevWeek}}<a href="{{.PrevHref}}" rel="prev">‹ Week {{.PrevWeek}}</a>{{end}}</span>
   <h1>{{.Season}} · Week {{.Week}}</h1>
-  <span class="next">{{with .NextWeek}}<a href="/{{$.Season}}/{{.}}" rel="next">Week {{.}} ›</a>{{end}}</span>
+  <span class="next">{{if .NextWeek}}<a href="{{.NextHref}}" rel="next">Week {{.NextWeek}} ›</a>{{end}}</span>
 </nav>
 <main class="matchup">
   {{range .Columns}}

@@ -9,20 +9,13 @@ import (
 	"github.com/eshifrin/bojjaes/internal/score"
 )
 
-// SeasonHandler redirects a bare season to its latest existing week. The
-// target is a fact about the tree's current contents, not a permanent
-// identity for the season, so the redirect is temporary.
-func SeasonHandler(tree *lineup.Tree) http.Handler {
+// SeasonHandler shows a bare season's latest existing week in place, so
+// /{season} stays the current week's address as new weeks arrive. It renders
+// rather than redirects, so the latest week's refusals match its numbered URL.
+func SeasonHandler(tree *lineup.Tree, source StatsSource, gameSource GamesSource) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		season, err := strconv.Atoi(r.PathValue("season"))
-		if err != nil {
-			http.Error(w, "season must be a number", http.StatusBadRequest)
-			return
-		}
-		// week 1 is always in range, so this checks only the season bound
-		// without a separate season-only validator.
-		if err := score.ValidateSeasonWeek(season, 1); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		season, ok := pathSeason(w, r)
+		if !ok {
 			return
 		}
 
@@ -33,6 +26,21 @@ func SeasonHandler(tree *lineup.Tree) http.Handler {
 			return
 		}
 
-		http.Redirect(w, r, "/"+strconv.Itoa(season)+"/"+strconv.Itoa(week), http.StatusFound)
+		renderWeek(w, r, tree, source, gameSource, season, week)
 	})
+}
+
+func pathSeason(w http.ResponseWriter, r *http.Request) (season int, ok bool) {
+	season, err := strconv.Atoi(r.PathValue("season"))
+	if err != nil {
+		http.Error(w, "season must be a number", http.StatusBadRequest)
+		return 0, false
+	}
+	// week 1 is always in range, so this checks only the season bound
+	// without a separate season-only validator.
+	if err := score.ValidateSeasonWeek(season, 1); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return 0, false
+	}
+	return season, true
 }

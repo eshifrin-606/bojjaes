@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os/exec"
+	"slices"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -22,13 +24,16 @@ type checkRun struct {
 	dom       string
 	pageLoads int32
 	checks    int32
+
+	pagePaths  []string
+	checkPaths []string
 }
 
-// runCheckScript serves the real page to headless Chrome with the given first
-// delay, answers its version checks with answer, and lets virtual time run
+// runCheckScript serves the real page at path to headless Chrome with the
+// given first delay, answers its version checks with answer, and lets virtual time run
 // for budget. Every render after the first carries reloadedMarker and a delay
 // of zero, so a reload happens at most once.
-func runCheckScript(t *testing.T, firstDelay int, budget time.Duration, answer http.HandlerFunc) checkRun {
+func runCheckScript(t *testing.T, path string, firstDelay int, budget time.Duration, answer http.HandlerFunc) checkRun {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("running the check script needs Chrome; skipped under -short")
@@ -49,29 +54,44 @@ func runCheckScript(t *testing.T, firstDelay int, budget time.Duration, answer h
 	}
 
 	var run checkRun
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /{season}/{week}", func(w http.ResponseWriter, r *http.Request) {
+	var mu sync.Mutex
+	page := func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		run.pagePaths = append(run.pagePaths, r.URL.Path)
+		mu.Unlock()
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		if atomic.AddInt32(&run.pageLoads, 1) == 1 {
 			w.Write([]byte(withDelay(firstDelay)))
 			return
 		}
 		w.Write([]byte(withDelay(0) + reloadedMarker))
-	})
-	mux.HandleFunc("GET /{season}/{week}/version", func(w http.ResponseWriter, r *http.Request) {
+	}
+	check := func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&run.checks, 1)
+		mu.Lock()
+		run.checkPaths = append(run.checkPaths, r.URL.Path)
+		mu.Unlock()
 		answer(w, r)
-	})
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /{season}/{week}", page)
+	mux.HandleFunc("GET /{season}", page)
+	// Chrome asks for it, and GET /{season} would otherwise count it as a load.
+	mux.HandleFunc("GET /favicon.ico", http.NotFound)
+	mux.HandleFunc("GET /{season}/{week}/version", check)
+	mux.HandleFunc("GET /{season}/version", check)
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	out, err := exec.CommandContext(ctx, chrome, "--headless", "--disable-gpu", "--dump-dom",
-		fmt.Sprintf("--virtual-time-budget=%d", budget.Milliseconds()), srv.URL+"/2025/15").Output()
+		fmt.Sprintf("--virtual-time-budget=%d", budget.Milliseconds()), srv.URL+path).Output()
 	if err != nil {
 		t.Fatalf("running Chrome: %v", err)
 	}
+	mu.Lock()
+	defer mu.Unlock()
 	run.dom = string(out)
 	return run
 }
@@ -121,7 +141,7 @@ func TestTheCheckScriptInChrome(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			run := runCheckScript(t, tt.firstDelay, budget, tt.answer)
+			run := runCheckScript(t, "/2025/15", tt.firstDelay, budget, tt.answer)
 
 			if got := strings.Contains(run.dom, reloadedMarker); got != tt.wantReload {
 				t.Errorf("reloaded = %t, want %t (%d page loads, %d checks)", got, tt.wantReload, run.pageLoads, run.checks)
@@ -133,5 +153,19 @@ func TestTheCheckScriptInChrome(t *testing.T) {
 				t.Errorf("made %d checks, want exactly %d", run.checks, tt.wantChecks)
 			}
 		})
+	}
+}
+
+func TestASeasonPageChecksTheSeasonFormAndReloadsItself(t *testing.T) {
+	run := runCheckScript(t, "/2026", 1, 3500*time.Millisecond, answerVersion("a-later-fetch", 1))
+
+	if !strings.Contains(run.dom, reloadedMarker) {
+		t.Errorf("the page did not reload (%d page loads, %d checks)", run.pageLoads, run.checks)
+	}
+	if want := []string{"/2026/version"}; !slices.Equal(run.checkPaths, want) {
+		t.Errorf("checks requested %v, want %v", run.checkPaths, want)
+	}
+	if want := []string{"/2026", "/2026"}; !slices.Equal(run.pagePaths, want) {
+		t.Errorf("pages requested %v, want %v", run.pagePaths, want)
 	}
 }
