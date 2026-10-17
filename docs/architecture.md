@@ -41,7 +41,7 @@ Three routes, all `GET`:
 | `/{season}` | a redirect to that season's latest week |
 
 The page is two columns, nine starters each, a total per side. Each starter's line also says where
-their NFL team's game stands: a kickoff (`Sun 12:00 PM`), the quarter, `Final`, or `Bye`. No margin, no leader
+their NFL team's game stands: a kickoff (`Sun 12p`), the quarter, `Final`, or `Bye`. No margin, no leader
 highlight, no win probability — [ADR 0004](adr/0004-web-frontend-stack.md) #8, and the refresh
 script is bound by it too (it never touches the previous page's values).
 

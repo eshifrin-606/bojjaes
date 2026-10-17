@@ -94,10 +94,40 @@
     display: none;
   }
 
+  /* The points box sits only on the name's line, so the meta line runs under
+     it too rather than wrapping a kickoff beside an empty cell. */
   .meta {
     color: #666;
     font-size: 0.8125rem;
-    grid-column: 1;
+    grid-column: 1 / -1;
+  }
+
+  /* Each slot is as wide as the widest value it can hold, so every row's team
+     and game start at the same offset. A hidden, zero-height ghost of the
+     widest candidates sets that width in whatever font the reader has, with
+     no slack: which value is widest differs between fonts. The ghost comes
+     before the text so the slot's baseline stays the text's. */
+  .meta .pos,
+  .meta .team {
+    display: inline-block;
+    text-align: center;
+  }
+
+  .meta .pos::before,
+  .meta .team::before {
+    display: block;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    white-space: pre;
+  }
+
+  .meta .pos::before {
+    content: "WR\A QB\A CB\A DB";
+  }
+
+  .meta .team::before {
+    content: "HOU\A WAS\A MIA\A NYG\A NYJ";
   }
 
   /* A box that never gives way to a name, so every row's name gets the same
@@ -195,7 +225,7 @@
       <p class="total">{{.Total}}</p>
     </header>
     <ol>
-      {{range .Starters}}<li><span class="player"><span class="long">{{.Name}}</span><span class="short">{{.ShortName}}</span></span><span class="points">{{.Points}}</span><span class="meta">{{.Position}} · {{.Team}}{{if .Game}} · <span class="game">{{.Game}}</span>{{else if .KickoffRFC3339}} · <span class="game"><time datetime="{{.KickoffRFC3339}}">{{.KickoffText}}</time></span>{{end}}</span></li>{{end}}
+      {{range .Starters}}<li><span class="player"><span class="long">{{.Name}}</span><span class="short">{{.ShortName}}</span></span><span class="points">{{.Points}}</span><span class="meta"><span class="pos">{{.Position}}</span> · <span class="team">{{.Team}}</span>{{if .Game}} · <span class="game">{{.Game}}</span>{{else if .KickoffRFC3339}} · <span class="game"><time datetime="{{.KickoffRFC3339}}">{{.KickoffText}}</time></span>{{end}}</span></li>{{end}}
     </ol>
   </section>
   {{end}}
@@ -218,9 +248,11 @@
       });
       var clock = part.hour + ":" + part.minute + " " + part.dayPeriod;
       // A kickoff is now on the reader's own clock, so it drops the zone
-      // label; the as-of line keeps the server's full form.
+      // label and takes the server's compact form; the as-of line keeps the
+      // server's full form.
+      var kickoff = part.hour + (part.minute === "00" ? "" : ":" + part.minute) + part.dayPeriod.charAt(0).toLowerCase();
       el.textContent = el.parentNode.classList.contains("game")
-        ? part.weekday + " " + clock
+        ? part.weekday + " " + kickoff
         : part.weekday + ", " + part.month + " " + part.day + " " + part.year + " " + clock + " " + part.timeZoneName;
     } catch (e) {
     }

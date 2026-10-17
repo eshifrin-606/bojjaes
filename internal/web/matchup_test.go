@@ -276,7 +276,6 @@ func fixtureShortNames(t *testing.T) []string {
 var (
 	rowPattern       = regexp.MustCompile(`(?s)<li>(.*?)</li>`)
 	shortNamePattern = regexp.MustCompile(`(?s)class="short">(.*?)</span>`)
-	metaPattern      = regexp.MustCompile(`(?s)class="meta">(.*?)</span>`)
 )
 
 // fixtureMeta is each fixture starter's "Position · Team" in page order, read
@@ -299,13 +298,13 @@ func fixtureMeta(t *testing.T) []string {
 	return meta
 }
 
-// renderedMeta reads the position-and-team text inside each starter row,
-// unescaped since html/template writes entities html.EscapeString would not.
+// renderedMeta reads the text of each starter row's meta line, unescaped since
+// html/template writes entities html.EscapeString would not.
 func renderedMeta(body string) []string {
 	var meta []string
 	for _, row := range rowPattern.FindAllStringSubmatch(body, -1) {
-		if m := metaPattern.FindStringSubmatch(row[1]); m != nil {
-			meta = append(meta, html.UnescapeString(m[1]))
+		if m := fullMetaPattern.FindStringSubmatch(row[1]); m != nil {
+			meta = append(meta, metaText(m[1]))
 		}
 	}
 	return meta
@@ -1122,7 +1121,7 @@ func TestTheStyleSheetDeclares(t *testing.T) {
 		{name: "an unbreakable name wraps instead of pushing the points out", block: []string{".player"}, declaration: "overflow-wrap: break-word"},
 		{name: "a row is a two-column grid", block: []string{".column li"}, declaration: "display: grid"},
 		{name: "a row's grid has a flexible name column and an auto points column", block: []string{".column li"}, declaration: "grid-template-columns: minmax(0, 1fr) auto"},
-		{name: "the meta line sits under the name, not the points", block: []string{".meta"}, declaration: "grid-column: 1"},
+		{name: "the meta line runs under both the name and the points", block: []string{".meta"}, declaration: "grid-column: 1 / -1"},
 		{name: "a narrow viewport has less body padding", block: []string{"@media (max-width: 33rem)", "body"}, declaration: "padding: 0.5rem"},
 		{name: "a narrow viewport has a narrower gap between the cards", block: []string{"@media (max-width: 33rem)", ".matchup"}, declaration: "column-gap: 0.5rem"},
 		{name: "a narrow viewport has less card padding", block: []string{"@media (max-width: 33rem)", ".column"}, declaration: "padding: 0 0.5rem 0.5rem"},
@@ -1137,6 +1136,9 @@ func TestTheStyleSheetDeclares(t *testing.T) {
 		{name: "a narrow card shows the short name", block: []string{"@container (max-width: 12.5rem)", ".player .short"}, declaration: "display: inline"},
 		{name: "adjacent starters are divided by a hairline", block: []string{".column li + li"}, declaration: "border-top: 1px solid #eee"},
 		{name: "a row has vertical breathing room", block: []string{".column li"}, declaration: "padding-block: 0.25rem"},
+		{name: "a position or team is centred in its slot", block: []string{".meta .pos,\n  .meta .team"}, declaration: "text-align: center"},
+		{name: "the position slot is sized by the widest positions", block: []string{".meta .pos::before"}, declaration: `content: "WR\A QB\A CB\A DB"`},
+		{name: "the team slot is sized by the widest teams", block: []string{".meta .team::before"}, declaration: `content: "HOU\A WAS\A MIA\A NYG\A NYJ"`},
 		{name: "the meta line is muted", block: []string{".meta"}, declaration: "color: #666"},
 		{name: "the meta line is smaller than the name", block: []string{".meta"}, declaration: "font-size: 0.8125rem"},
 		{name: "the matchup grid declares one row track per starter", block: []string{".matchup"}, declaration: "grid-template-rows: auto repeat(9, auto)"},
