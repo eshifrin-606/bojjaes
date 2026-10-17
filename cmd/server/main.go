@@ -40,7 +40,7 @@ func main() {
 		PlayStore: plays,
 		Logf:      log.Printf,
 	}
-	stats := weekcache.New(client.WeekStats, weekcache.TTL)
+	stats := weekcache.New("statscache", client.WeekStats, weekcache.TTL)
 	// A whole-week fetch that outlasts the cold wait lands after its week was
 	// cached from the poll alone; dropping the entry lets the next read see it.
 	plays.OnWholeWeekChanged(stats.Invalidate)

@@ -971,13 +971,13 @@ func (c *webFakeClock) advance(d time.Duration) {
 	c.t = c.t.Add(d)
 }
 
-// End to end over a real statscache.Cache: a page served from a cache hit dates
+// End to end over a real weekcache.Cache: a page served from a cache hit dates
 // its stats to the fetch, not to the request it answered, and does not spend a
 // second upstream call to do it.
 func TestAServedCacheHitDatesStatsToTheFetchNotTheRequest(t *testing.T) {
 	upstream := &countingStatsSource{weekStats: fixtureStats()}
 	clock := &webFakeClock{t: asOfInstant}
-	cache := weekcache.New(upstream.WeekStats, 5*time.Minute, weekcache.WithClock(clock.now))
+	cache := weekcache.New("statscache", upstream.WeekStats, 5*time.Minute, weekcache.WithClock(clock.now))
 	h := Handler(lineup.New(fixtureWeek()), cache)
 
 	first := serve(h, http.MethodGet, "/2025/15")

@@ -65,6 +65,9 @@ const defaultFetchTimeout = 30 * time.Second
 // wrapping one source is one upstream budget, so a caller that constructs its
 // own has opted out of the bound rather than gaining a private copy of it.
 type Cache[V any] struct {
+	// label opens every log line, so lines from caches over different
+	// fetches can be told apart.
+	label  string
 	source Source[V]
 	ttl    time.Duration
 
@@ -101,12 +104,13 @@ type cacheOptions struct {
 	now func() time.Time
 }
 
-func New[V any](source Source[V], ttl time.Duration, opts ...Option) *Cache[V] {
+func New[V any](label string, source Source[V], ttl time.Duration, opts ...Option) *Cache[V] {
 	o := cacheOptions{now: time.Now}
 	for _, opt := range opts {
 		opt(&o)
 	}
 	return &Cache[V]{
+		label:        label,
 		source:       source,
 		ttl:          ttl,
 		fetchTimeout: defaultFetchTimeout,
@@ -144,7 +148,7 @@ func (c *Cache[V]) WeekStatsAsOf(ctx context.Context, season, week int) (V, time
 	if ok && !c.expired(cached) {
 		age := c.now().Sub(cached.fetchedAt)
 		c.mu.Unlock()
-		c.logf("statscache hit: %d week %d, %s old", season, week, age)
+		c.logf("%s hit: %d week %d, %s old", c.label, season, week, age)
 		return cached.value, cached.fetchedAt, nil
 	}
 	flight := &entry[V]{done: make(chan struct{})}
@@ -197,10 +201,10 @@ func (c *Cache[V]) Invalidate(season, week int) {
 
 func (c *Cache[V]) logMiss(season, week int, elapsed time.Duration, err error) {
 	if err != nil {
-		c.logf("statscache miss: %d week %d failed after %s: %v", season, week, elapsed, err)
+		c.logf("%s miss: %d week %d failed after %s: %v", c.label, season, week, elapsed, err)
 		return
 	}
-	c.logf("statscache miss: %d week %d fetched in %s", season, week, elapsed)
+	c.logf("%s miss: %d week %d fetched in %s", c.label, season, week, elapsed)
 }
 
 // expired is checked on read; nothing sweeps. The key space is a handful of

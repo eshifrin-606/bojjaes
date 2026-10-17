@@ -114,7 +114,7 @@ func fetchOrdinal(t *testing.T, stats score.WeekStats) int {
 
 func TestWeekStatsReachesTheSource(t *testing.T) {
 	source := &fakeSource{}
-	cache := New(source.WeekStats, testTTL)
+	cache := New("statscache", source.WeekStats, testTTL)
 
 	stats, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
 	if err != nil {
@@ -159,7 +159,7 @@ func TestSecondRequestWithinTTLIsServedFromCache(t *testing.T) {
 
 func TestDifferentWeeksDoNotShareAnEntry(t *testing.T) {
 	source := &fakeSource{}
-	cache := New(source.WeekStats, testTTL)
+	cache := New("statscache", source.WeekStats, testTTL)
 
 	fifteen, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
 	if err != nil {
@@ -218,7 +218,7 @@ func (c *fakeClock) advance(d time.Duration) {
 // newTestCache wires a cache to a clock the test controls.
 func newTestCache(source *fakeSource, ttl time.Duration) (*Cache[score.WeekStats], *fakeClock) {
 	clock := newFakeClock()
-	cache := New(source.WeekStats, ttl)
+	cache := New("statscache", source.WeekStats, ttl)
 	cache.now = clock.now
 	return cache, clock
 }
@@ -627,6 +627,27 @@ func TestAHitIsLogged(t *testing.T) {
 	for _, want := range []string{"hit", "2025", "15"} {
 		if !strings.Contains(line, want) {
 			t.Errorf("hit log %q does not mention %q", line, want)
+		}
+	}
+}
+
+// Two caches log side by side in one process, so each line names its cache.
+func TestEveryLogLineOpensWithTheCachesLabel(t *testing.T) {
+	cache := New("gamescache", (&fakeSource{}).WeekStats, testTTL)
+	logs := recordLogs(cache)
+
+	for range 2 {
+		if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+			t.Fatalf("WeekStats: %v", err)
+		}
+	}
+
+	if len(*logs) != 2 {
+		t.Fatalf("miss then hit logged %d lines, want 2: %q", len(*logs), *logs)
+	}
+	for _, line := range *logs {
+		if !strings.HasPrefix(line, "gamescache ") {
+			t.Errorf("log %q does not open with the label gamescache", line)
 		}
 	}
 }
