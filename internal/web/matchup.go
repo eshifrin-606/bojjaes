@@ -52,6 +52,7 @@ func mustLoadLocation(name string) *time.Location {
 type matchup struct {
 	Season, Week       int
 	PrevWeek, NextWeek int // 0 when that week does not exist
+	PrevHref, NextHref string
 	Columns            [2]column
 
 	// FetchedAtRFC3339 is the fetch instant as a machine-readable RFC 3339
@@ -165,100 +166,119 @@ func Handler(tree *lineup.Tree, source StatsSource, gameSource GamesSource) http
 		if !ok {
 			return
 		}
-		ours, theirs, err := tree.Matchup(season, week)
-		if err != nil {
-			// The log carries the failing directory; the body never does,
-			// since it reaches whoever asked.
-			log.Printf("resolving %d week %d: %v", season, week, err)
-
-			// A week we never played is the reader asking for something that
-			// does not exist. A week directory that exists but is not a
-			// matchup is our lineup tree being wrong about a well-formed
-			// request, which is ours to fix, not theirs.
-			if errors.Is(err, lineup.ErrNoWeek) {
-				http.Error(w, "no such week", http.StatusNotFound)
-				return
-			}
-			http.Error(w, "that week is not a matchup", http.StatusInternalServerError)
-			return
-		}
-
-		// Both lineups are read before the provider is called: a week our
-		// lineup tree is wrong about is our mistake to fix, and there is no
-		// reason to fetch a week we cannot render.
-		teams := [2]string{ours, theirs}
-		var lineups [2]lineup.Lineup
-		for i, team := range teams {
-			l, err := tree.Read(season, week, team)
-			if err != nil {
-				log.Printf("reading %s lineup for %d week %d: %v", team, season, week, err)
-				http.Error(w, "that week's lineups could not be read", http.StatusInternalServerError)
-				return
-			}
-			lineups[i] = l
-		}
-
-		// A neighbour this page's own URL check would refuse is never linked,
-		// whatever the tree holds.
-		linkable := func(w int) bool {
-			return score.ValidateSeasonWeek(season, w) == nil && tree.HasWeek(season, w)
-		}
-		var prevWeek, nextWeek int
-		if linkable(week - 1) {
-			prevWeek = week - 1
-		}
-		if linkable(week + 1) {
-			nextWeek = week + 1
-		}
-
-		// Fetched once, and both columns scored from it: the two lineups must
-		// not be read from different snapshots of the week.
-		weekStats, fetchedAt, err := source.AsOf(r.Context(), season, week)
-		if err != nil {
-			log.Printf("fetching stats for %d week %d: %v", season, week, err)
-
-			// Never a zeroed page: it would read as "these players scored
-			// nothing" rather than "we do not know".
-			http.Error(w, "the week's stats could not be fetched", http.StatusBadGateway)
-			return
-		}
-
-		// Read after the stats so a stats failure costs no games fetch. A
-		// failure here only drops the game states: they annotate the scores,
-		// and the scores are what the page is for.
-		weekGames, _, err := gameSource.AsOf(r.Context(), season, week)
-		gamesAvailable := err == nil
-		if err != nil {
-			log.Printf("fetching games for %d week %d: %v", season, week, err)
-		}
-
-		view := matchup{
-			Season:           season,
-			Week:             week,
-			PrevWeek:         prevWeek,
-			NextWeek:         nextWeek,
-			FetchedAtRFC3339: fetchedAt.Format(time.RFC3339),
-			FetchedAtText:    fetchedAt.In(chicagoLoc).Format(fetchedAtLayout),
-			Version:          versionToken(fetchedAt),
-			NextCheckSeconds: checkDelaySeconds,
-		}
-		for i, team := range teams {
-			view.Columns[i] = scoreColumn(team, lineups[i], weekStats, weekGames, gamesAvailable)
-		}
-
-		// Rendered into a buffer first: executing straight into the
-		// ResponseWriter would commit a 200 and half a page before it could
-		// fail.
-		var buf bytes.Buffer
-		if err := page.Execute(&buf, view); err != nil {
-			log.Printf("rendering %d week %d: %v", season, week, err)
-			http.Error(w, "the page could not be rendered", http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write(buf.Bytes())
+		renderWeek(w, r, tree, source, gameSource, season, week)
 	})
+}
+
+// renderWeek answers with the matchup page for a season and week the caller
+// has already validated, so every route that shows a week refuses and renders
+// it the same way.
+func renderWeek(w http.ResponseWriter, r *http.Request, tree *lineup.Tree, source StatsSource, gameSource GamesSource, season, week int) {
+	ours, theirs, err := tree.Matchup(season, week)
+	if err != nil {
+		// The log carries the failing directory; the body never does,
+		// since it reaches whoever asked.
+		log.Printf("resolving %d week %d: %v", season, week, err)
+
+		// A week we never played is the reader asking for something that
+		// does not exist. A week directory that exists but is not a
+		// matchup is our lineup tree being wrong about a well-formed
+		// request, which is ours to fix, not theirs.
+		if errors.Is(err, lineup.ErrNoWeek) {
+			http.Error(w, "no such week", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "that week is not a matchup", http.StatusInternalServerError)
+		return
+	}
+
+	// Both lineups are read before the provider is called: a week our
+	// lineup tree is wrong about is our mistake to fix, and there is no
+	// reason to fetch a week we cannot render.
+	teams := [2]string{ours, theirs}
+	var lineups [2]lineup.Lineup
+	for i, team := range teams {
+		l, err := tree.Read(season, week, team)
+		if err != nil {
+			log.Printf("reading %s lineup for %d week %d: %v", team, season, week, err)
+			http.Error(w, "that week's lineups could not be read", http.StatusInternalServerError)
+			return
+		}
+		lineups[i] = l
+	}
+
+	// A neighbour this page's own URL check would refuse is never linked,
+	// whatever the tree holds.
+	linkable := func(w int) bool {
+		return score.ValidateSeasonWeek(season, w) == nil && tree.HasWeek(season, w)
+	}
+	// The latest week's address is the season's, so a link to it lands where
+	// an open tab keeps following whichever week is newest.
+	latest, _ := tree.LatestWeek(season)
+	weekHref := func(w int) string {
+		if w == latest {
+			return "/" + strconv.Itoa(season)
+		}
+		return "/" + strconv.Itoa(season) + "/" + strconv.Itoa(w)
+	}
+	var prevWeek, nextWeek int
+	var prevHref, nextHref string
+	if linkable(week - 1) {
+		prevWeek, prevHref = week-1, weekHref(week-1)
+	}
+	if linkable(week + 1) {
+		nextWeek, nextHref = week+1, weekHref(week+1)
+	}
+
+	// Fetched once, and both columns scored from it: the two lineups must
+	// not be read from different snapshots of the week.
+	weekStats, fetchedAt, err := source.AsOf(r.Context(), season, week)
+	if err != nil {
+		log.Printf("fetching stats for %d week %d: %v", season, week, err)
+
+		// Never a zeroed page: it would read as "these players scored
+		// nothing" rather than "we do not know".
+		http.Error(w, "the week's stats could not be fetched", http.StatusBadGateway)
+		return
+	}
+
+	// Read after the stats so a stats failure costs no games fetch. A
+	// failure here only drops the game states: they annotate the scores,
+	// and the scores are what the page is for.
+	weekGames, _, err := gameSource.AsOf(r.Context(), season, week)
+	gamesAvailable := err == nil
+	if err != nil {
+		log.Printf("fetching games for %d week %d: %v", season, week, err)
+	}
+
+	view := matchup{
+		Season:           season,
+		Week:             week,
+		PrevWeek:         prevWeek,
+		NextWeek:         nextWeek,
+		PrevHref:         prevHref,
+		NextHref:         nextHref,
+		FetchedAtRFC3339: fetchedAt.Format(time.RFC3339),
+		FetchedAtText:    fetchedAt.In(chicagoLoc).Format(fetchedAtLayout),
+		Version:          versionToken(fetchedAt),
+		NextCheckSeconds: checkDelaySeconds,
+	}
+	for i, team := range teams {
+		view.Columns[i] = scoreColumn(team, lineups[i], weekStats, weekGames, gamesAvailable)
+	}
+
+	// Rendered into a buffer first: executing straight into the
+	// ResponseWriter would commit a 200 and half a page before it could
+	// fail.
+	var buf bytes.Buffer
+	if err := page.Execute(&buf, view); err != nil {
+		log.Printf("rendering %d week %d: %v", season, week, err)
+		http.Error(w, "the page could not be rendered", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write(buf.Bytes())
 }
 
 // formatPoints renders a point total without a trailing zero: whole scores are

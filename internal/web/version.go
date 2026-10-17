@@ -29,12 +29,39 @@ func VersionHandler(source VersionSource) http.Handler {
 			return
 		}
 
-		resp := versionResponse{NextCheckSeconds: checkDelaySeconds}
-		if fetchedAt, held := source.FetchedAt(season, week); held {
-			resp.Version = versionToken(fetchedAt)
+		writeVersion(w, source, season, week)
+	})
+}
+
+func writeVersion(w http.ResponseWriter, source VersionSource, season, week int) {
+	resp := versionResponse{NextCheckSeconds: checkDelaySeconds}
+	if fetchedAt, held := source.FetchedAt(season, week); held {
+		resp.Version = versionToken(fetchedAt)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	json.NewEncoder(w).Encode(resp)
+}
+
+// LatestWeekSource resolves a season to its latest week. It is the season
+// form's only view of the lineup tree, so that endpoint cannot open a roster.
+type LatestWeekSource interface {
+	LatestWeek(season int) (week int, ok bool)
+}
+
+// SeasonVersionHandler reports the stats version held for the season's latest
+// week, resolved on every request so an open /{season} tab moves to a new week.
+func SeasonVersionHandler(weeks LatestWeekSource, source VersionSource) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		season, ok := pathSeason(w, r)
+		if !ok {
+			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Cache-Control", "no-store")
-		json.NewEncoder(w).Encode(resp)
+		week, ok := weeks.LatestWeek(season)
+		if !ok {
+			http.Error(w, "no such season", http.StatusNotFound)
+			return
+		}
+		writeVersion(w, source, season, week)
 	})
 }

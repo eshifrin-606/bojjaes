@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -128,7 +129,43 @@ func TestMuxStillRoutesThePageAndTheSeason(t *testing.T) {
 
 	season := httptest.NewRecorder()
 	testMux().ServeHTTP(season, httptest.NewRequest(http.MethodGet, "/2025", nil))
-	if got := season.Header().Get("Location"); season.Code != http.StatusFound || got != "/2025/16" {
-		t.Errorf("GET /2025 = %d to %q, want the season redirect to /2025/16", season.Code, got)
+	if got := season.Header().Get("Content-Type"); season.Code != http.StatusOK || got != "text/html; charset=utf-8" {
+		t.Errorf("GET /2025 = %d %q, want the latest week's 200 HTML", season.Code, got)
+	}
+}
+
+// GET /{season}/{week} would take "version" as a week and refuse it with 400.
+func TestMuxServesTheSeasonFormOfTheVersionEndpoint(t *testing.T) {
+	rec := httptest.NewRecorder()
+
+	testMux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/2025/version", nil))
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("GET /2025/version = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if got := rec.Header().Get("Content-Type"); got != "application/json" {
+		t.Errorf("Content-Type = %q, want the version handler's JSON", got)
+	}
+}
+
+type recordingStats struct {
+	stubStats
+	asked *[][2]int
+}
+
+func (r recordingStats) FetchedAt(season, week int) (time.Time, bool) {
+	*r.asked = append(*r.asked, [2]int{season, week})
+	return time.Time{}, false
+}
+
+// The season form would ask for the embedded tree's latest week, not week 5.
+func TestMuxStillRoutesANumberedWeeksVersionToTheWeekForm(t *testing.T) {
+	var asked [][2]int
+	mux := newMux(recordingStats{asked: &asked}, stubGames{}, lineup.New(lineup.Embedded))
+
+	mux.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/2025/5/version", nil))
+
+	if want := [][2]int{{2025, 5}}; !slices.Equal(asked, want) {
+		t.Errorf("GET /2025/5/version asked for %v, want %v", asked, want)
 	}
 }

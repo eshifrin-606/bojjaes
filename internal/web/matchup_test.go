@@ -1440,12 +1440,30 @@ func TestTheScriptImpliesNoWinner(t *testing.T) {
 }
 
 func TestAMiddleWeekLinksBothWays(t *testing.T) {
-	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3)))
+	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3), matchupWeek(2026, 4)))
 	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2026/2")
 
 	prev, next := renderedWeekLinks(rec.Body.String())
 	if prev != "/2026/1" || next != "/2026/3" {
 		t.Errorf("week links = prev %q, next %q, want prev %q, next %q", prev, next, "/2026/1", "/2026/3")
+	}
+}
+
+func TestTheLinkToTheLatestWeekIsTheSeasonURL(t *testing.T) {
+	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3)))
+	body := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2026/2").Body.String()
+
+	if _, next := renderedWeekLinks(body); next != "/2026" {
+		t.Errorf("next link = %q, want %q", next, "/2026")
+	}
+	var text string
+	for _, m := range relLinkPattern.FindAllStringSubmatch(body, -1) {
+		if m[1] == "next" {
+			text = m[2]
+		}
+	}
+	if text != "Week 3 ›" {
+		t.Errorf("next link text = %q, want %q", text, "Week 3 ›")
 	}
 }
 
@@ -1456,8 +1474,8 @@ func TestTheFirstWeekHasNoPreviousLink(t *testing.T) {
 	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2026/1")
 
 	prev, next := renderedWeekLinks(rec.Body.String())
-	if prev != "" || next != "/2026/2" {
-		t.Errorf("week links = prev %q, next %q, want prev %q, next %q", prev, next, "", "/2026/2")
+	if prev != "" || next != "/2026" {
+		t.Errorf("week links = prev %q, next %q, want prev %q, next %q", prev, next, "", "/2026")
 	}
 }
 
@@ -1509,7 +1527,7 @@ func TestABrokenNeighbourStillGetsALink(t *testing.T) {
 		"bojjaes": lineupCSV(ourLine),
 		"wood":    lineupCSV(theirLine),
 	})
-	tree := lineup.New(treeFS(matchupWeek(2026, 2), broken))
+	tree := lineup.New(treeFS(matchupWeek(2026, 2), broken, matchupWeek(2026, 4)))
 	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2026/2")
 
 	if _, next := renderedWeekLinks(rec.Body.String()); next != "/2026/3" {
