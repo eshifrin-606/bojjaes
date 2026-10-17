@@ -18,7 +18,7 @@ import (
 
 	"github.com/eshifrin/bojjaes/internal/lineup"
 	"github.com/eshifrin/bojjaes/internal/sleeper"
-	"github.com/eshifrin/bojjaes/internal/statscache"
+	"github.com/eshifrin/bojjaes/internal/weekcache"
 )
 
 // Comfortably above WriteTimeout minus a typical request, and below Fly's own
@@ -35,11 +35,11 @@ func main() {
 	// Wrapped once, here: the cache bounds upstream volume only if everything
 	// that reads a week reads through the same one.
 	plays := sleeper.NewPlayStore(sleeper.BaseURL, coldWait, log.Printf)
-	stats := statscache.New(sleeper.Client{
+	stats := weekcache.New(sleeper.Client{
 		BaseURL:   sleeper.BaseURL,
 		PlayStore: plays,
 		Logf:      log.Printf,
-	}, statscache.TTL)
+	}, weekcache.TTL)
 	// A whole-week fetch that outlasts the cold wait lands after its week was
 	// cached from the poll alone; dropping the entry lets the next read see it.
 	plays.OnWholeWeekChanged(stats.Invalidate)

@@ -1,11 +1,11 @@
-// Package statscache holds a short-lived cache over a weekly stat fetch, so
+// Package weekcache holds a short-lived cache over a weekly stat fetch, so
 // that upstream volume is bounded by the time-to-live and the number of weeks
 // being read rather than by the number of readers.
 //
 // It declares the StatsSource interface it wraps, exactly as the transports
 // do, so no provider package is named here and the cache is a StatsSource
 // itself: it is installed by wrapping, and nothing downstream is edited.
-package statscache
+package weekcache
 
 import (
 	"context"

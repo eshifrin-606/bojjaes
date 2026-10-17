@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/eshifrin/bojjaes/internal/lineup"
-	"github.com/eshifrin/bojjaes/internal/statscache"
+	"github.com/eshifrin/bojjaes/internal/weekcache"
 )
 
 var (
@@ -89,7 +89,7 @@ func TestThePageStatesItsFirstCheckDelay(t *testing.T) {
 func TestACacheHitCarriesTheOriginalFetchsVersion(t *testing.T) {
 	upstream := &countingStatsSource{weekStats: fixtureStats()}
 	clock := &webFakeClock{t: asOfInstant}
-	cache := statscache.New(upstream, 5*time.Minute, statscache.WithClock(clock.now))
+	cache := weekcache.New(upstream, 5*time.Minute, weekcache.WithClock(clock.now))
 	h := Handler(lineup.New(fixtureWeek()), cache)
 
 	first := renderedVersion(t, serve(h, http.MethodGet, "/2025/15").Body.String())

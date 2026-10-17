@@ -1,4 +1,4 @@
-package statscache
+package weekcache
 
 import (
 	"context"

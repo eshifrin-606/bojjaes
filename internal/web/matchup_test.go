@@ -20,7 +20,7 @@ import (
 
 	"github.com/eshifrin/bojjaes/internal/lineup"
 	"github.com/eshifrin/bojjaes/internal/score"
-	"github.com/eshifrin/bojjaes/internal/statscache"
+	"github.com/eshifrin/bojjaes/internal/weekcache"
 )
 
 // unusedSource fails the test if the page ever reaches the provider.
@@ -977,7 +977,7 @@ func (c *webFakeClock) advance(d time.Duration) {
 func TestAServedCacheHitDatesStatsToTheFetchNotTheRequest(t *testing.T) {
 	upstream := &countingStatsSource{weekStats: fixtureStats()}
 	clock := &webFakeClock{t: asOfInstant}
-	cache := statscache.New(upstream, 5*time.Minute, statscache.WithClock(clock.now))
+	cache := weekcache.New(upstream, 5*time.Minute, weekcache.WithClock(clock.now))
 	h := Handler(lineup.New(fixtureWeek()), cache)
 
 	first := serve(h, http.MethodGet, "/2025/15")
