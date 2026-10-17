@@ -1,0 +1,10 @@
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+4046,Patrick Mahomes,QB,KC
+12526,Tetairoa McMillan,WR,CAR
+11632,Malik Nabers,WR,NYG
+4217,George Kittle,TE,SF
+3198,Derrick Henry,RB,BAL
+11584,Bucky Irving,RB,TB
+13508,Hezekiah Masses,CB,LV
+13379,Josiah Trotter,LB,TB
