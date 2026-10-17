@@ -32,8 +32,21 @@ type columnLayout struct {
 	FirstMeta   *rect
 	FirstGame   *rect
 	MetaLines   int
+	MetaStops   []metaStops
 	LiTops      []float64
 	Column      rect
+}
+
+// metaStops are where a meta line's team and game begin, measured from the
+// line's left edge; -1 means the line has no such part.
+type metaStops struct {
+	Team, Game    float64
+	Pos, TeamSlot slot
+}
+
+// slot is a fixed-width meta part: its box, and the text inside it.
+type slot struct {
+	Box, Text *rect
 }
 
 type weekBarLayout struct {
@@ -69,15 +82,35 @@ const measuringScript = `<pre id="layout"></pre>
     var r = el.getBoundingClientRect();
     return {Top: r.top, Bottom: r.bottom, Left: r.left, Right: r.right, Width: r.width, Height: r.height};
   }
-  // An inline box splits into one rect per line it sits on, so the distinct
-  // tops of the meta's contents count its lines.
+  // Text splits into one rect per line it sits on, so the distinct tops of
+  // the meta's text count its lines. Only text is measured: an inline-block's
+  // own box has a different top from the text beside it.
   function lines(el) {
     if (!el) return 0;
-    var range = document.createRange();
-    range.selectNodeContents(el);
     var tops = {};
-    Array.prototype.forEach.call(range.getClientRects(), function (r) { tops[Math.round(r.top)] = true; });
+    var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (var node = walker.nextNode(); node; node = walker.nextNode()) {
+      var range = document.createRange();
+      range.selectNodeContents(node);
+      Array.prototype.forEach.call(range.getClientRects(), function (r) { tops[Math.round(r.top)] = true; });
+    }
     return Object.keys(tops).length;
+  }
+  function stops(meta) {
+    var left = meta.getBoundingClientRect().left;
+    function offset(el) { return el ? el.getBoundingClientRect().left - left : -1; }
+    function slot(el) {
+      if (!el) return {Box: null, Text: null};
+      var range = document.createRange();
+      range.selectNodeContents(el);
+      return {Box: box(el), Text: box(range)};
+    }
+    return {
+      Team: offset(meta.querySelector(".team")),
+      Game: offset(meta.querySelector(".game")),
+      Pos: slot(meta.querySelector(".pos")),
+      TeamSlot: slot(meta.querySelector(".team"))
+    };
   }
   var columns = Array.prototype.map.call(document.querySelectorAll(".column"), function (c) {
     return {
@@ -90,6 +123,7 @@ const measuringScript = `<pre id="layout"></pre>
       FirstMeta: box(c.querySelector(".meta")),
       FirstGame: box(c.querySelector(".game")),
       MetaLines: lines(c.querySelector(".meta")),
+      MetaStops: Array.prototype.map.call(c.querySelectorAll(".meta"), stops),
       LiTops: Array.prototype.map.call(c.querySelectorAll("li"), function (li) { return li.getBoundingClientRect().top; }),
       Column: box(c)
     };
@@ -352,6 +386,88 @@ func TestAPhoneFitsAKickoffOnTheMetaLine(t *testing.T) {
 	}
 	if got := l.Columns[0].MetaLines; got != 1 {
 		t.Errorf("the meta line with a kickoff wraps onto %d lines, want 1", got)
+	}
+}
+
+func TestEveryMetaLineStartsItsTeamAtTheSameOffset(t *testing.T) {
+	body := serveGames(chaseTree(), upcomingCIN(time.Date(2026, 10, 11, 20, 25, 0, 0, time.UTC)))
+
+	l := renderedLayout(t, body+narrowCardCSS)
+
+	var teams []float64
+	for _, c := range l.Columns {
+		for _, s := range c.MetaStops {
+			teams = append(teams, s.Team)
+		}
+	}
+	if len(teams) == 0 || slices.Min(teams) != slices.Max(teams) {
+		t.Errorf("team offsets = %v, want them all equal", teams)
+	}
+}
+
+func TestEveryMetaLineStartsItsGameAtTheSameOffset(t *testing.T) {
+	body := serveGames(chaseTree(), upcomingCIN(time.Date(2026, 10, 11, 20, 25, 0, 0, time.UTC)))
+
+	l := renderedLayout(t, body+narrowCardCSS)
+
+	var games []float64
+	for _, c := range l.Columns {
+		for _, s := range c.MetaStops {
+			games = append(games, s.Game)
+		}
+	}
+	if len(games) == 0 || slices.Min(games) != slices.Max(games) {
+		t.Errorf("game offsets = %v, want them all equal", games)
+	}
+}
+
+// slots gathers one part's slot from every meta line on the page.
+func slots(l layout, part func(metaStops) slot) []slot {
+	var all []slot
+	for _, c := range l.Columns {
+		for _, s := range c.MetaStops {
+			all = append(all, part(s))
+		}
+	}
+	return all
+}
+
+func TestTheWidestPositionAndTeamHaveNoSlack(t *testing.T) {
+	body := serveGames(chaseTree(), upcomingCIN(time.Date(2026, 10, 11, 20, 25, 0, 0, time.UTC)))
+
+	l := renderedLayout(t, body+narrowCardCSS)
+
+	for name, part := range map[string]func(metaStops) slot{
+		"position": func(s metaStops) slot { return s.Pos },
+		"team":     func(s metaStops) slot { return s.TeamSlot },
+	} {
+		widest := 0.0
+		var boxWidth float64
+		for _, s := range slots(l, part) {
+			widest = max(widest, s.Text.Width)
+			boxWidth = s.Box.Width
+		}
+		if math.Abs(boxWidth-widest) > 0.5 {
+			t.Errorf("%s slot is %vpx for text at most %vpx wide, want no slack", name, boxWidth, widest)
+		}
+	}
+}
+
+func TestEveryPositionAndTeamIsCentredInItsSlot(t *testing.T) {
+	body := serveGames(chaseTree(), upcomingCIN(time.Date(2026, 10, 11, 20, 25, 0, 0, time.UTC)))
+
+	l := renderedLayout(t, body+narrowCardCSS)
+
+	for name, part := range map[string]func(metaStops) slot{
+		"position": func(s metaStops) slot { return s.Pos },
+		"team":     func(s metaStops) slot { return s.TeamSlot },
+	} {
+		for _, s := range slots(l, part) {
+			left, right := s.Text.Left-s.Box.Left, s.Box.Right-s.Text.Right
+			if math.Abs(left-right) > 0.5 {
+				t.Errorf("%s text sits %vpx from its slot's left and %vpx from its right, want centred", name, left, right)
+			}
+		}
 	}
 }
 

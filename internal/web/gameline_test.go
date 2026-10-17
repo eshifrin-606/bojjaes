@@ -224,8 +224,8 @@ func TestAFreeAgentShowsNothingAfterTheTeam(t *testing.T) {
 
 	body := serveGames(tree, upcomingCIN(time.Date(2026, 10, 11, 17, 0, 0, 0, time.UTC)))
 
-	if got := starterMeta(t, body, "Ladd McConkey"); got != "WR · FA" {
-		t.Errorf("meta markup = %q, want exactly %q", got, "WR · FA")
+	if got := metaText(starterMeta(t, body, "Ladd McConkey")); got != "WR · FA" {
+		t.Errorf("meta line = %q, want exactly %q", got, "WR · FA")
 	}
 }
 

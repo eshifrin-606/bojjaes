@@ -791,7 +791,10 @@ A starter whose roster team is `FA` SHALL show no game state and no trailing sep
 
 The position-and-team line SHALL run under the points as well as the name, since the points are
 on the name's line only. It SHALL fit a kickoff on one line on a 390px-wide phone, and MAY wrap
-when the column is narrower. It SHALL NOT extend outside its column at any viewport width, and a wrapped line SHALL NOT break the alignment of starter rows
+when the column is narrower. The position and the team SHALL each sit centred in a slot exactly as wide
+as the widest value it can hold in the reader's font, so on unwrapped lines every row's team, and
+every row's game state, starts at the same offset in both columns, and a row with the widest values
+is spaced as if it had no slots. It SHALL NOT extend outside its column at any viewport width, and a wrapped line SHALL NOT break the alignment of starter rows
 across the two columns.
 
 #### Scenario: An upcoming game shows its kickoff
