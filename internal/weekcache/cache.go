@@ -12,14 +12,12 @@ import (
 	"log"
 	"sync"
 	"time"
-
-	"github.com/eshifrin/bojjaes/internal/score"
 )
 
-// StatsSource supplies one season and week's stats.
-type StatsSource interface {
-	WeekStats(ctx context.Context, season, week int) (score.WeekStats, error)
-}
+// Source fetches one season and week's value. It is a function rather than an
+// interface so a provider's method is passed as a method value and the cache
+// needs no interface per value type.
+type Source[V any] func(ctx context.Context, season, week int) (V, error)
 
 // key is the whole of a cache entry's identity: one fetch returns every
 // player in the league, so there is no partial hit and nothing to merge.
@@ -27,8 +25,8 @@ type key struct {
 	season, week int
 }
 
-type entry struct {
-	stats score.WeekStats
+type entry[V any] struct {
+	value V
 	err   error
 
 	// fetchedAt is when the upstream call completed, not when the entry was
@@ -42,7 +40,7 @@ type entry struct {
 	done chan struct{}
 }
 
-func (e *entry) inFlight() bool {
+func (e *entry[V]) inFlight() bool {
 	select {
 	case <-e.done:
 		return false
@@ -66,8 +64,8 @@ const defaultFetchTimeout = 30 * time.Second
 // Cache is safe for concurrent use, and only useful shared: one instance
 // wrapping one source is one upstream budget, so a caller that constructs its
 // own has opted out of the bound rather than gaining a private copy of it.
-type Cache struct {
-	source StatsSource
+type Cache[V any] struct {
+	source Source[V]
 	ttl    time.Duration
 
 	// fetchTimeout is a seam like now: a test cannot wait out the real bound.
@@ -82,34 +80,40 @@ type Cache struct {
 	logf func(format string, args ...any)
 
 	mu      sync.Mutex
-	entries map[key]*entry
+	entries map[key]*entry[V]
 }
 
 // Option adjusts a Cache at construction. Options exist for tests — main
 // constructs a Cache with none, so the clock and the fetch timeout stay
 // unexported seams rather than configuration.
-type Option func(*Cache)
+type Option func(*cacheOptions)
 
 // WithClock replaces the wall clock the Cache reads fetch instants and expiry
 // from. A test in another package that needs to move time or pin a fetch
 // instant against a known value passes one.
 func WithClock(now func() time.Time) Option {
-	return func(c *Cache) { c.now = now }
+	return func(o *cacheOptions) { o.now = now }
 }
 
-func New(source StatsSource, ttl time.Duration, opts ...Option) *Cache {
-	c := &Cache{
+// cacheOptions is what an Option sets. It is not generic, so an Option is one
+// type for every Cache rather than one per value type.
+type cacheOptions struct {
+	now func() time.Time
+}
+
+func New[V any](source Source[V], ttl time.Duration, opts ...Option) *Cache[V] {
+	o := cacheOptions{now: time.Now}
+	for _, opt := range opts {
+		opt(&o)
+	}
+	return &Cache[V]{
 		source:       source,
 		ttl:          ttl,
 		fetchTimeout: defaultFetchTimeout,
-		now:          time.Now,
+		now:          o.now,
 		logf:         log.Printf,
-		entries:      make(map[key]*entry),
+		entries:      make(map[key]*entry[V]),
 	}
-	for _, opt := range opts {
-		opt(c)
-	}
-	return c
 }
 
 // WeekStatsAsOf returns a week's stats together with the instant the fetch that
@@ -117,7 +121,7 @@ func New(source StatsSource, ttl time.Duration, opts ...Option) *Cache {
 // drove the fetch, a cache hit, a released waiter — gets that entry's recorded
 // fetchedAt, so a page served from cache can date its data to the fetch rather
 // than to the request.
-func (c *Cache) WeekStatsAsOf(ctx context.Context, season, week int) (score.WeekStats, time.Time, error) {
+func (c *Cache[V]) WeekStatsAsOf(ctx context.Context, season, week int) (V, time.Time, error) {
 	k := key{season: season, week: week}
 
 	c.mu.Lock()
@@ -129,20 +133,21 @@ func (c *Cache) WeekStatsAsOf(ctx context.Context, season, week int) (score.Week
 			// fetchedAt is written under c.mu before close(done) on the success
 			// path, so a released waiter reads a stable value; on the failure
 			// path it stays zero and err is non-nil.
-			return cached.stats, cached.fetchedAt, cached.err
+			return cached.value, cached.fetchedAt, cached.err
 		case <-ctx.Done():
 			// A waiter leaving takes only itself: the flight runs on, and the
 			// other waiters are still served by it.
-			return score.WeekStats{}, time.Time{}, ctx.Err()
+			var zero V
+			return zero, time.Time{}, ctx.Err()
 		}
 	}
 	if ok && !c.expired(cached) {
 		age := c.now().Sub(cached.fetchedAt)
 		c.mu.Unlock()
 		c.logf("statscache hit: %d week %d, %s old", season, week, age)
-		return cached.stats, cached.fetchedAt, nil
+		return cached.value, cached.fetchedAt, nil
 	}
-	flight := &entry{done: make(chan struct{})}
+	flight := &entry[V]{done: make(chan struct{})}
 	c.entries[k] = flight
 	c.mu.Unlock()
 
@@ -156,7 +161,7 @@ func (c *Cache) WeekStatsAsOf(ctx context.Context, season, week int) (score.Week
 	// so its exposure is bounded by the cache's own timeout instead.
 	fetchCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), c.fetchTimeout)
 	start := c.now()
-	flight.stats, flight.err = c.source.WeekStats(fetchCtx, season, week)
+	flight.value, flight.err = c.source(fetchCtx, season, week)
 	cancel()
 
 	// One line per miss: a miss is one upstream call spent, and misses arrive
@@ -179,18 +184,18 @@ func (c *Cache) WeekStatsAsOf(ctx context.Context, season, week int) (score.Week
 	c.mu.Unlock()
 	close(flight.done)
 
-	return flight.stats, flight.fetchedAt, flight.err
+	return flight.value, flight.fetchedAt, flight.err
 }
 
 // Invalidate drops a week's entry so its next read fetches afresh. It makes no
 // upstream call itself: freshness stays pull-driven.
-func (c *Cache) Invalidate(season, week int) {
+func (c *Cache[V]) Invalidate(season, week int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	delete(c.entries, key{season: season, week: week})
 }
 
-func (c *Cache) logMiss(season, week int, elapsed time.Duration, err error) {
+func (c *Cache[V]) logMiss(season, week int, elapsed time.Duration, err error) {
 	if err != nil {
 		c.logf("statscache miss: %d week %d failed after %s: %v", season, week, elapsed, err)
 		return
@@ -204,7 +209,7 @@ func (c *Cache) logMiss(season, week int, elapsed time.Duration, err error) {
 //
 // An age of exactly the TTL is expired: the requirement is that an entry lives
 // *for* the TTL, so the instant it has fully elapsed is already outside.
-func (c *Cache) expired(e *entry) bool {
+func (c *Cache[V]) expired(e *entry[V]) bool {
 	return c.now().Sub(e.fetchedAt) >= c.ttl
 }
 
@@ -216,7 +221,7 @@ func (c *Cache) expired(e *entry) bool {
 // The clock is deliberately not consulted: an entry past its TTL still reports
 // its instant. Expiry decides when the next read fetches, not whether the last
 // fetch happened.
-func (c *Cache) FetchedAt(season, week int) (time.Time, bool) {
+func (c *Cache[V]) FetchedAt(season, week int) (time.Time, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

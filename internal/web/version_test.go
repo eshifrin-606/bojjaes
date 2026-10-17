@@ -89,7 +89,7 @@ func TestThePageStatesItsFirstCheckDelay(t *testing.T) {
 func TestACacheHitCarriesTheOriginalFetchsVersion(t *testing.T) {
 	upstream := &countingStatsSource{weekStats: fixtureStats()}
 	clock := &webFakeClock{t: asOfInstant}
-	cache := weekcache.New(upstream, 5*time.Minute, weekcache.WithClock(clock.now))
+	cache := weekcache.New(upstream.WeekStats, 5*time.Minute, weekcache.WithClock(clock.now))
 	h := Handler(lineup.New(fixtureWeek()), cache)
 
 	first := renderedVersion(t, serve(h, http.MethodGet, "/2025/15").Body.String())

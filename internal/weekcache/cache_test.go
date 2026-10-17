@@ -16,7 +16,7 @@ import (
 // The cache is only useful if it can stand in for the provider wherever one is
 // taken, so the web transport's interface is asserted here rather than
 // discovered at the composition root.
-var _ web.StatsSource = (*Cache)(nil)
+var _ web.StatsSource = (*Cache[score.WeekStats])(nil)
 
 // timedStatsSource is a local copy of internal/web's freshness-reporting
 // interface shape. Asserting it here keeps the cache's substitutability for the
@@ -25,7 +25,7 @@ type timedStatsSource interface {
 	WeekStatsAsOf(ctx context.Context, season, week int) (score.WeekStats, time.Time, error)
 }
 
-var _ timedStatsSource = (*Cache)(nil)
+var _ timedStatsSource = (*Cache[score.WeekStats])(nil)
 
 // testTTL stands in for the production TTL; expiry tests move the clock
 // relative to it rather than depending on its value.
@@ -114,7 +114,7 @@ func fetchOrdinal(t *testing.T, stats score.WeekStats) int {
 
 func TestWeekStatsReachesTheSource(t *testing.T) {
 	source := &fakeSource{}
-	cache := New(source, testTTL)
+	cache := New(source.WeekStats, testTTL)
 
 	stats, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
 	if err != nil {
@@ -159,7 +159,7 @@ func TestSecondRequestWithinTTLIsServedFromCache(t *testing.T) {
 
 func TestDifferentWeeksDoNotShareAnEntry(t *testing.T) {
 	source := &fakeSource{}
-	cache := New(source, testTTL)
+	cache := New(source.WeekStats, testTTL)
 
 	fifteen, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
 	if err != nil {
@@ -216,9 +216,9 @@ func (c *fakeClock) advance(d time.Duration) {
 }
 
 // newTestCache wires a cache to a clock the test controls.
-func newTestCache(source StatsSource, ttl time.Duration) (*Cache, *fakeClock) {
+func newTestCache(source *fakeSource, ttl time.Duration) (*Cache[score.WeekStats], *fakeClock) {
 	clock := newFakeClock()
-	cache := New(source, ttl)
+	cache := New(source.WeekStats, ttl)
 	cache.now = clock.now
 	return cache, clock
 }
@@ -289,7 +289,7 @@ func TestEntryLivesUpToTheTTLAndNotBeyond(t *testing.T) {
 // fetchedAt reads an entry's recorded fetch time. Nothing in production reads
 // it yet; it is stored so the as-of timestamp can report when the data was
 // fetched rather than when the page was requested.
-func fetchedAt(t *testing.T, cache *Cache, season, week int) time.Time {
+func fetchedAt(t *testing.T, cache *Cache[score.WeekStats], season, week int) time.Time {
 	t.Helper()
 
 	cache.mu.Lock()
@@ -576,7 +576,7 @@ func TestARequestAfterTheFlightCompletesIsAHit(t *testing.T) {
 }
 
 // recordLogs redirects the cache's log to a slice the test can read back.
-func recordLogs(cache *Cache) *[]string {
+func recordLogs(cache *Cache[score.WeekStats]) *[]string {
 	var mu sync.Mutex
 	var lines []string
 	cache.logf = func(format string, args ...any) {

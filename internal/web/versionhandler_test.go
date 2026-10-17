@@ -134,7 +134,7 @@ func TestTheEndpointRefusesAMalformedPath(t *testing.T) {
 func TestTheEndpointFollowsTheCacheThePageIsServedFrom(t *testing.T) {
 	upstream := &countingStatsSource{weekStats: fixtureStats()}
 	clock := &webFakeClock{t: asOfInstant.Add(123456789 * time.Nanosecond)}
-	cache := weekcache.New(upstream, 5*time.Minute, weekcache.WithClock(clock.now))
+	cache := weekcache.New(upstream.WeekStats, 5*time.Minute, weekcache.WithClock(clock.now))
 	page := Handler(lineup.New(fixtureWeek()), cache)
 	endpoint := VersionHandler(cache)
 

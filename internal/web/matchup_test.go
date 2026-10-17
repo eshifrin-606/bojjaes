@@ -977,7 +977,7 @@ func (c *webFakeClock) advance(d time.Duration) {
 func TestAServedCacheHitDatesStatsToTheFetchNotTheRequest(t *testing.T) {
 	upstream := &countingStatsSource{weekStats: fixtureStats()}
 	clock := &webFakeClock{t: asOfInstant}
-	cache := weekcache.New(upstream, 5*time.Minute, weekcache.WithClock(clock.now))
+	cache := weekcache.New(upstream.WeekStats, 5*time.Minute, weekcache.WithClock(clock.now))
 	h := Handler(lineup.New(fixtureWeek()), cache)
 
 	first := serve(h, http.MethodGet, "/2025/15")

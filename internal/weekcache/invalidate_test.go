@@ -30,7 +30,7 @@ func TestARequestAfterInvalidationFetchesAgain(t *testing.T) {
 
 func TestInvalidationMakesNoCallByItself(t *testing.T) {
 	source := &fakeSource{}
-	cache := New(source, testTTL)
+	cache := New(source.WeekStats, testTTL)
 
 	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2026, 4); err != nil {
 		t.Fatalf("WeekStats: %v", err)
@@ -63,7 +63,7 @@ func TestInvalidationLeavesOtherWeeksCached(t *testing.T) {
 
 func TestInvalidatingANeverFetchedWeekIsHarmless(t *testing.T) {
 	source := &fakeSource{}
-	cache := New(source, testTTL)
+	cache := New(source.WeekStats, testTTL)
 
 	cache.Invalidate(2026, 4)
 
