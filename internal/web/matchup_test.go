@@ -18,6 +18,7 @@ import (
 	"testing/fstest"
 	"time"
 
+	"github.com/eshifrin/bojjaes/internal/games"
 	"github.com/eshifrin/bojjaes/internal/lineup"
 	"github.com/eshifrin/bojjaes/internal/score"
 	"github.com/eshifrin/bojjaes/internal/weekcache"
@@ -51,6 +52,14 @@ func (f *fakeSource) AsOf(_ context.Context, season, week int) (score.WeekStats,
 		return score.WeekStats{}, time.Time{}, f.err
 	}
 	return f.weekStats, f.fetchedAt, nil
+}
+
+// noGames is a games source for a week with no games, so no starter line
+// carries a game state.
+type noGames struct{}
+
+func (noGames) AsOf(_ context.Context, season, week int) (games.Week, time.Time, error) {
+	return games.NewWeek(season, week, nil), time.Time{}, nil
 }
 
 func TestChicagoLocationLoadsAtInit(t *testing.T) {
@@ -380,7 +389,7 @@ func TestBadRequestPaths(t *testing.T) {
 			// An empty tree and a provider that fails the test if called: a
 			// refusal that touched either would show up as something other
 			// than a 400.
-			h := Handler(lineup.New(fstest.MapFS{}), unusedSource{t})
+			h := Handler(lineup.New(fstest.MapFS{}), unusedSource{t}, noGames{})
 
 			if rec := serve(h, http.MethodGet, tt.path); rec.Code != http.StatusBadRequest {
 				t.Errorf("GET %s = %d, want %d", tt.path, rec.Code, http.StatusBadRequest)
@@ -393,7 +402,7 @@ func TestBadRequestPaths(t *testing.T) {
 // The test pins the registration: dropping the GET would make the page answer
 // a POST.
 func TestPostIsNotAllowed(t *testing.T) {
-	h := Handler(lineup.New(fstest.MapFS{}), unusedSource{t})
+	h := Handler(lineup.New(fstest.MapFS{}), unusedSource{t}, noGames{})
 
 	if rec := serve(h, http.MethodPost, "/2025/15"); rec.Code != http.StatusMethodNotAllowed {
 		t.Errorf("POST /2025/15 = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
@@ -406,7 +415,7 @@ func TestBothTeamsAppearWithUsFirst(t *testing.T) {
 		"wood":    lineupHeader + "8138,Bijan Robinson,RB,ATL\n",
 	})
 
-	rec := serve(Handler(lineup.New(weekTree), &fakeSource{}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(weekTree), &fakeSource{}, noGames{}), http.MethodGet, "/2025/15")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body)
 	}
@@ -429,7 +438,7 @@ func TestAlphabeticallyEarlierOpponentStaysOnTheRight(t *testing.T) {
 		"aardvarks": lineupHeader + "8138,Bijan Robinson,RB,ATL\n",
 	})
 
-	rec := serve(Handler(lineup.New(weekTree), &fakeSource{}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(weekTree), &fakeSource{}, noGames{}), http.MethodGet, "/2025/15")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body)
 	}
@@ -494,7 +503,7 @@ func TestWeekRefusals(t *testing.T) {
 
 			// No refusal reaches the provider: there is no reason to fetch a
 			// week we already know we cannot render.
-			rec := serve(Handler(lineup.New(weekTree), unusedSource{t}), http.MethodGet, "/2025/"+strconv.Itoa(tt.week))
+			rec := serve(Handler(lineup.New(weekTree), unusedSource{t}, noGames{}), http.MethodGet, "/2025/"+strconv.Itoa(tt.week))
 			if rec.Code != tt.want {
 				t.Errorf("status = %d, want %d", rec.Code, tt.want)
 			}
@@ -513,7 +522,7 @@ func TestWeekRefusals(t *testing.T) {
 }
 
 func TestStartersRenderWithTheirPoints(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body)
 	}
@@ -542,7 +551,7 @@ func TestEachStarterRendersItsShortName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: tt.weekStats}), http.MethodGet, "/2025/15")
+			rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: tt.weekStats}, noGames{}), http.MethodGet, "/2025/15")
 
 			want := fixtureShortNames(t)
 			if got := renderedShortNames(rec.Body.String()); !slices.Equal(got, want) {
@@ -563,7 +572,7 @@ func TestEachStarterRendersItsPositionAndTeam(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: tt.weekStats}), http.MethodGet, "/2025/15")
+			rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: tt.weekStats}, noGames{}), http.MethodGet, "/2025/15")
 
 			want := fixtureMeta(t)
 			if got := renderedMeta(rec.Body.String()); !slices.Equal(got, want) {
@@ -574,7 +583,7 @@ func TestEachStarterRendersItsPositionAndTeam(t *testing.T) {
 }
 
 func TestEachColumnTotalsItsStarters(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	want := []string{"56", "42"}
 	if got := renderedTotals(rec.Body.String()); !slices.Equal(got, want) {
@@ -589,7 +598,7 @@ func TestBenchPlayersAreNotRendered(t *testing.T) {
 		"wood":    lineupCSV(theirLine),
 	})
 
-	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	body := rec.Body.String()
 	for _, name := range []string{"First Bench", "Second Bench", "Third Bench"} {
@@ -605,7 +614,7 @@ func TestBenchPlayersAreNotRendered(t *testing.T) {
 func TestOneFetchServesBothColumns(t *testing.T) {
 	source := &fakeSource{weekStats: fixtureStats()}
 
-	serve(Handler(lineup.New(fixtureWeek()), source), http.MethodGet, "/2025/15")
+	serve(Handler(lineup.New(fixtureWeek()), source, noGames{}), http.MethodGet, "/2025/15")
 
 	if source.calls != 1 {
 		t.Errorf("provider called %d times, want 1: the two columns must come from one snapshot", source.calls)
@@ -615,7 +624,7 @@ func TestOneFetchServesBothColumns(t *testing.T) {
 func TestAFailedFetchServesNoPage(t *testing.T) {
 	source := &fakeSource{err: errors.New("upstream is down")}
 
-	rec := serve(Handler(lineup.New(fixtureWeek()), source), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), source, noGames{}), http.MethodGet, "/2025/15")
 
 	if rec.Code != http.StatusBadGateway {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusBadGateway)
@@ -629,7 +638,7 @@ func TestAFailedFetchServesNoPage(t *testing.T) {
 // off, is inactive, or does not exist, so absence is shown as absence.
 func TestAMissingStarterIsNotZero(t *testing.T) {
 	// Brandon Aubrey, who would have scored 15, has no entry this week.
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats("7")}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats("7")}, noGames{}), http.MethodGet, "/2025/15")
 
 	body := rec.Body.String()
 	if !slices.Contains(renderedStarters(body), "Brandon Aubrey=--") {
@@ -645,7 +654,7 @@ func TestAMissingStarterIsNotZero(t *testing.T) {
 }
 
 func TestAnAbsentStarterContributesNothingToTheTotal(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats("7")}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats("7")}, noGames{}), http.MethodGet, "/2025/15")
 
 	// 56 less Aubrey's 15: the other eight starters, and nothing for him.
 	if got := renderedTotals(rec.Body.String()); !slices.Equal(got, []string{"41", "42"}) {
@@ -656,7 +665,7 @@ func TestAnAbsentStarterContributesNothingToTheTotal(t *testing.T) {
 // A total is always a number: a column with nothing to add up totals 0, not the
 // placeholder its starter lines carry.
 func TestAColumnWithNoStatsAtAllTotalsZero(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats("11", "12", "13", "14", "15", "16", "17", "18", "19")}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats("11", "12", "13", "14", "15", "16", "17", "18", "19")}, noGames{}), http.MethodGet, "/2025/15")
 	body := rec.Body.String()
 
 	starters := renderedStarters(body)
@@ -676,7 +685,7 @@ func TestAColumnWithNoStatsAtAllTotalsZero(t *testing.T) {
 // A scoreless week is a real line, not an absence: Jayden Daniels is in the
 // payload having done nothing.
 func TestAScorelessStarterIsZero(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	if !slices.Contains(renderedStarters(rec.Body.String()), "Jayden Daniels=0") {
 		t.Errorf("scoreless starter did not render 0; got %q", renderedStarters(rec.Body.String()))
@@ -687,7 +696,7 @@ func TestAScorelessStarterIsZero(t *testing.T) {
 // inactive, so anything implying a winner would present an unsettled reading
 // as a result.
 func TestThePageShowsNoMargin(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 	body := rec.Body.String()
 
 	if got := renderedTotals(body); !slices.Equal(got, []string{"56", "42"}) {
@@ -714,7 +723,7 @@ func TestThePageShowsNoMargin(t *testing.T) {
 // The two columns differ only in their content: one class, used twice, with
 // nothing keyed on which total is larger.
 func TestTheTwoColumnsCarryTheSameMarkup(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 	body := rec.Body.String()
 
 	if got := strings.Count(body, `class="column"`); got != 2 {
@@ -735,7 +744,7 @@ var headerTagPattern = regexp.MustCompile(`<header\b([^>]*)>`)
 
 // A class or style on one heading is the hook a leader highlight would need.
 func TestTheHeadingsCarryNoClassOrStyle(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	tags := headerTagPattern.FindAllStringSubmatch(rec.Body.String(), -1)
 	if len(tags) != 2 {
@@ -752,7 +761,7 @@ var sectionPattern = regexp.MustCompile(`(?s)<section class="column">(.*?)</sect
 var headerPattern = regexp.MustCompile(`(?s)<header>(.*?)</header>`)
 
 func TestTheTeamNameAndTotalShareAHeading(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	sections := sectionPattern.FindAllStringSubmatch(rec.Body.String(), -1)
 	if len(sections) != 2 {
@@ -781,7 +790,7 @@ func TestLineupTextIsEscaped(t *testing.T) {
 		"wood":    lineupHeader + "11,Josh Allen,QB,BUF\n",
 	})
 
-	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	body := rec.Body.String()
 	if strings.Contains(body, "<b>") {
@@ -808,7 +817,7 @@ func TestAShortNameIsEscaped(t *testing.T) {
 		t.Fatalf("fixture short name %q lost its <b>; pick a record whose short name keeps the markup", shortName)
 	}
 
-	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	body := rec.Body.String()
 	if strings.Contains(body, "<b>") {
@@ -820,23 +829,34 @@ func TestAShortNameIsEscaped(t *testing.T) {
 }
 
 func TestThePageIsServedAsHTML(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	if got := rec.Header().Get("Content-Type"); got != "text/html; charset=utf-8" {
 		t.Errorf("Content-Type = %q, want an HTML type", got)
 	}
 }
 
+// asOfTimes is the <time> elements inside the as-of line alone; kickoffs carry
+// <time> elements of their own elsewhere on the page.
+func asOfTimes(t *testing.T, body string) [][2]string {
+	t.Helper()
+	m := asOfLinePattern.FindStringSubmatch(body)
+	if m == nil {
+		t.Fatalf("no <p class=\"as-of\"> element:\n%s", body)
+	}
+	return renderedTimes(m[1])
+}
+
 func TestThePageStampsTheFetchInstantAsRFC3339(t *testing.T) {
 	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
-	rec := serve(Handler(lineup.New(fixtureWeek()), source), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), source, fixtureGames(games.Upcoming)), http.MethodGet, "/2025/15")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body)
 	}
 
-	times := renderedTimes(rec.Body.String())
+	times := asOfTimes(t, rec.Body.String())
 	if len(times) != 1 {
-		t.Fatalf("page has %d <time> elements, want exactly 1", len(times))
+		t.Fatalf("as-of line has %d <time> elements, want exactly 1", len(times))
 	}
 	if got, want := times[0][0], asOfInstant.Format(time.RFC3339); got != want {
 		t.Errorf("datetime attribute = %q, want %q", got, want)
@@ -848,11 +868,11 @@ func TestThePageStampsTheFetchInstantAsRFC3339(t *testing.T) {
 // bare Chicago wall-clock string.
 func TestTheDatetimeAttributeIsAnUnambiguousInstant(t *testing.T) {
 	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
-	rec := serve(Handler(lineup.New(fixtureWeek()), source), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), source, fixtureGames(games.Upcoming)), http.MethodGet, "/2025/15")
 
-	times := renderedTimes(rec.Body.String())
+	times := asOfTimes(t, rec.Body.String())
 	if len(times) != 1 {
-		t.Fatalf("page has %d <time> elements, want exactly 1", len(times))
+		t.Fatalf("as-of line has %d <time> elements, want exactly 1", len(times))
 	}
 
 	parsed, err := time.Parse(time.RFC3339, times[0][0])
@@ -866,7 +886,7 @@ func TestTheDatetimeAttributeIsAnUnambiguousInstant(t *testing.T) {
 
 func TestThePageShowsTheFetchInstantInChicagoTime(t *testing.T) {
 	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
-	rec := serve(Handler(lineup.New(fixtureWeek()), source), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), source, noGames{}), http.MethodGet, "/2025/15")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body)
 	}
@@ -878,7 +898,7 @@ func TestThePageShowsTheFetchInstantInChicagoTime(t *testing.T) {
 
 func TestTheAsOfLineIsLabelledAsFetchedAndDoesNotOverclaimCurrency(t *testing.T) {
 	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
-	rec := serve(Handler(lineup.New(fixtureWeek()), source), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), source, fixtureGames(games.InProgress)), http.MethodGet, "/2025/15")
 
 	body := rec.Body.String()
 	text := visibleText(body)
@@ -891,10 +911,15 @@ func TestTheAsOfLineIsLabelledAsFetchedAndDoesNotOverclaimCurrency(t *testing.T)
 		t.Errorf("the text before the timestamp does not say it was fetched: %q", label)
 	}
 
-	lower := strings.ToLower(body)
+	// Scoped to the as-of line: a starter's game in progress reads "Live",
+	// which is about that game, not about how fresh the page is.
+	if !strings.Contains(body, `<span class="game">Live</span>`) {
+		t.Fatalf("the fixture shows no game in progress, so this cannot tell the as-of line from a row")
+	}
+	lower := strings.ToLower(asOfLinePattern.FindString(body))
 	for _, overclaim := range []string{"live", "current"} {
 		if strings.Contains(lower, overclaim) {
-			t.Errorf("the page contains %q, which overclaims how current it is", overclaim)
+			t.Errorf("the as-of line contains %q, which overclaims how current it is", overclaim)
 		}
 	}
 }
@@ -905,7 +930,7 @@ var asOfLinePattern = regexp.MustCompile(`(?s)<p class="as-of"[^>]*>(.*?)</p>`)
 // rule that governs the two columns governs this element too.
 func TestTheAsOfLineImpliesNoWinner(t *testing.T) {
 	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
-	rec := serve(Handler(lineup.New(fixtureWeek()), source), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), source, noGames{}), http.MethodGet, "/2025/15")
 	body := rec.Body.String()
 
 	if got := renderedTotals(body); !slices.Equal(got, []string{"56", "42"}) {
@@ -978,7 +1003,7 @@ func TestAServedCacheHitDatesStatsToTheFetchNotTheRequest(t *testing.T) {
 	upstream := &countingStatsSource{weekStats: fixtureStats()}
 	clock := &webFakeClock{t: asOfInstant}
 	cache := weekcache.New("statscache", upstream.WeekStats, 5*time.Minute, weekcache.WithClock(clock.now))
-	h := Handler(lineup.New(fixtureWeek()), cache)
+	h := Handler(lineup.New(fixtureWeek()), cache, noGames{})
 
 	first := serve(h, http.MethodGet, "/2025/15")
 	if first.Code != http.StatusOK {
@@ -1154,7 +1179,7 @@ func TestTheStyleSheetDeclares(t *testing.T) {
 		{name: "the week label is no larger than the team names", block: []string{".weeks h1"}, declaration: "font-size: 1.125rem"},
 	}
 
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 	style := renderedStyle(t, rec.Body.String())
 
 	for _, tt := range tests {
@@ -1180,7 +1205,7 @@ func TestTheStyleSheetDeclares(t *testing.T) {
 // column-gap alone; a bare `gap` would open unwanted space between every
 // starter row.
 func TestMatchupGridHasNoGapShorthand(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 	style := renderedStyle(t, rec.Body.String())
 
 	block, found := cssBlock(style, ".matchup")
@@ -1214,7 +1239,7 @@ func TestMatchupGridHasNoGapShorthand(t *testing.T) {
 }
 
 func TestRowPaddingIsVerticalOnly(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 	style := renderedStyle(t, rec.Body.String())
 
 	block, found := cssBlock(style, ".column li")
@@ -1232,7 +1257,7 @@ func TestRowPaddingIsVerticalOnly(t *testing.T) {
 // The total sits beside the team name now, so a sum rule above it would read
 // as a line under the heading rather than under the starters it adds up.
 func TestTheTotalHasNoSumLine(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 	style := renderedStyle(t, rec.Body.String())
 
 	block, found := cssBlock(style, ".total")
@@ -1249,7 +1274,7 @@ func TestTheTotalHasNoSumLine(t *testing.T) {
 // A regression pin: row separation comes from hairlines and the meta line
 // alone, never from zebra striping keyed on row position.
 func TestRowsAreNotStriped(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 	style := renderedStyle(t, rec.Body.String())
 
 	for _, forbidden := range []string{"nth-child", ":nth-of-type", "odd", "even"} {
@@ -1273,7 +1298,7 @@ func TestRowsAreNotStriped(t *testing.T) {
 // A name too long for its row wraps; a starter's name is never shortened by the
 // browser into something the roster does not say.
 func TestNoNameIsCutOffWithAnEllipsis(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	style := renderedStyle(t, rec.Body.String())
 	for _, forbidden := range []string{"text-overflow", "ellipsis"} {
@@ -1284,7 +1309,7 @@ func TestNoNameIsCutOffWithAnEllipsis(t *testing.T) {
 }
 
 func TestThePageCarriesARefreshScript(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	if script := renderedScript(t, rec.Body.String()); strings.TrimSpace(script) == "" {
 		t.Error("the page's script element is empty")
@@ -1292,7 +1317,7 @@ func TestThePageCarriesARefreshScript(t *testing.T) {
 }
 
 func TestTheRefreshIntervalIsFiveMinutes(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	script := renderedScript(t, rec.Body.String())
 	if !strings.Contains(script, "5 * 60 * 1000") {
@@ -1303,7 +1328,7 @@ func TestTheRefreshIntervalIsFiveMinutes(t *testing.T) {
 // A hidden tab must cost nothing upstream, so the reload is conditioned on the
 // tab being visible at the moment the timer fires.
 func TestTheRefreshIsGuardedByTabVisibility(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	script := renderedScript(t, rec.Body.String())
 	for _, want := range []string{"document.visibilityState", `"visible"`} {
@@ -1314,7 +1339,7 @@ func TestTheRefreshIsGuardedByTabVisibility(t *testing.T) {
 }
 
 func TestTheScriptListensForTheTabComingBack(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	script := renderedScript(t, rec.Body.String())
 	if !strings.Contains(script, "visibilitychange") {
@@ -1325,7 +1350,7 @@ func TestTheScriptListensForTheTabComingBack(t *testing.T) {
 // Returning to the tab reloads only when the page is already older than the
 // interval, so a glance away costs nothing.
 func TestReturningToTheTabRefreshesOnlyWhenStale(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	script := renderedScript(t, rec.Body.String())
 	if !strings.Contains(script, "Date.now()") {
@@ -1346,13 +1371,21 @@ func TestReturningToTheTabRefreshesOnlyWhenStale(t *testing.T) {
 // contexts the escaping requirement already covers.
 func TestNoLineupTextReachesTheScript(t *testing.T) {
 	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
-	rec := serve(Handler(lineup.New(fixtureWeek()), source), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), source, fixtureGames(games.Upcoming)), http.MethodGet, "/2025/15")
 
 	body := rec.Body.String()
 	script := renderedScript(t, body)
+	// The instants the script rewrites are read from their time elements, so
+	// none of them belongs in the script either.
+	instants := []string{"2025-12-14T21:05:00Z", asOfInstant.Format(time.RFC3339)}
+	for _, instant := range instants {
+		if !strings.Contains(body, `datetime="`+instant+`"`) {
+			t.Fatalf("the page carries no time element for %s to keep out of the script", instant)
+		}
+	}
 	// The stats version is page data too: the script reads it from the as-of
 	// line rather than carrying it.
-	names := []string{"bojjaes", "wood", renderedVersion(t, body)}
+	names := append([]string{"bojjaes", "wood", renderedVersion(t, body)}, instants...)
 	for _, line := range renderedStarters(body) {
 		names = append(names, strings.Split(line, "=")[0])
 	}
@@ -1367,7 +1400,7 @@ func TestNoLineupTextReachesTheScript(t *testing.T) {
 // The strongest form of the no-interpolation rule: nothing about the week can
 // change the script, so an interpolation added later shows up here.
 func TestTheScriptIsIdenticalAcrossWeeks(t *testing.T) {
-	first := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	first := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	otherFS := weekFS(2024, 3, map[string]string{
 		"bojjaes": lineupHeader + "31,Ja'Marr Chase,WR,CIN\n",
@@ -1377,7 +1410,7 @@ func TestTheScriptIsIdenticalAcrossWeeks(t *testing.T) {
 		"31": {PlayerID: "31", RecTD: 3},
 		"32": {PlayerID: "32", RecTD: 1},
 	})
-	second := serve(Handler(lineup.New(otherFS), &fakeSource{weekStats: otherStats}), http.MethodGet, "/2024/3")
+	second := serve(Handler(lineup.New(otherFS), &fakeSource{weekStats: otherStats}, noGames{}), http.MethodGet, "/2024/3")
 
 	if a, b := renderedScript(t, first.Body.String()), renderedScript(t, second.Body.String()); a != b {
 		t.Errorf("the script differs between weeks:\n%s\n---\n%s", a, b)
@@ -1387,7 +1420,7 @@ func TestTheScriptIsIdenticalAcrossWeeks(t *testing.T) {
 // The no-winner rule binds the script too: a refresh must not become the route
 // by which the page starts marking which total moved.
 func TestTheScriptImpliesNoWinner(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, fixtureGames(games.InProgress)), http.MethodGet, "/2025/15")
 
 	script := strings.ToLower(renderedScript(t, rec.Body.String()))
 	for _, word := range []string{"win", "lead", "los", "ahead", "behind", "trail", "margin", "diff", "total", "score"} {
@@ -1406,7 +1439,7 @@ func TestTheScriptImpliesNoWinner(t *testing.T) {
 
 func TestAMiddleWeekLinksBothWays(t *testing.T) {
 	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3)))
-	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/2")
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2026/2")
 
 	prev, next := renderedWeekLinks(rec.Body.String())
 	if prev != "/2026/1" || next != "/2026/3" {
@@ -1418,7 +1451,7 @@ func TestAMiddleWeekLinksBothWays(t *testing.T) {
 // directly: the page must never link to a week its own URL check would refuse.
 func TestTheFirstWeekHasNoPreviousLink(t *testing.T) {
 	tree := lineup.New(treeFS(matchupWeek(2026, 0), matchupWeek(2026, 1), matchupWeek(2026, 2)))
-	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/1")
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2026/1")
 
 	prev, next := renderedWeekLinks(rec.Body.String())
 	if prev != "" || next != "/2026/2" {
@@ -1428,7 +1461,7 @@ func TestTheFirstWeekHasNoPreviousLink(t *testing.T) {
 
 func TestTheLastWeekOfTheRangeHasNoNextLink(t *testing.T) {
 	tree := lineup.New(treeFS(matchupWeek(2026, 17), matchupWeek(2026, 18), matchupWeek(2026, 19)))
-	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/18")
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2026/18")
 
 	prev, next := renderedWeekLinks(rec.Body.String())
 	if prev != "/2026/17" || next != "" {
@@ -1438,7 +1471,7 @@ func TestTheLastWeekOfTheRangeHasNoNextLink(t *testing.T) {
 
 func TestTheLatestWeekHasNoNextLink(t *testing.T) {
 	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2)))
-	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/2")
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2026/2")
 
 	prev, next := renderedWeekLinks(rec.Body.String())
 	if prev != "/2026/1" || next != "" {
@@ -1448,7 +1481,7 @@ func TestTheLatestWeekHasNoNextLink(t *testing.T) {
 
 func TestLinksDoNotCrossASeason(t *testing.T) {
 	tree := lineup.New(treeFS(matchupWeek(2025, 16), matchupWeek(2026, 1)))
-	h := Handler(tree, &fakeSource{weekStats: fixtureStats()})
+	h := Handler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{})
 
 	if _, next := renderedWeekLinks(serve(h, http.MethodGet, "/2025/16").Body.String()); next != "" {
 		t.Errorf("2025 week 16 next link = %q, want none", next)
@@ -1460,7 +1493,7 @@ func TestLinksDoNotCrossASeason(t *testing.T) {
 
 func TestAGapIsNotSkipped(t *testing.T) {
 	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 3)))
-	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/3")
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2026/3")
 
 	if prev, _ := renderedWeekLinks(rec.Body.String()); prev != "" {
 		t.Errorf("prev link = %q, want none", prev)
@@ -1475,7 +1508,7 @@ func TestABrokenNeighbourStillGetsALink(t *testing.T) {
 		"wood":    lineupCSV(theirLine),
 	})
 	tree := lineup.New(treeFS(matchupWeek(2026, 2), broken))
-	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/2")
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2026/2")
 
 	if _, next := renderedWeekLinks(rec.Body.String()); next != "/2026/3" {
 		t.Errorf("next link = %q, want %q", next, "/2026/3")
@@ -1485,7 +1518,7 @@ func TestABrokenNeighbourStillGetsALink(t *testing.T) {
 func TestOnlyTheShownWeekIsFetched(t *testing.T) {
 	source := &fakeSource{weekStats: fixtureStats()}
 	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3)))
-	serve(Handler(tree, source), http.MethodGet, "/2026/2")
+	serve(Handler(tree, source, noGames{}), http.MethodGet, "/2026/2")
 
 	if want := [][2]int{{2026, 2}}; !slices.Equal(source.asked, want) {
 		t.Errorf("provider asked for %v, want %v", source.asked, want)
@@ -1500,7 +1533,7 @@ var (
 
 func TestThePageNamesItsWeek(t *testing.T) {
 	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3)))
-	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/2")
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2026/2")
 
 	var heading string
 	if m := headingPattern.FindStringSubmatch(rec.Body.String()); m != nil {
@@ -1513,7 +1546,7 @@ func TestThePageNamesItsWeek(t *testing.T) {
 
 func TestEachLinkNamesTheWeekItLeadsTo(t *testing.T) {
 	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3)))
-	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/2")
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2026/2")
 
 	text := map[string]string{}
 	for _, m := range relLinkPattern.FindAllStringSubmatch(rec.Body.String(), -1) {
@@ -1532,7 +1565,7 @@ func TestTheWeekBarIsIdenticalWhateverTheScore(t *testing.T) {
 	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3)))
 	weekBar := func(stats score.WeekStats, wantTotals []string) string {
 		t.Helper()
-		body := serve(Handler(tree, &fakeSource{weekStats: stats}), http.MethodGet, "/2026/2").Body.String()
+		body := serve(Handler(tree, &fakeSource{weekStats: stats}, noGames{}), http.MethodGet, "/2026/2").Body.String()
 		if totals := renderedTotals(body); !slices.Equal(totals, wantTotals) {
 			t.Fatalf("totals = %q, want %q", totals, wantTotals)
 		}

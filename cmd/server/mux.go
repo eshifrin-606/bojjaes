@@ -17,9 +17,9 @@ type weekStats interface {
 
 // newMux builds the routing table as a value. On DefaultServeMux it would be
 // process-wide state that cannot be built twice.
-func newMux(stats weekStats, tree *lineup.Tree) *http.ServeMux {
+func newMux(stats weekStats, games web.GamesSource, tree *lineup.Tree) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.Handle("GET /{season}/{week}", web.Handler(tree, stats))
+	mux.Handle("GET /{season}/{week}", web.Handler(tree, stats, games))
 	mux.Handle("GET /{season}/{week}/version", web.VersionHandler(stats))
 	mux.Handle("GET /{season}", web.SeasonHandler(tree))
 	return mux

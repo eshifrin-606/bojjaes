@@ -29,6 +29,9 @@ type columnLayout struct {
 	FirstLi     *rect
 	SecondLi    *rect
 	FirstPlayer *rect
+	FirstMeta   *rect
+	FirstGame   *rect
+	LiTops      []float64
 	Column      rect
 }
 
@@ -73,6 +76,9 @@ const measuringScript = `<pre id="layout"></pre>
       FirstLi: box(c.querySelector("li")),
       SecondLi: box(c.querySelectorAll("li")[1]),
       FirstPlayer: box(c.querySelector(".player")),
+      FirstMeta: box(c.querySelector(".meta")),
+      FirstGame: box(c.querySelector(".game")),
+      LiTops: Array.prototype.map.call(c.querySelectorAll("li"), function (li) { return li.getBoundingClientRect().top; }),
       Column: box(c)
     };
   });
@@ -127,7 +133,7 @@ func renderedLayout(t *testing.T, body string) layout {
 }
 
 func TestTheHarnessMeasuresTheStarterList(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	l := renderedLayout(t, rec.Body.String())
 
@@ -156,7 +162,7 @@ func TestStarterRowsLineUpAcrossCards(t *testing.T) {
 		"bojjaes": lineupCSV(wrapping),
 		"wood":    lineupCSV(theirLine),
 	})
-	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	l := renderedLayout(t, rec.Body.String()+narrowCardCSS)
 
@@ -174,7 +180,7 @@ func TestStarterRowsLineUpAcrossCards(t *testing.T) {
 }
 
 func TestTheTotalSitsOnTheTeamNameLine(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	l := renderedLayout(t, rec.Body.String())
 
@@ -196,7 +202,7 @@ func TestTheTotalSitsOnTheTeamNameLine(t *testing.T) {
 }
 
 func TestNothingSitsAboveTheHeading(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	l := renderedLayout(t, rec.Body.String())
 
@@ -217,7 +223,7 @@ func TestNothingSitsAboveTheHeading(t *testing.T) {
 }
 
 func TestTheBandSpansTheCard(t *testing.T) {
-	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	l := renderedLayout(t, rec.Body.String())
 
@@ -241,7 +247,7 @@ func TestAWrappedTeamNameKeepsTheHeadingsAligned(t *testing.T) {
 		"bojjaes":                     lineupCSV(ourLine),
 		"extraordinarilylongteamname": lineupCSV(theirLine),
 	})
-	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	l := renderedLayout(t, rec.Body.String()+narrowCardCSS)
 
@@ -271,7 +277,7 @@ func TestAWrappedTeamNameKeepsTheHeadingsAligned(t *testing.T) {
 func TestTheLabelDoesNotMoveWhenALinkIsAbsent(t *testing.T) {
 	labelLeft := func(tree *lineup.Tree) float64 {
 		t.Helper()
-		rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/2")
+		rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2026/2")
 		l := renderedLayout(t, rec.Body.String())
 		if l.Weeks.H1 == nil {
 			t.Fatal("no week label measured")
@@ -289,7 +295,7 @@ func TestTheLabelDoesNotMoveWhenALinkIsAbsent(t *testing.T) {
 
 func TestAPhoneFitsTheWeekBarOnOneLine(t *testing.T) {
 	tree := lineup.New(treeFS(matchupWeek(2026, 1), matchupWeek(2026, 2), matchupWeek(2026, 3)))
-	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}), http.MethodGet, "/2026/2")
+	rec := serve(Handler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2026/2")
 
 	w := renderedLayout(t, rec.Body.String()+narrowCardCSS).Weeks
 
@@ -317,5 +323,33 @@ func TestAPhoneFitsTheWeekBarOnOneLine(t *testing.T) {
 				t.Errorf("%s right %v overlaps %s left %v", a.name, a.r.Right, b.name, b.r.Left)
 			}
 		}
+	}
+}
+
+func TestAPhoneKeepsAKickoffInsideItsColumn(t *testing.T) {
+	kickoff := time.Date(2026, 10, 11, 17, 0, 0, 0, time.UTC)
+	body := serveGames(chaseTree(), upcomingCIN(kickoff))
+	if !strings.Contains(body, "Sun 12:00 PM") {
+		t.Fatalf("the page shows no kickoff to measure")
+	}
+
+	l := renderedLayout(t, body+narrowCardCSS)
+
+	if len(l.Columns) != 2 {
+		t.Fatalf("measured %d columns, want 2", len(l.Columns))
+	}
+	ours, theirs := l.Columns[0], l.Columns[1]
+	// The meta span's own box is its grid track whatever its text does; the
+	// inline game span is where an overflowing kickoff would show.
+	for name, r := range map[string]*rect{"meta line": ours.FirstMeta, "kickoff": ours.FirstGame} {
+		if r == nil {
+			t.Fatalf("no %s measured", name)
+		}
+		if r.Left < ours.Column.Left || r.Right > ours.Column.Right {
+			t.Errorf("the %s spans %v–%v, outside its column's %v–%v", name, r.Left, r.Right, ours.Column.Left, ours.Column.Right)
+		}
+	}
+	if !slices.Equal(ours.LiTops, theirs.LiTops) {
+		t.Errorf("starter row tops = %v and %v, want them equal", ours.LiTops, theirs.LiTops)
 	}
 }

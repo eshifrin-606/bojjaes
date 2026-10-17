@@ -39,7 +39,7 @@ func runCheckScript(t *testing.T, firstDelay int, budget time.Duration, answer h
 	}
 
 	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
-	body := serve(Handler(lineup.New(fixtureWeek()), source), http.MethodGet, "/2025/15").Body.String()
+	body := serve(Handler(lineup.New(fixtureWeek()), source, noGames{}), http.MethodGet, "/2025/15").Body.String()
 	served := fmt.Sprintf(`data-next-check="%d"`, checkDelaySeconds)
 	if !strings.Contains(body, served) {
 		t.Fatalf("the page does not carry %s to replace", served)

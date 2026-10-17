@@ -13,7 +13,7 @@ func servedScript(t *testing.T) string {
 	t.Helper()
 
 	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
-	rec := serve(Handler(lineup.New(fixtureWeek()), source), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), source, noGames{}), http.MethodGet, "/2025/15")
 	return renderedScript(t, rec.Body.String())
 }
 

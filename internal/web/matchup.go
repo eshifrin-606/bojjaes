@@ -17,6 +17,7 @@ import (
 	// same whether or not the deploy image ships /usr/share/zoneinfo.
 	_ "time/tzdata"
 
+	"github.com/eshifrin/bojjaes/internal/games"
 	"github.com/eshifrin/bojjaes/internal/lineup"
 	"github.com/eshifrin/bojjaes/internal/score"
 )
@@ -85,6 +86,11 @@ func versionToken(fetchedAt time.Time) string {
 // against their own.
 const fetchedAtLayout = "Mon, Jan 2 2006 3:04 PM MST"
 
+// kickoffLayout has no zone abbreviation: with one, the meta line wrapped to
+// three lines on a phone. A reader whose script does not run sees an
+// unlabelled Central time.
+const kickoffLayout = "Mon 3:04 PM"
+
 type column struct {
 	Team     string
 	Starters []starter
@@ -99,6 +105,12 @@ type starter struct {
 	// Points is formatted here rather than in the template, so the choice
 	// between a number and a placeholder is made in Go, where it is testable.
 	Points string
+	// Game is where the starter's NFL game stands. For a game not yet kicked
+	// off it is empty and KickoffRFC3339 is set instead; both empty means the
+	// line ends at the team.
+	Game           string
+	KickoffRFC3339 string
+	KickoffText    string
 }
 
 // StatsSource supplies one season and week's stats along with the instant they
@@ -109,6 +121,13 @@ type starter struct {
 // design.
 type StatsSource interface {
 	AsOf(ctx context.Context, season, week int) (score.WeekStats, time.Time, error)
+}
+
+// GamesSource supplies one season and week's NFL games. The fetch instant is
+// part of the shape so a cache can satisfy it the same way it satisfies
+// StatsSource; the page states no instant for the games.
+type GamesSource interface {
+	AsOf(ctx context.Context, season, week int) (games.Week, time.Time, error)
 }
 
 // seasonWeek reads the season and week from the request path. When either is
@@ -133,7 +152,7 @@ func seasonWeek(w http.ResponseWriter, r *http.Request) (season, week int, ok bo
 }
 
 // Handler renders the matchup page for the season and week in the request path.
-func Handler(tree *lineup.Tree, source StatsSource) http.Handler {
+func Handler(tree *lineup.Tree, source StatsSource, gameSource GamesSource) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Both segments are validated before the lineup tree is opened and
 		// before the provider is called: a typo in a URL must not reach
@@ -200,6 +219,15 @@ func Handler(tree *lineup.Tree, source StatsSource) http.Handler {
 			return
 		}
 
+		// Read after the stats so a stats failure costs no games fetch. A
+		// failure here only drops the game states: they annotate the scores,
+		// and the scores are what the page is for.
+		weekGames, _, err := gameSource.AsOf(r.Context(), season, week)
+		gamesAvailable := err == nil
+		if err != nil {
+			log.Printf("fetching games for %d week %d: %v", season, week, err)
+		}
+
 		view := matchup{
 			Season:           season,
 			Week:             week,
@@ -211,7 +239,7 @@ func Handler(tree *lineup.Tree, source StatsSource) http.Handler {
 			NextCheckSeconds: checkDelaySeconds,
 		}
 		for i, team := range teams {
-			view.Columns[i] = scoreColumn(team, lineups[i], weekStats)
+			view.Columns[i] = scoreColumn(team, lineups[i], weekStats, weekGames, gamesAvailable)
 		}
 
 		// Rendered into a buffer first: executing straight into the
@@ -236,13 +264,20 @@ func formatPoints(pts float64) string {
 	return strconv.FormatFloat(pts, 'f', -1, 64)
 }
 
-// scoreColumn scores one lineup's starters out of the week's stats.
-func scoreColumn(team string, l lineup.Lineup, weekStats score.WeekStats) column {
+// scoreColumn scores one lineup's starters out of the week's stats and states
+// each one's game from the week's games.
+func scoreColumn(team string, l lineup.Lineup, weekStats score.WeekStats, weekGames games.Week, gamesAvailable bool) column {
 	col := column{Team: team}
 
 	var total float64
 	for _, rec := range l.Starters() {
 		s := starter{Name: rec.Name, ShortName: rec.ShortName, Position: rec.Position, Team: rec.Team, Points: noStats}
+		var kickoff time.Time
+		s.Game, kickoff = gameState(rec.Team, weekGames, gamesAvailable)
+		if !kickoff.IsZero() {
+			s.KickoffRFC3339 = kickoff.Format(time.RFC3339)
+			s.KickoffText = kickoff.In(chicagoLoc).Format(kickoffLayout)
+		}
 
 		// Absence and a scoreless week are different facts, and Player's
 		// second return is the only thing that tells them apart.

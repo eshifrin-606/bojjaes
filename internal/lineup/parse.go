@@ -18,7 +18,8 @@ type Record struct {
 	ShortName string
 	// Position is display text only.
 	Position string
-	// Team is display text only.
+	// Team is display text and the key to the player's game in the week's
+	// games; it never identifies the player.
 	Team string
 }
 

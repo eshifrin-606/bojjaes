@@ -17,6 +17,7 @@ graph TD
     end
     subgraph domain["internal — domain"]
         score["internal/score"]
+        games["internal/games"]
         lineup["internal/lineup"]
         files[("internal/lineup/data/*.csv<br/><i>embedded</i>")]
     end
@@ -34,8 +35,10 @@ graph TD
     main --> sleeperpkg
     main --> lineup
     web --> score
+    web --> games
     web --> lineup
     sleeperpkg --> score
+    sleeperpkg --> games
     sleeperpkg --> sleeper
     weekcache -. wraps at runtime .-> sleeperpkg
     lineup --> files
@@ -45,7 +48,7 @@ Every arrow into the domain points inward, and nothing but `main` names a provid
 shape [ADR 0002](adr/0002-live-scoreboard-backend.md) asked for, now held by the compiler rather
 than by a comment.
 
-The invariant is directional, not a count: `score` and `lineup` must not import `sleeper` or `web`. `score` also takes no stdlib import that would commit the domain to something it should
+The invariant is directional, not a count: `score`, `games`, and `lineup` must not import `sleeper` or `web`. `score` also takes no stdlib import that would commit the domain to something it should
 not decide — no `net/http`, `os`, or `io` (side effects), and no `encoding/json` (a wire format).
 It does import `fmt`, which commits it to nothing: a validation error naming the seasons the
 league could have played is domain vocabulary, not transport.
@@ -58,18 +61,20 @@ serialization decision. Read the direction of the arrows, not the length of the 
 
 | Package | Role | Imports (first-party) | Imports (stdlib) | Imported by |
 | --- | --- | --- | --- | --- |
-| `cmd/server` | Process entrypoint and composition root. Constructs the provider, wraps it in the cache, constructs the lineup tree, builds the mux, and owns the process lifecycle: listen address, connection timeouts, and the drain on `SIGTERM`. | `internal/lineup`, `internal/sleeper`, `internal/web`, `internal/weekcache` | `context`, `errors`, `log`, `net`, `net/http`, `os`, `os/signal`, `syscall`, `time` | — |
+| `cmd/server` | Process entrypoint and composition root. Constructs the provider, wraps its stats and its games each in a cache, constructs the lineup tree, builds the mux, and owns the process lifecycle: listen address, connection timeouts, and the drain on `SIGTERM`. | `internal/lineup`, `internal/sleeper`, `internal/web`, `internal/weekcache` | `context`, `errors`, `fmt`, `io/fs`, `log`, `net`, `net/http`, `os`, `os/signal`, `path/filepath`, `syscall`, `time` | — |
 | `internal/score` | The scoring domain: `StatLine`, `Points`, `WeekStats`, and the season/week bounds. | none | `fmt` | `internal/sleeper`, `internal/web` |
-| `internal/sleeper` | The Sleeper adapter: the HTTP client, the base URL, the stat-key transform. | `internal/score` | `context`, `encoding/json`, `fmt`, `net/http`, `time` | `cmd/server` |
+| `internal/games` | A week's NFL games, provider-neutral: `Game`, its `State`, and `Week` with `ForTeam`. | none | `time` | `internal/sleeper`, `internal/web` |
+| `internal/sleeper` | The Sleeper adapter: the HTTP client, the base URL, the stat-key transform, and the scores endpoint read into `games.Week`. | `internal/games`, `internal/score` | `context`, `encoding/json`, `fmt`, `net/http`, `regexp`, `strconv`, `strings`, `sync`, `time` | `cmd/server` |
 | `internal/weekcache` | A caching decorator over any weekly fetch, generic over its value: TTL expiry, single-flight, the `TTL` constant. | none | `context`, `log`, `sync`, `time` | `cmd/server` |
-| `internal/web` | The HTML transport: `GET /{season}/{week}`, its view model, its template. | `internal/lineup`, `internal/score` | `bytes`, `context`, `embed`, `errors`, `html/template`, `log`, `net/http`, `strconv`, `time`, `time/tzdata` | `cmd/server` |
+| `internal/web` | The HTML transport: `GET /{season}/{week}`, its view model, its template. | `internal/games`, `internal/lineup`, `internal/score` | `bytes`, `context`, `embed`, `encoding/json`, `errors`, `html/template`, `log`, `net/http`, `strconv`, `strings`, `time`, `time/tzdata` | `cmd/server` |
 | `internal/lineup` | Lineup knowledge: file format, tree layout, matchup resolution, starters/bench split, and the embedded tree itself. | none | `bufio`, `embed`, `errors`, `fmt`, `io`, `io/fs`, `path`, `path/filepath`, `strings` | `cmd/server`, `internal/web` |
 
 ### `cmd/server`
 
 Thin by design, and the only place the provider and the transport meet: it constructs a
 `sleeper.Client` and a `lineup.Tree` and hands them to `web.Handler`, which knows only the
-one-method `AsOf` interface it declares for itself, satisfied by the wrapped cache. If
+one-method `AsOf` interfaces it declares for itself, `StatsSource` and `GamesSource`, satisfied by
+the two wrapped caches. If
 logic starts appearing here, it belongs in a package instead — `main()` should stay readable as a
 table of contents for the service.
 
@@ -80,7 +85,10 @@ different tree — a live one off disk, say — is a different `fs.FS` at this o
 Because the wiring is here, the TTL cache landed as pure addition: `weekcache.New` wraps the
 `sleeper.Client`'s `WeekStats` method value in this file and the wrapped value goes to both handlers, with no consumer edited
 and no handler file touched. Wrapping once matters — a cache per handler would be two upstream
-budgets for one league — and it is the kind of thing only a composition root can guarantee.
+budgets for one league — and it is the kind of thing only a composition root can guarantee. Games
+arrived the same way: a second `weekcache.New("gamescache", client.WeekGames, weekcache.TTL)` over
+the same client. Only the stats cache is hooked to the play store's invalidation; dropping a week's
+stats leaves its games alone.
 
 The package is no longer one file, and the split is what made it testable at all. `main()` is the
 untested few lines that name the real environment, the real signal disposition, and the real
@@ -88,7 +96,7 @@ address; everything it calls takes those as arguments and lives beside it:
 
 - **`addr.go`** — `resolveAddr(getenv)`. `PORT` if set and non-empty, `8080` otherwise. The lookup
   is a parameter so a test passes a map instead of mutating the process environment.
-- **`mux.go`** — `newMux(stats, tree)` returns an owned `*http.ServeMux`. Registering on
+- **`mux.go`** — `newMux(stats, games, tree)` returns an owned `*http.ServeMux`. Registering on
   `DefaultServeMux` made the routing table process-wide state that could not be built twice in one
   test binary without a duplicate-pattern panic; as a value it can be built and driven with
   `httptest`.
@@ -120,12 +128,25 @@ The domain. Four files, and `fmt` is the whole of its stdlib surface:
   request body against them and `web` validates two URL segments. Two copies would eventually
   disagree.
 
+### `internal/games`
+
+The second domain vocabulary, shaped like `WeekStats`: a week's games, built by an adapter through
+`NewWeek` and read through `ForTeam`, so `web` can show a starter's game state without importing a
+provider. A game is found by team code, matched exactly, and `Empty` tells a week with no games
+apart from one team's bye. `State` maps the provider's status into upcoming, in progress, complete,
+or `Other`, which keeps a status never seen before rather than guessing; the provider's quarter and
+status text ride along as sent, and the wording is `web`'s choice. `time` is its only import.
+
 ### `internal/sleeper`
 
 The only package that talks to the network, and the only one in which a Sleeper stat key appears —
 a fact worth re-checking by grep rather than trusting. `FetchWeekStats` fetches once and transforms
 **every** entry in the payload, so the decoded `map[string]map[string]float64` never outlives the
 call. `Client` is the same thing with the base URL held in a field, so `main` wires a value.
+
+`Client.WeekGames` reads the scores endpoint (`/scores/nfl/regular/<season>/<week>`), which unlike
+the schedule endpoint carries kickoff and quarter, and translates Sleeper's fields only. An unplayed
+week answers `[]`, an empty week rather than an error.
 
 Mapping the whole payload rather than the ~18 players a request wants is a deliberate cost, measured
 rather than assumed: about 0.7 ms against the 13 ms JSON decode that produced its input. See
@@ -180,13 +201,19 @@ is in comments at each site and in the change's notes.
 
 ### `internal/web`
 
-The HTML edge, and the third thing this map used to predict: it imports both domain packages so
-neither has to import the other. It resolves a week to two teams through `lineup.Tree`, reads both
+The HTML edge, and the third thing this map used to predict: it imports the domain packages so
+none has to import another. It resolves a week to two teams through `lineup.Tree`, reads both
 lineups, fetches the week's stats **once**, and scores both columns from that one snapshot — the
-two columns must not come from different readings of the week.
+two columns must not come from different readings of the week. Then it fetches the week's games,
+after the stats so a stats failure costs no games fetch, and finds each starter's game by the
+lineup record's `Team`. A games failure is logged and the page is served with no game state.
 
-It declares its own `StatsSource` and never imports `internal/sleeper`, so its tests build a
-`score.WeekStats` with `NewWeekStats` rather than standing up an `httptest` server. That is what let
+The page's script rewrites the served Central-time instants into the reader's timezone: a kickoff
+(`Sun 12:00 PM`, served with no zone label) stays unlabelled, and the as-of line takes the reader's
+zone abbreviation.
+
+It declares its own `StatsSource` and `GamesSource` and never imports `internal/sleeper`, so its
+tests build a `score.WeekStats` with `NewWeekStats` and a `games.Week` with `NewWeek` rather than standing up an `httptest` server. That is what let
 the TTL cache arrive as a wrapping `StatsSource` wired in `main` with nothing here edited.
 
 `embed` and `html/template` are the imports that mark it: `matchup.html` lives beside the handler
@@ -197,9 +224,10 @@ before it could fail.
 
 ## What the shape tells you
 
-- **`score` and `lineup` still do not know about each other.** A lineup is a list of player IDs;
-  scoring takes player IDs. Neither needs the other's types. They meet in callers — `cmd/server`
-  and `internal/web`.
+- **`score`, `games`, and `lineup` still do not know about each other.** A lineup is a list of
+  player IDs; scoring takes player IDs. A record's `Team` is the key to its game, but as a string,
+  so `lineup` needs no `games` type. None needs another's types. They meet in callers —
+  `cmd/server` and `internal/web`.
 - **The next edge was a third thing, as expected.** The served page arrived as `internal/web`,
   importing both, rather than `lineup` importing `score` (which would drag a transport concern into
   a pure domain package) or the reverse. Expect the same of the next consumer: a season-long view
@@ -209,9 +237,10 @@ before it could fail.
   either cannot reach it without an import that is not there.
 - **A few tests add first-party edges the map does not show.** Every test is in-package, and there
   are still no third-party dependencies anywhere in `go.mod`. `cmd/server` has tests now, and they
-  add a test-only edge to `internal/score`: the stub that stands in for the cache has to return a
-  `score.WeekStats`. But `internal/weekcache`'s tests import `internal/web` and `internal/score` to
-  assert at compile time that `*Cache[score.WeekStats]` satisfies its `StatsSource`, and
+  add test-only edges to `internal/score` and `internal/games`: the stubs that stand in for the caches
+  have to return a `score.WeekStats` and a `games.Week`. But `internal/weekcache`'s tests import `internal/web` and `internal/score` to
+  assert at compile time that `*Cache[score.WeekStats]` satisfies its `StatsSource` (and
+  `internal/games`, to exercise the games cache), and
   `internal/web`'s tests now import `internal/weekcache` to serve a
   page end to end over a real cache and check that a cache hit dates its stats to the fetch. Those
   edges are deliberate and test-only: the substitutability and the freshness attribution are the
