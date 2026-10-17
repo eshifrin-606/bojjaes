@@ -1,4 +1,4 @@
-package sleeper
+package plays
 
 import (
 	"context"
@@ -29,7 +29,7 @@ func TestWholeWeekFetchThatAddsPlaysReportsTheWeek(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.releaseWholeFetches()
 	ps.wholeBody = readFixture(t, "testdata/plays_2026_w3.json")
-	store := NewPlayStore(ps.URL, 0, noLog)
+	store := NewStore(ps.URL, 0, noLog)
 	changed := &weekRecorder{}
 	store.OnWholeWeekChanged(changed.record)
 
@@ -49,7 +49,7 @@ func TestWholeWeekFetchThatChangesNothingReportsNothing(t *testing.T) {
 	ps.releaseWholeFetches()
 	ps.pollBody = jsonPlays(t, held)
 	ps.wholeBody = jsonPlays(t, held)
-	store := NewPlayStore(ps.URL, 0, noLog)
+	store := NewStore(ps.URL, 0, noLog)
 	store.now = func() time.Time { return changedAt.Add(2 * time.Hour) } // quiet, so a post-game refresh runs
 	store.merge(2026, 3, []play{held})
 	changed := &weekRecorder{}
@@ -71,7 +71,7 @@ func TestFailedWholeWeekFetchReportsNothing(t *testing.T) {
 	ps.releaseWholeFetches()
 	ps.wholeStatus = http.StatusBadGateway
 	ps.wholeBody = readFixture(t, "testdata/plays_2026_w3.json")
-	store := NewPlayStore(ps.URL, 0, noLog)
+	store := NewStore(ps.URL, 0, noLog)
 	changed := &weekRecorder{}
 	store.OnWholeWeekChanged(changed.record)
 
@@ -86,7 +86,7 @@ func TestFailedWholeWeekFetchReportsNothing(t *testing.T) {
 func TestPollThatAddsPlaysReportsNothing(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.pollBody = jsonPlays(t, play{ID: "old", UpdatedAt: 100}, play{ID: "new", UpdatedAt: 200})
-	store := NewPlayStore(ps.URL, 0, noLog)
+	store := NewStore(ps.URL, 0, noLog)
 	store.now = func() time.Time { return time.UnixMilli(200) } // live week, overlapping poll: no whole-week fetch
 	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
 	changed := &weekRecorder{}

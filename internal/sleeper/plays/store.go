@@ -1,4 +1,4 @@
-package sleeper
+package plays
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 
 type weekKey struct{ season, week int }
 
-type PlayStore struct {
+type Store struct {
 	mu          sync.Mutex
 	baseURL     string
 	logf        func(format string, args ...any)
@@ -25,7 +25,7 @@ type PlayStore struct {
 }
 
 // merge reports whether any play was added or replaced.
-func (s *PlayStore) merge(season, week int, plays []play) bool {
+func (s *Store) merge(season, week int, plays []play) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -47,7 +47,7 @@ func (s *PlayStore) merge(season, week int, plays []play) bool {
 	return changed
 }
 
-func (s *PlayStore) snapshot(season, week int) []play {
+func (s *Store) snapshot(season, week int) []play {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -58,13 +58,13 @@ func (s *PlayStore) snapshot(season, week int) []play {
 	return out
 }
 
-func (s *PlayStore) holdsPlays(season, week int) bool {
+func (s *Store) holdsPlays(season, week int) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return len(s.weeks[weekKey{season, week}]) > 0
 }
 
-func (s *PlayStore) needsWholeFetch(season, week int, polled []play) bool {
+func (s *Store) needsWholeFetch(season, week int, polled []play) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -75,7 +75,7 @@ func (s *PlayStore) needsWholeFetch(season, week int, polled []play) bool {
 	return len(polled) > 0 && oldestUpdate(polled) > s.newestHeld(season, week)
 }
 
-func (s *PlayStore) newestHeld(season, week int) int64 {
+func (s *Store) newestHeld(season, week int) int64 {
 	var newest int64
 	for _, p := range s.weeks[weekKey{season, week}] {
 		newest = max(newest, p.UpdatedAt)
@@ -91,7 +91,7 @@ func oldestUpdate(plays []play) int64 {
 	return oldest
 }
 
-func (s *PlayStore) markWholeFetched(season, week int, at time.Time) {
+func (s *Store) markWholeFetched(season, week int, at time.Time) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -105,7 +105,7 @@ func (s *PlayStore) markWholeFetched(season, week int, at time.Time) {
 // and how long after its last change a whole fetch must run to be trusted.
 const quietPeriod = time.Hour
 
-func (s *PlayStore) needsPostGameRefresh(season, week int, now time.Time) bool {
+func (s *Store) needsPostGameRefresh(season, week int, now time.Time) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -118,17 +118,17 @@ func (s *PlayStore) needsPostGameRefresh(season, week int, now time.Time) bool {
 
 const pollLimit = 300
 
-func NewPlayStore(baseURL string, coldWait time.Duration, logf func(format string, args ...any)) *PlayStore {
-	return &PlayStore{baseURL: baseURL, coldWait: coldWait, logf: logf, pollTimeout: 5 * time.Second, now: time.Now}
+func NewStore(baseURL string, coldWait time.Duration, logf func(format string, args ...any)) *Store {
+	return &Store{baseURL: baseURL, coldWait: coldWait, logf: logf, pollTimeout: 5 * time.Second, now: time.Now}
 }
 
 // OnWholeWeekChanged registers fn to run after a whole-week fetch lands, so a
 // result scored before it can be dropped. Set it before the store is read.
-func (s *PlayStore) OnWholeWeekChanged(fn func(season, week int)) {
+func (s *Store) OnWholeWeekChanged(fn func(season, week int)) {
 	s.onWholeWeekChanged = fn
 }
 
-func (s *PlayStore) ForcedFumbles(ctx context.Context, season, week int, ids identities) map[string]int {
+func (s *Store) ForcedFumbles(ctx context.Context, season, week int, ids Identities) map[string]int {
 	pollCtx, cancel := context.WithTimeout(ctx, s.pollTimeout)
 	defer cancel()
 	start := s.now()
@@ -156,7 +156,7 @@ func (s *PlayStore) ForcedFumbles(ctx context.Context, season, week int, ids ide
 
 // wholeFetchReason names why a read needs a whole-week fetch, or "" if it
 // needs none.
-func (s *PlayStore) wholeFetchReason(season, week int, cold bool, polled []play) string {
+func (s *Store) wholeFetchReason(season, week int, cold bool, polled []play) string {
 	switch {
 	case cold:
 		return "cold"
@@ -176,7 +176,7 @@ const (
 // startWholeFetch runs at most one whole-week fetch per week at a time. The
 // returned channel closes when that fetch finishes, whether this call started
 // it or joined one already running.
-func (s *PlayStore) startWholeFetch(season, week int, reason string) <-chan struct{} {
+func (s *Store) startWholeFetch(season, week int, reason string) <-chan struct{} {
 	k := weekKey{season, week}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -201,7 +201,7 @@ func (s *PlayStore) startWholeFetch(season, week int, reason string) <-chan stru
 
 // fetchWholeWeek runs detached from any request: a cold-week waiter only
 // observes it, so a waiter giving up never cancels it.
-func (s *PlayStore) fetchWholeWeek(season, week int) {
+func (s *Store) fetchWholeWeek(season, week int) {
 	ctx, cancel := context.WithTimeout(context.Background(), wholeFetchBudget)
 	defer cancel()
 	start := s.now()

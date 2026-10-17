@@ -1,4 +1,4 @@
-package sleeper
+package plays
 
 import (
 	"sort"
@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func snapshotIDs(s *PlayStore, season, week int) []string {
+func snapshotIDs(s *Store, season, week int) []string {
 	ids := []string{}
 	for _, p := range s.snapshot(season, week) {
 		ids = append(ids, p.ID)
@@ -28,7 +28,7 @@ func assertIDs(t *testing.T, got []string, want ...string) {
 }
 
 func TestPlayStoreSnapshotHoldsMergedPlaysPerWeek(t *testing.T) {
-	s := &PlayStore{}
+	s := &Store{}
 	s.merge(2026, 2, []play{{ID: "a"}, {ID: "b"}})
 	s.merge(2026, 3, []play{{ID: "c"}})
 
@@ -38,7 +38,7 @@ func TestPlayStoreSnapshotHoldsMergedPlaysPerWeek(t *testing.T) {
 }
 
 func TestPlayStoreNewerCopyReplacesHeld(t *testing.T) {
-	s := &PlayStore{}
+	s := &Store{}
 	s.merge(2026, 3, []play{{ID: "a", UpdatedAt: 100, Metadata: playMeta{Description: "old"}}})
 	s.merge(2026, 3, []play{{ID: "a", UpdatedAt: 200, Metadata: playMeta{Description: "new"}}})
 
@@ -49,7 +49,7 @@ func TestPlayStoreNewerCopyReplacesHeld(t *testing.T) {
 }
 
 func TestPlayStoreIgnoresOlderCopy(t *testing.T) {
-	s := &PlayStore{}
+	s := &Store{}
 	s.merge(2026, 3, []play{{ID: "a", UpdatedAt: 200, Metadata: playMeta{Description: "new"}}})
 	s.merge(2026, 3, []play{{ID: "a", UpdatedAt: 100, Metadata: playMeta{Description: "old"}}})
 
@@ -60,14 +60,14 @@ func TestPlayStoreIgnoresOlderCopy(t *testing.T) {
 }
 
 func TestNeedsWholeFetchWhenWeekEmpty(t *testing.T) {
-	s := &PlayStore{}
+	s := &Store{}
 	if !s.needsWholeFetch(2026, 3, []play{{ID: "a", UpdatedAt: 100}}) {
 		t.Fatal("empty week should need a whole fetch")
 	}
 }
 
 func TestNeedsWholeFetchOnGap(t *testing.T) {
-	s := &PlayStore{}
+	s := &Store{}
 	s.merge(2026, 3, []play{{ID: "a", UpdatedAt: 100}})
 	if !s.needsWholeFetch(2026, 3, []play{{ID: "b", UpdatedAt: 150}, {ID: "c", UpdatedAt: 200}}) {
 		t.Fatal("poll starting after the newest held play leaves a gap")
@@ -75,7 +75,7 @@ func TestNeedsWholeFetchOnGap(t *testing.T) {
 }
 
 func TestNeedsWholeFetchFalseOnOverlap(t *testing.T) {
-	s := &PlayStore{}
+	s := &Store{}
 	s.merge(2026, 3, []play{{ID: "a", UpdatedAt: 100}})
 	if s.needsWholeFetch(2026, 3, []play{{ID: "a", UpdatedAt: 100}, {ID: "c", UpdatedAt: 200}}) {
 		t.Fatal("overlapping poll should not need a whole fetch")
@@ -84,8 +84,8 @@ func TestNeedsWholeFetchFalseOnOverlap(t *testing.T) {
 
 func TestPostGameRefresh(t *testing.T) {
 	newest := time.Date(2026, 9, 28, 20, 0, 0, 0, time.UTC)
-	held := func() *PlayStore {
-		s := &PlayStore{}
+	held := func() *Store {
+		s := &Store{}
 		s.merge(2026, 3, []play{{ID: "a", UpdatedAt: newest.UnixMilli()}})
 		return s
 	}
