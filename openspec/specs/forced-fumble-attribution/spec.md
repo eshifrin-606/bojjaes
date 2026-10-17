@@ -134,9 +134,9 @@ aggregate is unresolved: logged and not credited.
 ### Requirement: Attribution matches the official record
 
 Attribution over the recorded 2026 week 2 and week 3 plays SHALL agree with every row of
-`internal/sleeper/testdata/ff-test-players.csv`. A row marked `ff_turnover=yes` SHALL credit that
-Sleeper player with one turnover-qualified forced fumble on that play. A row marked `no` SHALL credit
-no one from that play. Plays SHALL be joined to rows by quarter and game clock.
+`internal/sleeper/plays/testdata/ff-test-players.csv`. A row marked `ff_turnover=yes` SHALL credit
+that Sleeper player with one turnover-qualified forced fumble on that play. A row marked `no` SHALL
+credit no one from that play. Plays SHALL be joined to rows by quarter and game clock.
 
 #### Scenario: Ground-truth rows reproduce
 
