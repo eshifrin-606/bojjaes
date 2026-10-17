@@ -44,9 +44,10 @@ func main() {
 	// A whole-week fetch that outlasts the cold wait lands after its week was
 	// cached from the poll alone; dropping the entry lets the next read see it.
 	plays.OnWholeWeekChanged(stats.Invalidate)
+	games := weekcache.New("gamescache", client.WeekGames, weekcache.TTL)
 
 	addr := resolveAddr(os.Getenv)
-	srv := newServer(addr, newMux(stats, lineup.New(lineupTree(resolveLineupVolume(os.Getenv)))))
+	srv := newServer(addr, newMux(stats, games, lineup.New(lineupTree(resolveLineupVolume(os.Getenv)))))
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)

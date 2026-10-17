@@ -45,7 +45,7 @@ func renderedVersion(t *testing.T, body string) string {
 
 func TestThePageCarriesItsStatsVersion(t *testing.T) {
 	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
-	rec := serve(Handler(lineup.New(fixtureWeek()), source), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), source, noGames{}), http.MethodGet, "/2025/15")
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body)
 	}
@@ -62,7 +62,7 @@ func TestTwoFetchesInOneSecondHaveDifferentVersions(t *testing.T) {
 	versions := make([]string, 2)
 	for i, fetchedAt := range []time.Time{asOfInstant.Add(100 * time.Millisecond), asOfInstant.Add(100*time.Millisecond + time.Nanosecond)} {
 		source := &fakeSource{weekStats: fixtureStats(), fetchedAt: fetchedAt}
-		rec := serve(Handler(lineup.New(fixtureWeek()), source), http.MethodGet, "/2025/15")
+		rec := serve(Handler(lineup.New(fixtureWeek()), source, noGames{}), http.MethodGet, "/2025/15")
 		versions[i] = renderedVersion(t, rec.Body.String())
 	}
 
@@ -75,7 +75,7 @@ var dataNextCheckPattern = regexp.MustCompile(`data-next-check="([^"]*)"`)
 
 func TestThePageStatesItsFirstCheckDelay(t *testing.T) {
 	source := &fakeSource{weekStats: fixtureStats(), fetchedAt: asOfInstant}
-	rec := serve(Handler(lineup.New(fixtureWeek()), source), http.MethodGet, "/2025/15")
+	rec := serve(Handler(lineup.New(fixtureWeek()), source, noGames{}), http.MethodGet, "/2025/15")
 
 	m := dataNextCheckPattern.FindStringSubmatch(asOfAttributes(t, rec.Body.String()))
 	if m == nil {
@@ -90,7 +90,7 @@ func TestACacheHitCarriesTheOriginalFetchsVersion(t *testing.T) {
 	upstream := &countingStatsSource{weekStats: fixtureStats()}
 	clock := &webFakeClock{t: asOfInstant}
 	cache := weekcache.New("statscache", upstream.WeekStats, 5*time.Minute, weekcache.WithClock(clock.now))
-	h := Handler(lineup.New(fixtureWeek()), cache)
+	h := Handler(lineup.New(fixtureWeek()), cache, noGames{})
 
 	first := renderedVersion(t, serve(h, http.MethodGet, "/2025/15").Body.String())
 	clock.advance(3 * time.Minute)

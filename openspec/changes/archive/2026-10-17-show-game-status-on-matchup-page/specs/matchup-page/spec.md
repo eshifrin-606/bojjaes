@@ -160,10 +160,10 @@ were fetched.
 Every instant the page shows SHALL be shown in the timezone of the reader's browser when the page
 script runs, and in `America/Chicago` otherwise. This covers each kickoff and the as-of line.
 
-The server SHALL render each instant as an `America/Chicago` wall-clock time, with that zone's
-abbreviation, as the text of a `<time>` element whose `datetime` attribute carries the instant as
-an RFC 3339 string. That text SHALL be complete and correct on its own, so a page whose script does
-not run still tells the reader which clock it is on.
+The server SHALL render each instant as an `America/Chicago` wall-clock time, as the text of a
+`<time>` element whose `datetime` attribute carries the instant as an RFC 3339 string. A served
+kickoff SHALL show a weekday and a time of day with no zone label, so the meta line fits a phone. A
+served as-of instant SHALL carry the zone abbreviation.
 
 The page script SHALL replace the text of each such element with the same instant in the browser's
 timezone, taking the instant from the element's `datetime` attribute. The weekday SHALL be computed
@@ -181,7 +181,7 @@ keeping with the requirement that the script carries no page data.
 #### Scenario: The server writes Central
 
 - **WHEN** a page is served with a kickoff at 2026-10-11T17:00:00Z
-- **THEN** the served markup's `<time>` for that kickoff reads `Sun 12:00 PM CDT`
+- **THEN** the served markup's `<time>` for that kickoff reads `Sun 12:00 PM`
 
 #### Scenario: A reader in another zone sees their own time
 
@@ -191,7 +191,7 @@ keeping with the requirement that the script carries no page data.
 #### Scenario: The weekday follows the reader's zone
 
 - **WHEN** a kickoff is at 2026-10-13T00:15:00Z
-- **THEN** the served markup reads `Mon 7:15 PM CDT`, and a browser whose timezone is `Europe/London`
+- **THEN** the served markup reads `Mon 7:15 PM`, and a browser whose timezone is `Europe/London`
   shows `Tue 1:15 AM`
 
 #### Scenario: A reader in Central sees the same clock time
@@ -208,8 +208,8 @@ keeping with the requirement that the script carries no page data.
 #### Scenario: Without the script, Central stays
 
 - **WHEN** the page is viewed with scripts disabled
-- **THEN** every instant on the page is the served `America/Chicago` text, zone abbreviation
-  included
+- **THEN** every instant on the page is the served `America/Chicago` text: kickoffs unlabelled, the
+  as-of line with its zone abbreviation
 
 #### Scenario: The rewrite puts no page data in the script
 

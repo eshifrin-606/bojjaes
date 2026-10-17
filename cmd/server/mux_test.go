@@ -4,9 +4,11 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/eshifrin/bojjaes/internal/games"
 	"github.com/eshifrin/bojjaes/internal/lineup"
 	"github.com/eshifrin/bojjaes/internal/score"
 )
@@ -21,8 +23,14 @@ func (stubStats) FetchedAt(int, int) (time.Time, bool) {
 	return time.Time{}, false
 }
 
+type stubGames struct{ games []games.Game }
+
+func (s stubGames) AsOf(_ context.Context, season, week int) (games.Week, time.Time, error) {
+	return games.NewWeek(season, week, s.games), time.Now(), nil
+}
+
 func testMux() *http.ServeMux {
-	return newMux(stubStats{}, lineup.New(lineup.Embedded))
+	return newMux(stubStats{}, stubGames{}, lineup.New(lineup.Embedded))
 }
 
 func TestMuxServesTheMatchupPage(t *testing.T) {
@@ -32,6 +40,18 @@ func TestMuxServesTheMatchupPage(t *testing.T) {
 
 	if rec.Code == http.StatusNotFound {
 		t.Errorf("GET /2025/15 = %d, want the matchup handler to answer", rec.Code)
+	}
+}
+
+func TestMuxRendersTheGamesSourcesGameState(t *testing.T) {
+	detroit := stubGames{games: []games.Game{{Home: "DET", Away: "LAR", State: games.Complete}}}
+	rec := httptest.NewRecorder()
+
+	newMux(stubStats{}, detroit, lineup.New(lineup.Embedded)).
+		ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/2025/15", nil))
+
+	if body := rec.Body.String(); !strings.Contains(body, `<span class="game">Final</span>`) {
+		t.Errorf("GET /2025/15 body has no Final game span; want the games source's DET game shown")
 	}
 }
 

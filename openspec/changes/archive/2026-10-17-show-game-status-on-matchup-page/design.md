@@ -187,8 +187,9 @@ stay aligned.
 
 Server text, in `America/Chicago`:
 
-- Kickoff: `Sun 12:00 PM CDT`. The zone label is there because an unscripted reader has no other
-  way to know which clock it is.
+- Kickoff: `Sun 12:00 PM`, with no zone label. With one, the meta line wrapped to three lines at
+  390px, the label itself splitting. An unscripted reader sees an unlabelled Central time; the
+  as-of line on the same page still names the zone.
 - As-of line: unchanged, `Sun, Oct 11 2026 5:07 PM CDT`.
 
 The script, after load, for each `<time>` with a `datetime`:
@@ -226,9 +227,8 @@ tabs on their five-minute reload.
   time is a visible sign the file needs a one-line fix.
 - [Game state can be about five minutes behind] → Same staleness as scores today. The next change
   revisits expiry.
-- [The meta line may not fit a 390px phone with a zone label] → Checked in the Chrome layout tests.
-  If it wraps badly, drop the label from the server text and accept an unlabelled Central time for
-  unscripted readers.
+- [An unscripted reader sees kickoffs in an unlabelled Central time] → Accepted for the phone fit
+  (D9). The as-of line still names the zone.
 - [The rewritten text flashes from Central to local on load] → The script is inline at the end of
   the body and runs before first paint in practice. Not verified on a slow device.
 - [Zone abbreviations outside the US render as `GMT+2`] → Acceptable for the as-of line. Kickoff
@@ -243,8 +243,6 @@ volume are untouched.
 
 ## Open Questions
 
-- Should the server's kickoff text carry `CDT`/`CST`, or a fixed `CT`? D9 uses what Go's zone
-  abbreviation gives, matching the as-of line.
 - Is `Live` the right word for an in-progress game with no quarter text, if that state exists?
 
 One thing found while reading the specs, not caused by this change: `weekly-stats-cache` says a

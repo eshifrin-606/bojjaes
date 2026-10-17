@@ -549,7 +549,7 @@ func TestARequestAfterTheFlightCompletesIsAHit(t *testing.T) {
 }
 
 // recordLogs redirects the cache's log to a slice the test can read back.
-func recordLogs(cache *Cache[score.WeekStats]) *[]string {
+func recordLogs[V any](cache *Cache[V]) *[]string {
 	var mu sync.Mutex
 	var lines []string
 	cache.logf = func(format string, args ...any) {

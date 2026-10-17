@@ -135,7 +135,7 @@ func TestTheEndpointFollowsTheCacheThePageIsServedFrom(t *testing.T) {
 	upstream := &countingStatsSource{weekStats: fixtureStats()}
 	clock := &webFakeClock{t: asOfInstant.Add(123456789 * time.Nanosecond)}
 	cache := weekcache.New("statscache", upstream.WeekStats, 5*time.Minute, weekcache.WithClock(clock.now))
-	page := Handler(lineup.New(fixtureWeek()), cache)
+	page := Handler(lineup.New(fixtureWeek()), cache, noGames{})
 	endpoint := VersionHandler(cache)
 
 	reported := func() any {

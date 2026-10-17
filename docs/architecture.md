@@ -15,7 +15,7 @@ graph LR
         tree[("internal/lineup/data/<br/>2025/15/*.csv<br/><i>embedded in the binary</i>")]
         server --- tree
     end
-    server -->|"one fetch per week per 5 min"| sleeper(["Sleeper REST API"])
+    server -->|"stats + games, one fetch each per week per 5 min"| sleeper(["Sleeper REST API"])
     server -.->|"HTML + inline JS"| reader
 ```
 
@@ -40,7 +40,8 @@ Three routes, all `GET`:
 | `/{season}/{week}/version` | which fetch the server holds for that week, as JSON; never fetches |
 | `/{season}` | a redirect to that season's latest week |
 
-The page is two columns, nine starters each, a total per side. No margin, no leader
+The page is two columns, nine starters each, a total per side. Each starter's line also says where
+their NFL team's game stands: a kickoff (`Sun 12:00 PM`), the quarter, `Final`, or `Bye`. No margin, no leader
 highlight, no win probability — [ADR 0004](adr/0004-web-frontend-stack.md) #8, and the refresh
 script is bound by it too (it never touches the previous page's values).
 
@@ -64,6 +65,10 @@ For the case where the timer breaks or bfcache leaves a tab weird, the page says
 line under the columns, "Sleeper stats fetched Sun, Oct 11 2026 1:24 PM CDT". That is the instant
 the stats were fetched from Sleeper, not the instant the page was requested, so a page served from
 the cache dates itself honestly.
+
+Both instants are served in Central time; the kickoff carries no zone label and the as-of line
+does. The page script rewrites each into the reader's own timezone: a kickoff stays unlabelled, and
+the as-of line takes the reader's zone abbreviation. If the rewrite fails, the Central text stays.
 
 ## 2. The refresh loop
 
@@ -143,8 +148,8 @@ requests reaches Sleeper.
 
 ## 3. Where the traffic goes
 
-One page load is at most one upstream fetch, and usually none: a week's stats are held in memory
-for five minutes and shared by every reader.
+One page load is at most two upstream fetches, stats then games, and usually none: each is held in
+memory for five minutes and shared by every reader.
 
 ```mermaid
 sequenceDiagram
@@ -172,12 +177,18 @@ sequenceDiagram
         S-->>C: score.WeekStats
         C-->>W: score.WeekStats + the instant it was fetched
     end
+    W->>C: games AsOf(2025, 15)
+    Note right of C: same shape, its own entry —<br/>a miss is GET /scores/nfl/regular/2025/15
+    C-->>W: games.Week, or an error
+    Note right of W: a games failure is logged<br/>and the page shows no game state
     W->>W: score both columns from ONE snapshot
     W-->>B: HTML + the refresh script
 ```
 
 Two invariants in there: the lineup tree is consulted before the network, and both columns are
 scored from a single fetch so the two sides can never come from different snapshots of the week.
+Games are read after stats, so a stats failure (the 502 of section 4) costs no games fetch. A games
+failure never fails the page: game state annotates the scores, so the page is served without it.
 
 ### The math
 
@@ -189,9 +200,11 @@ graph LR
     C -->|"≤ 12 fetches/hr per week,<br/>however many tabs"| S["Sleeper"]
 ```
 
-**One cache, server-side and shared.** It is keyed by `(season, week)`, so it is the same entry for
-every tab on every device, and clearing your browser cache does nothing to it. There is no
-browser-side cache.
+**Two caches, server-side and shared.** `statscache` and `gamescache` are the same
+`weekcache.Cache` over one `sleeper.Client`, with the same TTL, each keyed by `(season, week)`, so
+each is the same entry for every tab on every device, and clearing your browser cache does nothing
+to them. There is no browser-side cache. Everything below holds for both; the math above is per
+cache, so a week costs at most 24 fetches an hour.
 
 - **TTL of five minutes**, the same as the refresh timer. Upstream volume is bounded by the TTL and
   the number of weeks being read, not by the number of readers.
@@ -205,7 +218,8 @@ browser-side cache.
 - **Invalidation.** Forced fumbles come from plays. A cold week's whole-week play fetch is waited on
   only briefly (`PLAYS_COLD_WAIT`); when it lands later and changes anything, the week's entry is
   dropped so the next read is fresh. The version check in section 2 is what brings an open page back
-  for that read.
+  for that read. This drops only the stats entry; `gamescache` is untouched, and the version token
+  is the stats fetch instant alone.
 
 ## 4. The sharp edge
 
