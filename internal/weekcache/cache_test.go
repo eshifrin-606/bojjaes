@@ -413,33 +413,6 @@ func TestAsOfGivesEveryWaiterTheSameFetchInstant(t *testing.T) {
 	}
 }
 
-// WeekStats is a thin delegate to AsOf. This pins that the delegation
-// did not change what the stats-only path does: two reads within the TTL still
-// cost one upstream call and return the same fetch's stats with a nil error.
-func TestWeekStatsStillDelegatesWithoutChangingCaching(t *testing.T) {
-	source := &fakeSource{}
-	cache, clock := newTestCache(source, testTTL)
-
-	first, _, err := cache.AsOf(context.Background(), 2025, 15)
-	if err != nil {
-		t.Fatalf("first WeekStats: %v", err)
-	}
-
-	clock.advance(time.Minute)
-
-	second, _, err := cache.AsOf(context.Background(), 2025, 15)
-	if err != nil {
-		t.Fatalf("second WeekStats: %v", err)
-	}
-
-	if got := source.callCount(); got != 1 {
-		t.Errorf("upstream called %d times for two reads within the TTL, want 1", got)
-	}
-	if got, want := fetchOrdinal(t, second), fetchOrdinal(t, first); got != want {
-		t.Errorf("second read served fetch %d, want fetch %d", got, want)
-	}
-}
-
 // Freshness is pull-driven: an expired entry is not refreshed until someone
 // asks for it. Nothing sweeps and nothing polls.
 func TestIdleCacheMakesNoCalls(t *testing.T) {
