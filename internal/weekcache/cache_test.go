@@ -22,7 +22,7 @@ var _ web.StatsSource = (*Cache[score.WeekStats])(nil)
 // interface shape. Asserting it here keeps the cache's substitutability for the
 // web transport checked in this package rather than discovered in main.
 type timedStatsSource interface {
-	WeekStatsAsOf(ctx context.Context, season, week int) (score.WeekStats, time.Time, error)
+	AsOf(ctx context.Context, season, week int) (score.WeekStats, time.Time, error)
 }
 
 var _ timedStatsSource = (*Cache[score.WeekStats])(nil)
@@ -116,7 +116,7 @@ func TestWeekStatsReachesTheSource(t *testing.T) {
 	source := &fakeSource{}
 	cache := New("statscache", source.WeekStats, testTTL)
 
-	stats, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	stats, _, err := cache.AsOf(context.Background(), 2025, 15)
 	if err != nil {
 		t.Fatalf("WeekStats: %v", err)
 	}
@@ -137,14 +137,14 @@ func TestSecondRequestWithinTTLIsServedFromCache(t *testing.T) {
 	source := &fakeSource{}
 	cache, clock := newTestCache(source, testTTL)
 
-	first, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	first, _, err := cache.AsOf(context.Background(), 2025, 15)
 	if err != nil {
 		t.Fatalf("first WeekStats: %v", err)
 	}
 
 	clock.advance(time.Minute)
 
-	second, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	second, _, err := cache.AsOf(context.Background(), 2025, 15)
 	if err != nil {
 		t.Fatalf("second WeekStats: %v", err)
 	}
@@ -161,11 +161,11 @@ func TestDifferentWeeksDoNotShareAnEntry(t *testing.T) {
 	source := &fakeSource{}
 	cache := New("statscache", source.WeekStats, testTTL)
 
-	fifteen, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	fifteen, _, err := cache.AsOf(context.Background(), 2025, 15)
 	if err != nil {
 		t.Fatalf("week 15 WeekStats: %v", err)
 	}
-	sixteen, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 16)
+	sixteen, _, err := cache.AsOf(context.Background(), 2025, 16)
 	if err != nil {
 		t.Fatalf("week 16 WeekStats: %v", err)
 	}
@@ -181,7 +181,7 @@ func TestDifferentWeeksDoNotShareAnEntry(t *testing.T) {
 	}
 
 	// Week 16's fetch must not have displaced week 15's entry.
-	again, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	again, _, err := cache.AsOf(context.Background(), 2025, 15)
 	if err != nil {
 		t.Fatalf("second week 15 WeekStats: %v", err)
 	}
@@ -227,13 +227,13 @@ func TestRequestAfterTTLFetchesAgain(t *testing.T) {
 	source := &fakeSource{}
 	cache, clock := newTestCache(source, testTTL)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2025, 15); err != nil {
 		t.Fatalf("first WeekStats: %v", err)
 	}
 
 	clock.advance(6 * time.Minute)
 
-	second, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	second, _, err := cache.AsOf(context.Background(), 2025, 15)
 	if err != nil {
 		t.Fatalf("second WeekStats: %v", err)
 	}
@@ -265,13 +265,13 @@ func TestEntryLivesUpToTheTTLAndNotBeyond(t *testing.T) {
 			source := &fakeSource{}
 			cache, clock := newTestCache(source, testTTL)
 
-			if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+			if _, _, err := cache.AsOf(context.Background(), 2025, 15); err != nil {
 				t.Fatalf("first WeekStats: %v", err)
 			}
 
 			clock.advance(tt.age)
 
-			stats, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+			stats, _, err := cache.AsOf(context.Background(), 2025, 15)
 			if err != nil {
 				t.Fatalf("second WeekStats: %v", err)
 			}
@@ -307,7 +307,7 @@ func TestEntryRecordsItsFetchTimeNotItsReadTime(t *testing.T) {
 	cache, clock := newTestCache(source, testTTL)
 
 	fetchTime := clock.now()
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2025, 15); err != nil {
 		t.Fatalf("first WeekStats: %v", err)
 	}
 	if got := fetchedAt(t, cache, 2025, 15); !got.Equal(fetchTime) {
@@ -316,7 +316,7 @@ func TestEntryRecordsItsFetchTimeNotItsReadTime(t *testing.T) {
 
 	clock.advance(3 * time.Minute)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2025, 15); err != nil {
 		t.Fatalf("second WeekStats: %v", err)
 	}
 	if got := source.callCount(); got != 1 {
@@ -327,14 +327,14 @@ func TestEntryRecordsItsFetchTimeNotItsReadTime(t *testing.T) {
 	}
 }
 
-func TestWeekStatsAsOfOnAMissReturnsTheFetchInstant(t *testing.T) {
+func TestAsOfOnAMissReturnsTheFetchInstant(t *testing.T) {
 	source := &fakeSource{}
 	cache, clock := newTestCache(source, testTTL)
 
 	fetchTime := clock.now()
-	_, asOf, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	_, asOf, err := cache.AsOf(context.Background(), 2025, 15)
 	if err != nil {
-		t.Fatalf("WeekStatsAsOf: %v", err)
+		t.Fatalf("AsOf: %v", err)
 	}
 
 	if asOf.IsZero() {
@@ -345,20 +345,20 @@ func TestWeekStatsAsOfOnAMissReturnsTheFetchInstant(t *testing.T) {
 	}
 }
 
-func TestWeekStatsAsOfOnAHitReturnsTheOriginalFetchInstant(t *testing.T) {
+func TestAsOfOnAHitReturnsTheOriginalFetchInstant(t *testing.T) {
 	source := &fakeSource{}
 	cache, clock := newTestCache(source, testTTL)
 
-	_, first, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	_, first, err := cache.AsOf(context.Background(), 2025, 15)
 	if err != nil {
-		t.Fatalf("first WeekStatsAsOf: %v", err)
+		t.Fatalf("first AsOf: %v", err)
 	}
 
 	clock.advance(3 * time.Minute)
 
-	_, second, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	_, second, err := cache.AsOf(context.Background(), 2025, 15)
 	if err != nil {
-		t.Fatalf("second WeekStatsAsOf: %v", err)
+		t.Fatalf("second AsOf: %v", err)
 	}
 	if got := source.callCount(); got != 1 {
 		t.Fatalf("upstream called %d times, want 1 (the second read is a hit)", got)
@@ -368,7 +368,7 @@ func TestWeekStatsAsOfOnAHitReturnsTheOriginalFetchInstant(t *testing.T) {
 	}
 }
 
-func TestWeekStatsAsOfGivesEveryWaiterTheSameFetchInstant(t *testing.T) {
+func TestAsOfGivesEveryWaiterTheSameFetchInstant(t *testing.T) {
 	const callers = 10
 
 	source := &fakeSource{}
@@ -388,7 +388,7 @@ func TestWeekStatsAsOfGivesEveryWaiterTheSameFetchInstant(t *testing.T) {
 		go func() {
 			defer done.Done()
 			started.Done()
-			stats[i], asOf[i], errs[i] = cache.WeekStatsAsOf(context.Background(), 2025, 15)
+			stats[i], asOf[i], errs[i] = cache.AsOf(context.Background(), 2025, 15)
 		}()
 	}
 
@@ -413,21 +413,21 @@ func TestWeekStatsAsOfGivesEveryWaiterTheSameFetchInstant(t *testing.T) {
 	}
 }
 
-// WeekStats is a thin delegate to WeekStatsAsOf. This pins that the delegation
+// WeekStats is a thin delegate to AsOf. This pins that the delegation
 // did not change what the stats-only path does: two reads within the TTL still
 // cost one upstream call and return the same fetch's stats with a nil error.
 func TestWeekStatsStillDelegatesWithoutChangingCaching(t *testing.T) {
 	source := &fakeSource{}
 	cache, clock := newTestCache(source, testTTL)
 
-	first, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	first, _, err := cache.AsOf(context.Background(), 2025, 15)
 	if err != nil {
 		t.Fatalf("first WeekStats: %v", err)
 	}
 
 	clock.advance(time.Minute)
 
-	second, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	second, _, err := cache.AsOf(context.Background(), 2025, 15)
 	if err != nil {
 		t.Fatalf("second WeekStats: %v", err)
 	}
@@ -446,7 +446,7 @@ func TestIdleCacheMakesNoCalls(t *testing.T) {
 	source := &fakeSource{}
 	cache, clock := newTestCache(source, testTTL)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2025, 15); err != nil {
 		t.Fatalf("WeekStats: %v", err)
 	}
 
@@ -488,7 +488,7 @@ func TestSimultaneousMissesShareOneFetch(t *testing.T) {
 		go func() {
 			defer done.Done()
 			started.Done()
-			results[i], _, errs[i] = cache.WeekStatsAsOf(context.Background(), 2025, 15)
+			results[i], _, errs[i] = cache.AsOf(context.Background(), 2025, 15)
 		}()
 	}
 
@@ -517,14 +517,14 @@ func TestASlowFetchDoesNotBlockAnotherWeek(t *testing.T) {
 
 	fifteen := make(chan error, 1)
 	go func() {
-		_, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+		_, _, err := cache.AsOf(context.Background(), 2025, 15)
 		fifteen <- err
 	}()
 	waitForCalls(t, source, 1)
 
 	sixteen := make(chan error, 1)
 	go func() {
-		_, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 16)
+		_, _, err := cache.AsOf(context.Background(), 2025, 16)
 		sixteen <- err
 	}()
 
@@ -551,7 +551,7 @@ func TestARequestAfterTheFlightCompletesIsAHit(t *testing.T) {
 	waiters := make(chan score.WeekStats, 2)
 	for range 2 {
 		go func() {
-			stats, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+			stats, _, err := cache.AsOf(context.Background(), 2025, 15)
 			if err != nil {
 				t.Errorf("waiting WeekStats: %v", err)
 			}
@@ -563,7 +563,7 @@ func TestARequestAfterTheFlightCompletesIsAHit(t *testing.T) {
 	<-waiters
 	<-waiters
 
-	late, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	late, _, err := cache.AsOf(context.Background(), 2025, 15)
 	if err != nil {
 		t.Fatalf("late WeekStats: %v", err)
 	}
@@ -592,7 +592,7 @@ func TestAMissIsLogged(t *testing.T) {
 	cache, _ := newTestCache(source, testTTL)
 	logs := recordLogs(cache)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2025, 15); err != nil {
 		t.Fatalf("WeekStats: %v", err)
 	}
 
@@ -612,11 +612,11 @@ func TestAHitIsLogged(t *testing.T) {
 	cache, clock := newTestCache(source, testTTL)
 	logs := recordLogs(cache)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2025, 15); err != nil {
 		t.Fatalf("first WeekStats: %v", err)
 	}
 	clock.advance(time.Minute)
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2025, 15); err != nil {
 		t.Fatalf("second WeekStats: %v", err)
 	}
 
@@ -637,7 +637,7 @@ func TestEveryLogLineOpensWithTheCachesLabel(t *testing.T) {
 	logs := recordLogs(cache)
 
 	for range 2 {
-		if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+		if _, _, err := cache.AsOf(context.Background(), 2025, 15); err != nil {
 			t.Fatalf("WeekStats: %v", err)
 		}
 	}
@@ -657,11 +657,11 @@ func TestTheHitLogReportsTheEntrysAge(t *testing.T) {
 	cache, clock := newTestCache(source, testTTL)
 	logs := recordLogs(cache)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2025, 15); err != nil {
 		t.Fatalf("first WeekStats: %v", err)
 	}
 	clock.advance(90 * time.Second)
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2025, 15); err != nil {
 		t.Fatalf("second WeekStats: %v", err)
 	}
 
@@ -682,7 +682,7 @@ func TestTheMissLogReportsHowLongTheFetchTook(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+		if _, _, err := cache.AsOf(context.Background(), 2025, 15); err != nil {
 			t.Errorf("WeekStats: %v", err)
 		}
 	}()
@@ -706,7 +706,7 @@ func TestAFailedMissIsLoggedWithItsError(t *testing.T) {
 	cache, _ := newTestCache(source, testTTL)
 	logs := recordLogs(cache)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); !errors.Is(err, errUpstream) {
+	if _, _, err := cache.AsOf(context.Background(), 2025, 15); !errors.Is(err, errUpstream) {
 		t.Fatalf("WeekStats returned %v, want %v", err, errUpstream)
 	}
 
@@ -729,13 +729,13 @@ func TestAFailureIsReturnedNotStored(t *testing.T) {
 	source.fail(errUpstream)
 	cache, _ := newTestCache(source, testTTL)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); !errors.Is(err, errUpstream) {
+	if _, _, err := cache.AsOf(context.Background(), 2025, 15); !errors.Is(err, errUpstream) {
 		t.Fatalf("failed WeekStats returned %v, want %v", err, errUpstream)
 	}
 
 	source.fail(nil)
 
-	stats, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	stats, _, err := cache.AsOf(context.Background(), 2025, 15)
 	if err != nil {
 		t.Fatalf("WeekStats after the failure: %v", err)
 	}
@@ -765,7 +765,7 @@ func TestAFailedFlightFailsAllItsWaiters(t *testing.T) {
 		go func() {
 			defer done.Done()
 			started.Done()
-			results[i], _, errs[i] = cache.WeekStatsAsOf(context.Background(), 2025, 15)
+			results[i], _, errs[i] = cache.AsOf(context.Background(), 2025, 15)
 		}()
 	}
 
@@ -794,17 +794,17 @@ func TestASuccessAfterAFailureIsCached(t *testing.T) {
 	source.fail(errUpstream)
 	cache, _ := newTestCache(source, testTTL)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); !errors.Is(err, errUpstream) {
+	if _, _, err := cache.AsOf(context.Background(), 2025, 15); !errors.Is(err, errUpstream) {
 		t.Fatalf("failed WeekStats returned %v, want %v", err, errUpstream)
 	}
 
 	source.fail(nil)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2025, 15); err != nil {
 		t.Fatalf("recovering WeekStats: %v", err)
 	}
 
-	third, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	third, _, err := cache.AsOf(context.Background(), 2025, 15)
 	if err != nil {
 		t.Fatalf("third WeekStats: %v", err)
 	}
@@ -832,14 +832,14 @@ func TestTheLeaderLeavingDoesNotFailTheWaiters(t *testing.T) {
 
 	leaderCtx, cancelLeader := context.WithCancel(context.Background())
 	defer cancelLeader()
-	go cache.WeekStatsAsOf(leaderCtx, 2025, 15)
+	go cache.AsOf(leaderCtx, 2025, 15)
 	waitForCalls(t, source, 1)
 
 	results := make(chan score.WeekStats, waiters)
 	errs := make(chan error, waiters)
 	for range waiters {
 		go func() {
-			stats, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+			stats, _, err := cache.AsOf(context.Background(), 2025, 15)
 			results <- stats
 			errs <- err
 		}()
@@ -867,21 +867,21 @@ func TestAWaitersCancellationIsItsOwn(t *testing.T) {
 	source.block(15)
 	cache, _ := newTestCache(source, testTTL)
 
-	go cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	go cache.AsOf(context.Background(), 2025, 15)
 	waitForCalls(t, source, 1)
 
 	leavingCtx, cancelLeaving := context.WithCancel(context.Background())
 	defer cancelLeaving()
 	leaving := make(chan error, 1)
 	go func() {
-		_, _, err := cache.WeekStatsAsOf(leavingCtx, 2025, 15)
+		_, _, err := cache.AsOf(leavingCtx, 2025, 15)
 		leaving <- err
 	}()
 
 	staying := make(chan score.WeekStats, 1)
 	stayingErr := make(chan error, 1)
 	go func() {
-		stats, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+		stats, _, err := cache.AsOf(context.Background(), 2025, 15)
 		staying <- stats
 		stayingErr <- err
 	}()
@@ -915,7 +915,7 @@ func TestAFetchThatOutlastsTheTimeoutFailsAndIsNotCached(t *testing.T) {
 	cache, _ := newTestCache(source, testTTL)
 	cache.fetchTimeout = 20 * time.Millisecond
 
-	_, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	_, _, err := cache.AsOf(context.Background(), 2025, 15)
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("the timed-out fetch returned %v, want %v", err, context.DeadlineExceeded)
 	}
@@ -924,7 +924,7 @@ func TestAFetchThatOutlastsTheTimeoutFailsAndIsNotCached(t *testing.T) {
 	// that ran out of time is a failure like any other, and failures are not
 	// remembered.
 	source.release(15)
-	stats, _, err := cache.WeekStatsAsOf(context.Background(), 2025, 15)
+	stats, _, err := cache.AsOf(context.Background(), 2025, 15)
 	if err != nil {
 		t.Fatalf("the retry returned %v, want stats", err)
 	}

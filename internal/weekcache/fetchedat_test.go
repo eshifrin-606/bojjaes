@@ -9,9 +9,9 @@ import (
 func TestAFetchedWeekReportsItsFetchInstant(t *testing.T) {
 	cache, _ := newTestCache(&fakeSource{}, testTTL)
 
-	_, asOf, err := cache.WeekStatsAsOf(context.Background(), 2026, 4)
+	_, asOf, err := cache.AsOf(context.Background(), 2026, 4)
 	if err != nil {
-		t.Fatalf("WeekStatsAsOf: %v", err)
+		t.Fatalf("AsOf: %v", err)
 	}
 
 	got, ok := cache.FetchedAt(2026, 4)
@@ -19,7 +19,7 @@ func TestAFetchedWeekReportsItsFetchInstant(t *testing.T) {
 		t.Fatal("FetchedAt reported no instant for a fetched week")
 	}
 	if !got.Equal(asOf) {
-		t.Errorf("FetchedAt = %v, want the instant WeekStatsAsOf returned, %v", got, asOf)
+		t.Errorf("FetchedAt = %v, want the instant AsOf returned, %v", got, asOf)
 	}
 }
 
@@ -30,7 +30,7 @@ func TestAWeekInFlightHasNoInstantYet(t *testing.T) {
 
 	fetched := make(chan error, 1)
 	go func() {
-		_, _, err := cache.WeekStatsAsOf(context.Background(), 2026, 4)
+		_, _, err := cache.AsOf(context.Background(), 2026, 4)
 		fetched <- err
 	}()
 	waitForCalls(t, source, 1)
@@ -56,7 +56,7 @@ func TestAWeekInFlightHasNoInstantYet(t *testing.T) {
 
 	source.release(4)
 	if err := <-fetched; err != nil {
-		t.Fatalf("WeekStatsAsOf: %v", err)
+		t.Fatalf("AsOf: %v", err)
 	}
 }
 
@@ -75,8 +75,8 @@ func TestANeverFetchedWeekHasNoInstant(t *testing.T) {
 func TestAnInvalidatedWeekHasNoInstant(t *testing.T) {
 	cache, _ := newTestCache(&fakeSource{}, testTTL)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2026, 4); err != nil {
-		t.Fatalf("WeekStatsAsOf: %v", err)
+	if _, _, err := cache.AsOf(context.Background(), 2026, 4); err != nil {
+		t.Fatalf("AsOf: %v", err)
 	}
 	cache.Invalidate(2026, 4)
 
@@ -91,9 +91,9 @@ func TestAnExpiredEntryStillReportsItsInstant(t *testing.T) {
 	source := &fakeSource{}
 	cache, clock := newTestCache(source, testTTL)
 
-	_, asOf, err := cache.WeekStatsAsOf(context.Background(), 2026, 4)
+	_, asOf, err := cache.AsOf(context.Background(), 2026, 4)
 	if err != nil {
-		t.Fatalf("WeekStatsAsOf: %v", err)
+		t.Fatalf("AsOf: %v", err)
 	}
 	clock.advance(6 * time.Minute)
 
@@ -113,8 +113,8 @@ func TestAskingForTheFetchInstantCostsNothing(t *testing.T) {
 	source := &fakeSource{}
 	cache, _ := newTestCache(source, testTTL)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2026, 4); err != nil {
-		t.Fatalf("WeekStatsAsOf: %v", err)
+	if _, _, err := cache.AsOf(context.Background(), 2026, 4); err != nil {
+		t.Fatalf("AsOf: %v", err)
 	}
 	logs := recordLogs(cache)
 

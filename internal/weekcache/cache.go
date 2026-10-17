@@ -120,12 +120,12 @@ func New[V any](label string, source Source[V], ttl time.Duration, opts ...Optio
 	}
 }
 
-// WeekStatsAsOf returns a week's stats together with the instant the fetch that
-// produced them completed. Every caller served from one entry — the caller who
+// AsOf returns a week's value together with the instant the fetch that
+// produced it completed. Every caller served from one entry — the caller who
 // drove the fetch, a cache hit, a released waiter — gets that entry's recorded
 // fetchedAt, so a page served from cache can date its data to the fetch rather
 // than to the request.
-func (c *Cache[V]) WeekStatsAsOf(ctx context.Context, season, week int) (V, time.Time, error) {
+func (c *Cache[V]) AsOf(ctx context.Context, season, week int) (V, time.Time, error) {
 	k := key{season: season, week: week}
 
 	c.mu.Lock()

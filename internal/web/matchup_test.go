@@ -26,7 +26,7 @@ import (
 // unusedSource fails the test if the page ever reaches the provider.
 type unusedSource struct{ t *testing.T }
 
-func (u unusedSource) WeekStatsAsOf(context.Context, int, int) (score.WeekStats, time.Time, error) {
+func (u unusedSource) AsOf(context.Context, int, int) (score.WeekStats, time.Time, error) {
 	u.t.Helper()
 	u.t.Error("provider was called for a request that should never have reached it")
 	return score.WeekStats{}, time.Time{}, nil
@@ -44,7 +44,7 @@ type fakeSource struct {
 	asked [][2]int
 }
 
-func (f *fakeSource) WeekStatsAsOf(_ context.Context, season, week int) (score.WeekStats, time.Time, error) {
+func (f *fakeSource) AsOf(_ context.Context, season, week int) (score.WeekStats, time.Time, error) {
 	f.calls++
 	f.asked = append(f.asked, [2]int{season, week})
 	if f.err != nil {
