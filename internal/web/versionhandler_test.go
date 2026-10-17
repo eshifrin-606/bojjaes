@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/eshifrin/bojjaes/internal/lineup"
-	"github.com/eshifrin/bojjaes/internal/statscache"
+	"github.com/eshifrin/bojjaes/internal/weekcache"
 )
 
 // fakeVersions stands in for the cache: a fetch instant it holds or does not,
@@ -128,13 +128,13 @@ func TestTheEndpointRefusesAMalformedPath(t *testing.T) {
 	}
 }
 
-// End to end over a real statscache.Cache shared by the page and the endpoint,
+// End to end over a real weekcache.Cache shared by the page and the endpoint,
 // as main wires them. The clock starts off a whole second so a formatter that
 // truncated on one side would show up as a mismatch.
 func TestTheEndpointFollowsTheCacheThePageIsServedFrom(t *testing.T) {
 	upstream := &countingStatsSource{weekStats: fixtureStats()}
 	clock := &webFakeClock{t: asOfInstant.Add(123456789 * time.Nanosecond)}
-	cache := statscache.New(upstream, 5*time.Minute, statscache.WithClock(clock.now))
+	cache := weekcache.New("statscache", upstream.WeekStats, 5*time.Minute, weekcache.WithClock(clock.now))
 	page := Handler(lineup.New(fixtureWeek()), cache)
 	endpoint := VersionHandler(cache)
 

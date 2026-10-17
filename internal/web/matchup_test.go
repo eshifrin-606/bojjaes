@@ -20,13 +20,13 @@ import (
 
 	"github.com/eshifrin/bojjaes/internal/lineup"
 	"github.com/eshifrin/bojjaes/internal/score"
-	"github.com/eshifrin/bojjaes/internal/statscache"
+	"github.com/eshifrin/bojjaes/internal/weekcache"
 )
 
 // unusedSource fails the test if the page ever reaches the provider.
 type unusedSource struct{ t *testing.T }
 
-func (u unusedSource) WeekStatsAsOf(context.Context, int, int) (score.WeekStats, time.Time, error) {
+func (u unusedSource) AsOf(context.Context, int, int) (score.WeekStats, time.Time, error) {
 	u.t.Helper()
 	u.t.Error("provider was called for a request that should never have reached it")
 	return score.WeekStats{}, time.Time{}, nil
@@ -44,7 +44,7 @@ type fakeSource struct {
 	asked [][2]int
 }
 
-func (f *fakeSource) WeekStatsAsOf(_ context.Context, season, week int) (score.WeekStats, time.Time, error) {
+func (f *fakeSource) AsOf(_ context.Context, season, week int) (score.WeekStats, time.Time, error) {
 	f.calls++
 	f.asked = append(f.asked, [2]int{season, week})
 	if f.err != nil {
@@ -971,13 +971,13 @@ func (c *webFakeClock) advance(d time.Duration) {
 	c.t = c.t.Add(d)
 }
 
-// End to end over a real statscache.Cache: a page served from a cache hit dates
+// End to end over a real weekcache.Cache: a page served from a cache hit dates
 // its stats to the fetch, not to the request it answered, and does not spend a
 // second upstream call to do it.
 func TestAServedCacheHitDatesStatsToTheFetchNotTheRequest(t *testing.T) {
 	upstream := &countingStatsSource{weekStats: fixtureStats()}
 	clock := &webFakeClock{t: asOfInstant}
-	cache := statscache.New(upstream, 5*time.Minute, statscache.WithClock(clock.now))
+	cache := weekcache.New("statscache", upstream.WeekStats, 5*time.Minute, weekcache.WithClock(clock.now))
 	h := Handler(lineup.New(fixtureWeek()), cache)
 
 	first := serve(h, http.MethodGet, "/2025/15")

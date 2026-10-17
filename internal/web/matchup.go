@@ -108,7 +108,7 @@ type starter struct {
 // source — which has no honest fetch instant — would not satisfy this by
 // design.
 type StatsSource interface {
-	WeekStatsAsOf(ctx context.Context, season, week int) (score.WeekStats, time.Time, error)
+	AsOf(ctx context.Context, season, week int) (score.WeekStats, time.Time, error)
 }
 
 // seasonWeek reads the season and week from the request path. When either is
@@ -190,7 +190,7 @@ func Handler(tree *lineup.Tree, source StatsSource) http.Handler {
 
 		// Fetched once, and both columns scored from it: the two lineups must
 		// not be read from different snapshots of the week.
-		weekStats, fetchedAt, err := source.WeekStatsAsOf(r.Context(), season, week)
+		weekStats, fetchedAt, err := source.AsOf(r.Context(), season, week)
 		if err != nil {
 			log.Printf("fetching stats for %d week %d: %v", season, week, err)
 

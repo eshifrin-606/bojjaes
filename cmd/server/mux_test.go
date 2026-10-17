@@ -13,7 +13,7 @@ import (
 
 type stubStats struct{}
 
-func (stubStats) WeekStatsAsOf(context.Context, int, int) (score.WeekStats, time.Time, error) {
+func (stubStats) AsOf(context.Context, int, int) (score.WeekStats, time.Time, error) {
 	return score.WeekStats{}, time.Now(), nil
 }
 

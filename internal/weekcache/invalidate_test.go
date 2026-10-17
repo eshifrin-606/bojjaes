@@ -1,4 +1,4 @@
-package statscache
+package weekcache
 
 import (
 	"context"
@@ -10,13 +10,13 @@ func TestARequestAfterInvalidationFetchesAgain(t *testing.T) {
 	source := &fakeSource{}
 	cache, clock := newTestCache(source, testTTL)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2026, 4); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2026, 4); err != nil {
 		t.Fatalf("first WeekStats: %v", err)
 	}
 	clock.advance(time.Minute)
 	cache.Invalidate(2026, 4)
 
-	second, _, err := cache.WeekStatsAsOf(context.Background(), 2026, 4)
+	second, _, err := cache.AsOf(context.Background(), 2026, 4)
 	if err != nil {
 		t.Fatalf("second WeekStats: %v", err)
 	}
@@ -30,9 +30,9 @@ func TestARequestAfterInvalidationFetchesAgain(t *testing.T) {
 
 func TestInvalidationMakesNoCallByItself(t *testing.T) {
 	source := &fakeSource{}
-	cache := New(source, testTTL)
+	cache := New("statscache", source.WeekStats, testTTL)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2026, 4); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2026, 4); err != nil {
 		t.Fatalf("WeekStats: %v", err)
 	}
 	cache.Invalidate(2026, 4)
@@ -47,13 +47,13 @@ func TestInvalidationLeavesOtherWeeksCached(t *testing.T) {
 	cache, _ := newTestCache(source, testTTL)
 
 	for _, week := range []int{4, 5} {
-		if _, _, err := cache.WeekStatsAsOf(context.Background(), 2026, week); err != nil {
+		if _, _, err := cache.AsOf(context.Background(), 2026, week); err != nil {
 			t.Fatalf("week %d WeekStats: %v", week, err)
 		}
 	}
 	cache.Invalidate(2026, 4)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2026, 5); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2026, 5); err != nil {
 		t.Fatalf("week 5 again: %v", err)
 	}
 	if got := source.callCount(); got != 2 {
@@ -63,11 +63,11 @@ func TestInvalidationLeavesOtherWeeksCached(t *testing.T) {
 
 func TestInvalidatingANeverFetchedWeekIsHarmless(t *testing.T) {
 	source := &fakeSource{}
-	cache := New(source, testTTL)
+	cache := New("statscache", source.WeekStats, testTTL)
 
 	cache.Invalidate(2026, 4)
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2026, 4); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2026, 4); err != nil {
 		t.Fatalf("WeekStats: %v", err)
 	}
 	if got := source.callCount(); got != 1 {
@@ -82,7 +82,7 @@ func TestAnInvalidatedFlightAnswersItsWaiterButIsNotCached(t *testing.T) {
 
 	served := make(chan int, 1)
 	go func() {
-		stats, _, err := cache.WeekStatsAsOf(context.Background(), 2026, 4)
+		stats, _, err := cache.AsOf(context.Background(), 2026, 4)
 		if err != nil {
 			t.Errorf("waiting WeekStats: %v", err)
 		}
@@ -95,7 +95,7 @@ func TestAnInvalidatedFlightAnswersItsWaiterButIsNotCached(t *testing.T) {
 	if got := <-served; got != 1 {
 		t.Errorf("the waiter was served fetch %d, want fetch 1", got)
 	}
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2026, 4); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2026, 4); err != nil {
 		t.Fatalf("later WeekStats: %v", err)
 	}
 	if got := source.callCount(); got != 2 {
@@ -112,7 +112,7 @@ func TestAStaleFlightsFailureDoesNotClobberANewerFlight(t *testing.T) {
 
 	staleDone := make(chan error, 1)
 	go func() {
-		_, _, err := cache.WeekStatsAsOf(context.Background(), 2026, 4)
+		_, _, err := cache.AsOf(context.Background(), 2026, 4)
 		staleDone <- err
 	}()
 	waitForCalls(t, source, 1)
@@ -123,7 +123,7 @@ func TestAStaleFlightsFailureDoesNotClobberANewerFlight(t *testing.T) {
 	source.fail(nil)
 	freshDone := make(chan error, 1)
 	go func() {
-		_, _, err := cache.WeekStatsAsOf(context.Background(), 2026, 4)
+		_, _, err := cache.AsOf(context.Background(), 2026, 4)
 		freshDone <- err
 	}()
 	waitForCalls(t, source, 2)
@@ -137,7 +137,7 @@ func TestAStaleFlightsFailureDoesNotClobberANewerFlight(t *testing.T) {
 		t.Fatalf("fresh flight: %v", err)
 	}
 
-	if _, _, err := cache.WeekStatsAsOf(context.Background(), 2026, 4); err != nil {
+	if _, _, err := cache.AsOf(context.Background(), 2026, 4); err != nil {
 		t.Fatalf("later WeekStats: %v", err)
 	}
 	if got := source.callCount(); got != 2 {
