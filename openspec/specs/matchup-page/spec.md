@@ -15,9 +15,7 @@ Nothing here compares the two columns. There is deliberately no margin, win prob
 bar, or leader highlight, because a starter whose game has not kicked off is indistinguishable on
 this page from one who was inactive, and any winner-implying element would present an unsettled
 reading as a result.
-
 ## Requirements
-
 ### Requirement: The page is addressed by season and week
 
 The server SHALL serve the matchup page at `GET /{season}/{week}`, where both segments are decimal
@@ -495,7 +493,6 @@ The as-of line states the stats fetch only. It SHALL NOT state when the week's g
 - **WHEN** the week's stats and games were fetched at different instants
 - **THEN** the as-of line states the stats' instant and the page states no instant for the games
 
-
 ### Requirement: The page names its week and links to the adjacent weeks of its season
 
 The page SHALL show a week bar above both columns and outside either one. The bar SHALL hold a
@@ -508,12 +505,16 @@ previous link, and a season's last week has no next link, even if the other seas
 Whether a week exists SHALL be decided as `lineup-source` decides it, so a week whose directory is
 not a well-formed matchup still gets a link.
 
-Each link SHALL be an ordinary hyperlink to that week's page (`/{season}/{week}`). The previous link
-SHALL carry `rel="prev"` and the next link `rel="next"`. Each link's text SHALL name the week it
-leads to.
+Each link SHALL be an ordinary hyperlink. A link to the season's latest week, as `lineup-source`'s
+latest-week answer names it, SHALL point to the season's page (`/{season}`); a link to any other
+week SHALL point to that week's page (`/{season}/{week}`). The previous link SHALL carry
+`rel="prev"` and the next link `rel="next"`. Each link's text SHALL name the week it leads to.
 
-Deciding which links to show SHALL NOT call the stats provider, and the page SHALL still fetch only
-the week it shows.
+The bar SHALL be the same whichever URL served the page: `/{season}` and `/{season}/{week}` for the
+same week show the same label and the same links.
+
+Deciding which links to show and where they point SHALL NOT call the stats provider, and the page
+SHALL still fetch only the week it shows.
 
 When a link is absent, its space SHALL stay empty rather than collapse: the label's horizontal
 position SHALL NOT depend on which links are present. The label and both links SHALL fit on one line
@@ -522,19 +523,30 @@ are.
 
 #### Scenario: A middle week links both ways
 
-- **WHEN** the tree holds 2026 weeks 1, 2, and 3, and `GET /2026/2` is requested
+- **WHEN** the tree holds 2026 weeks 1 through 4, and `GET /2026/2` is requested
 - **THEN** the page's label reads `2026 · Week 2`, a `rel="prev"` link points to `/2026/1`, and a
   `rel="next"` link points to `/2026/3`
+
+#### Scenario: The link to the latest week is the season URL
+
+- **WHEN** the tree holds 2026 weeks 1, 2, and 3, and `GET /2026/2` is requested
+- **THEN** the page's `rel="next"` link reads `Week 3 ›` and points to `/2026`
 
 #### Scenario: The first week has no previous link
 
 - **WHEN** the tree holds 2026 weeks 1 and 2, and `GET /2026/1` is requested
-- **THEN** the page has a `rel="next"` link to `/2026/2` and no `rel="prev"` link
+- **THEN** the page has a `rel="next"` link to `/2026` and no `rel="prev"` link
 
 #### Scenario: The latest week has no next link
 
 - **WHEN** the tree holds 2026 weeks 1 and 2, and `GET /2026/2` is requested
 - **THEN** the page has a `rel="prev"` link to `/2026/1` and no `rel="next"` link
+
+#### Scenario: The season page has the latest week's bar
+
+- **WHEN** the tree holds 2026 weeks 1 and 2, and `GET /2026` is requested
+- **THEN** the page's label reads `2026 · Week 2`, a `rel="prev"` link points to `/2026/1`, and
+  there is no `rel="next"` link
 
 #### Scenario: Links do not cross a season boundary
 
@@ -548,7 +560,8 @@ are.
 
 #### Scenario: A broken neighbouring week still gets a link
 
-- **WHEN** the tree's 2026 week 3 directory holds three rosters, and `GET /2026/2` is requested
+- **WHEN** the tree holds 2026 weeks 2, 3, and 4, its week 3 directory holds three rosters, and
+  `GET /2026/2` is requested
 - **THEN** the page has a `rel="next"` link to `/2026/3`
 
 #### Scenario: Only the shown week is fetched
@@ -565,57 +578,6 @@ are.
 
 - **WHEN** the page is viewed on a viewport 390 CSS px wide with both links present
 - **THEN** the previous link, the label, and the next link share one line and do not overlap
-
-### Requirement: A season alone redirects to its latest week
-
-The server SHALL serve `GET /{season}`, where the segment is a decimal integer, by redirecting to
-`/{season}/{week}` for the greatest week the lineup tree holds a directory for in that season, per
-`lineup-source`'s latest-week answer. The redirect SHALL NOT depend on that week being a
-well-formed matchup: the same "exists, not resolved" rule the week bar's neighbour links use.
-
-A segment that is not an integer, or a season outside the plausible range `internal/score`
-validates, SHALL be refused with `400 Bad Request` and SHALL NOT reach the lineup tree.
-
-A season with no week directories in the tree SHALL be refused with `404 Not Found`.
-
-Resolving the redirect SHALL read only the lineup tree's directory listing. It SHALL NOT open a
-roster file and SHALL NOT call the stats provider.
-
-#### Scenario: A season redirects to its highest week
-
-- **WHEN** the tree holds 2026 weeks 1 and 2, and `GET /2026` is requested
-- **THEN** the response redirects to `/2026/2`
-
-#### Scenario: A gap does not change the target
-
-- **WHEN** the tree holds 2026 weeks 1 and 3 but not week 2, and `GET /2026` is requested
-- **THEN** the response redirects to `/2026/3`
-
-#### Scenario: A non-numeric segment is refused
-
-- **WHEN** `GET /twentytwentysix` is requested
-- **THEN** the response is `400 Bad Request` and no directory is read
-
-#### Scenario: An out-of-range season is refused
-
-- **WHEN** `GET /1899` is requested
-- **THEN** the response is `400 Bad Request`
-
-#### Scenario: A season with no weeks is a 404
-
-- **WHEN** the tree holds no directories under 2027, and `GET /2027` is requested
-- **THEN** the response is `404 Not Found`
-
-#### Scenario: A season whose only week is not a matchup still redirects
-
-- **WHEN** the tree's `2026/3/` directory holds three rosters and no higher week exists under 2026
-- **THEN** `GET /2026` redirects to `/2026/3`, and `/2026/3` itself is served (or refused) by the
-  existing season/week handler
-
-#### Scenario: Resolving the redirect makes no upstream fetch
-
-- **WHEN** `GET /2026` is requested
-- **THEN** the stats provider is not called
 
 ### Requirement: The page states the version of the stats it was rendered from
 
@@ -646,20 +608,39 @@ the page: the script SHALL compare it for equality only and SHALL NOT parse it.
 `GET /{season}/{week}/version` SHALL report the stats version the server currently holds for that
 season and week, in the same token form the page carries, so the two can be compared as strings.
 
+`GET /{season}/version` SHALL report the stats version the server currently holds for the season's
+latest week, resolved on every request as `GET /{season}` resolves it. When a higher week's
+directory appears, the next answer SHALL be for that week.
+
 When the server holds no completed fetch for that week, the endpoint SHALL report an empty version.
 This covers a week never fetched, a week whose stats were invalidated, a week whose fetch is in
 flight, and a server that has restarted.
 
-Answering SHALL NOT call the stat provider, SHALL NOT start or wait on a fetch, and SHALL NOT read
-the lineup tree. The response SHALL be marked as not to be stored by any cache.
+Answering SHALL NOT call the stat provider and SHALL NOT start or wait on a fetch. The week form
+SHALL NOT read the lineup tree. The season form SHALL read only the tree's directory listing and
+SHALL NOT open a roster file. The response SHALL be marked as not to be stored by any cache.
 
 The season and week SHALL be validated as the page's are: a segment that is not a number, or a
-season or week out of range, SHALL be refused with status 400.
+season or week out of range, SHALL be refused with status 400. A season with no week directories
+SHALL be refused by the season form with status 404.
 
 #### Scenario: The endpoint reports the version a fresh page carries
 
 - **WHEN** a page for week 4 is served and the version endpoint for week 4 is then asked
 - **THEN** the endpoint's version equals the page's stats version
+
+#### Scenario: The season form reports the version the season page carries
+
+- **WHEN** the tree holds 2026 weeks 1 and 2, `GET /2026` is served, and `GET /2026/version` is then
+  asked
+- **THEN** the endpoint's version equals the page's stats version
+
+#### Scenario: A new week changes the season form's answer
+
+- **WHEN** `GET /2026` is served while week 2 is the latest, then a 2026 week 3 directory appears,
+  and `GET /2026/version` is asked
+- **THEN** the version reported is the one held for week 3, which is empty if week 3 has not been
+  fetched, and differs from the page's
 
 #### Scenario: Invalidation empties the version
 
@@ -673,24 +654,40 @@ season or week out of range, SHALL be refused with status 400.
 
 #### Scenario: Asking costs nothing upstream
 
-- **WHEN** the version endpoint is asked for a week, whether or not that week has been fetched
+- **WHEN** either form of the version endpoint is asked, whether or not the week has been fetched
 - **THEN** no call is made to the stat provider
+
+#### Scenario: The season form opens no roster
+
+- **WHEN** `GET /2026/version` is asked
+- **THEN** no roster file is opened
 
 #### Scenario: A malformed week is refused
 
 - **WHEN** `GET /2026/five/version` is requested
 - **THEN** the response status is 400 and no version is reported
 
+#### Scenario: A malformed season is refused
+
+- **WHEN** `GET /twentytwentysix/version` is requested
+- **THEN** the response status is 400 and no directory is read
+
+#### Scenario: A season with no weeks has no version
+
+- **WHEN** the tree holds no directories under 2027, and `GET /2027/version` is requested
+- **THEN** the response status is 404
+
 #### Scenario: The response is not cacheable
 
-- **WHEN** the version endpoint answers
+- **WHEN** either form of the version endpoint answers
 - **THEN** the response carries `Cache-Control: no-store`
 
 ### Requirement: The page reloads when the server's stats version differs from its own
 
-While its tab is visible, the page SHALL check the version endpoint for its own season and week and
-compare the reported version with the one it carries. When they differ, including when the reported
-version is empty, the page SHALL reload its own URL.
+While its tab is visible, the page SHALL check the version endpoint for the URL it was loaded from
+(`/{season}/{week}/version` for a week's page, `/{season}/version` for a season's page) and compare
+the reported version with the one it carries. When they differ, including when the reported version
+is empty, the page SHALL reload its own URL.
 
 The check SHALL be conditioned on the tab being visible at the moment it would fire. While the tab is
 hidden the page SHALL make no check request.
@@ -711,6 +708,17 @@ nothing as changed, and keeps no state across loads.
 - **WHEN** a visible page's week is invalidated on the server and the next check reports an empty
   version
 - **THEN** the page reloads its own URL, and that reload's request fetches the week afresh
+
+#### Scenario: A season page checks the season form
+
+- **WHEN** the page was loaded from `/2026`
+- **THEN** its checks request `/2026/version`
+
+#### Scenario: An open season page follows a new week
+
+- **WHEN** a visible page loaded from `/2026` shows week 2, and a 2026 week 3 directory appears
+- **THEN** the next check reports a different version, the page reloads `/2026`, and the reload
+  shows week 3
 
 #### Scenario: A matching version does nothing
 
@@ -980,3 +988,63 @@ keeping with the requirement that the script carries no page data.
 
 - **WHEN** a page is rendered for a week with known kickoffs and a known fetch instant
 - **THEN** the script element contains none of those instants
+
+### Requirement: A season alone shows its latest week
+
+The server SHALL serve `GET /{season}`, where the segment is a decimal integer, with the matchup page
+for the greatest week the lineup tree holds a directory for in that season, per `lineup-source`'s
+latest-week answer. The response SHALL be the page itself, not a redirect: its status and body SHALL
+be what `GET /{season}/{week}` answers for that week, including that week's refusals when its
+directory is not a well-formed matchup.
+
+`GET /{season}/{week}` SHALL continue to serve every week, the latest included. Neither URL SHALL
+redirect to the other.
+
+A segment that is not an integer, or a season outside the plausible range `internal/score`
+validates, SHALL be refused with `400 Bad Request` and SHALL NOT reach the lineup tree.
+
+A season with no week directories in the tree SHALL be refused with `404 Not Found`.
+
+The stats provider SHALL be asked for the latest week only.
+
+#### Scenario: A season shows its highest week
+
+- **WHEN** the tree holds 2026 weeks 1 and 2, and `GET /2026` is requested
+- **THEN** the response is `200` with the page labelled `2026 · Week 2`, and it carries no
+  `Location` header
+
+#### Scenario: A gap does not change the week shown
+
+- **WHEN** the tree holds 2026 weeks 1 and 3 but not week 2, and `GET /2026` is requested
+- **THEN** the page shown is week 3's
+
+#### Scenario: The latest week still has its numbered URL
+
+- **WHEN** the tree holds 2026 weeks 1 and 2, and `GET /2026/2` is requested
+- **THEN** the response is `200` with week 2's page, not a redirect
+
+#### Scenario: A non-numeric segment is refused
+
+- **WHEN** `GET /twentytwentysix` is requested
+- **THEN** the response is `400 Bad Request` and no directory is read
+
+#### Scenario: An out-of-range season is refused
+
+- **WHEN** `GET /1899` is requested
+- **THEN** the response is `400 Bad Request`
+
+#### Scenario: A season with no weeks is a 404
+
+- **WHEN** the tree holds no directories under 2027, and `GET /2027` is requested
+- **THEN** the response is `404 Not Found`
+
+#### Scenario: A latest week that is not a matchup is refused as its own URL is
+
+- **WHEN** the tree's `2026/3/` directory holds three rosters and no higher week exists under 2026
+- **THEN** `GET /2026` answers `500`, as `GET /2026/3` does
+
+#### Scenario: Only the latest week is fetched
+
+- **WHEN** the tree holds 2026 weeks 1 and 2, and `GET /2026` is requested
+- **THEN** the stats provider is asked for 2026 week 2 exactly once and for no other week
+
