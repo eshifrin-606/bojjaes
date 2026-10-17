@@ -153,9 +153,9 @@ func TestAKickoffIsServedInChicagoTime(t *testing.T) {
 		kickoff time.Time
 		want    string
 	}{
-		{name: "a Sunday noon kickoff", kickoff: time.Date(2026, 10, 11, 17, 0, 0, 0, time.UTC), want: "Sun 12:00 PM"},
-		{name: "the weekday is Chicago's, not UTC's", kickoff: time.Date(2026, 10, 13, 0, 15, 0, 0, time.UTC), want: "Mon 7:15 PM"},
-		{name: "a December kickoff is on standard time", kickoff: time.Date(2026, 12, 13, 18, 0, 0, 0, time.UTC), want: "Sun 12:00 PM"},
+		{name: "a Sunday noon kickoff", kickoff: time.Date(2026, 10, 11, 17, 0, 0, 0, time.UTC), want: "Sun 12p"},
+		{name: "the weekday is Chicago's, not UTC's", kickoff: time.Date(2026, 10, 13, 0, 15, 0, 0, time.UTC), want: "Mon 7:15p"},
+		{name: "a December kickoff is on standard time", kickoff: time.Date(2026, 12, 13, 18, 0, 0, 0, time.UTC), want: "Sun 12p"},
 	}
 
 	for _, tt := range tests {
@@ -204,7 +204,7 @@ func TestAStarterWithoutStatsStillShowsTheirGame(t *testing.T) {
 	if !slices.Contains(renderedStarters(body), "Ja&#39;Marr Chase=--") {
 		t.Errorf("starters = %q, want Ja'Marr Chase at --", renderedStarters(body))
 	}
-	if got, want := metaText(starterMeta(t, body, "Ja'Marr Chase")), "WR · CIN · Sun 12:00 PM"; got != want {
+	if got, want := metaText(starterMeta(t, body, "Ja'Marr Chase")), "WR · CIN · Sun 12p"; got != want {
 		t.Errorf("meta line = %q, want %q", got, want)
 	}
 }

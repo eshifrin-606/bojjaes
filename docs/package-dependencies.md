@@ -209,7 +209,7 @@ after the stats so a stats failure costs no games fetch, and finds each starter'
 lineup record's `Team`. A games failure is logged and the page is served with no game state.
 
 The page's script rewrites the served Central-time instants into the reader's timezone: a kickoff
-(`Sun 12:00 PM`, served with no zone label) stays unlabelled, and the as-of line takes the reader's
+(`Sun 12p`, served with no zone label) stays unlabelled, and the as-of line takes the reader's
 zone abbreviation.
 
 It declares its own `StatsSource` and `GamesSource` and never imports `internal/sleeper`, so its

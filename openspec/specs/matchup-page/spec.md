@@ -789,8 +789,9 @@ column's points.
 
 A starter whose roster team is `FA` SHALL show no game state and no trailing separator.
 
-The position-and-team line MAY wrap when the column is narrow. It SHALL NOT extend outside its
-column at any viewport width, and a wrapped line SHALL NOT break the alignment of starter rows
+The position-and-team line SHALL run under the points as well as the name, since the points are
+on the name's line only. It SHALL fit a kickoff on one line on a 390px-wide phone, and MAY wrap
+when the column is narrower. It SHALL NOT extend outside its column at any viewport width, and a wrapped line SHALL NOT break the alignment of starter rows
 across the two columns.
 
 #### Scenario: An upcoming game shows its kickoff
@@ -922,15 +923,16 @@ script runs, and in `America/Chicago` otherwise. This covers each kickoff and th
 
 The server SHALL render each instant as an `America/Chicago` wall-clock time, as the text of a
 `<time>` element whose `datetime` attribute carries the instant as an RFC 3339 string. A served
-kickoff SHALL show a weekday and a time of day with no zone label, so the meta line fits a phone. A
-served as-of instant SHALL carry the zone abbreviation.
+kickoff SHALL show a weekday and a compact time of day with no zone label, so the meta line fits a
+phone: the hour, then the minutes only when they are not `:00`, then `a` or `p` (`Sun 12p`,
+`Sun 3:25p`). A served as-of instant SHALL carry the zone abbreviation.
 
 The page script SHALL replace the text of each such element with the same instant in the browser's
 timezone, taking the instant from the element's `datetime` attribute. The weekday SHALL be computed
 in the same timezone as the time of day, so a kickoff that falls on different days in different
 zones is shown on the reader's day.
 
-A rewritten kickoff SHALL show a weekday and a time of day with no zone label. A rewritten as-of
+A rewritten kickoff SHALL take the served kickoff's compact form. A rewritten as-of
 instant SHALL keep the form the server gave it: weekday, date, time of day, and the abbreviation of
 the reader's zone.
 
@@ -941,18 +943,18 @@ keeping with the requirement that the script carries no page data.
 #### Scenario: The server writes Central
 
 - **WHEN** a page is served with a kickoff at 2026-10-11T17:00:00Z
-- **THEN** the served markup's `<time>` for that kickoff reads `Sun 12:00 PM`
+- **THEN** the served markup's `<time>` for that kickoff reads `Sun 12p`
 
 #### Scenario: A reader in another zone sees their own time
 
 - **WHEN** that page is viewed in a browser whose timezone is `America/New_York` and the script runs
-- **THEN** the kickoff reads `Sun 1:00 PM`
+- **THEN** the kickoff reads `Sun 1p`
 
 #### Scenario: The weekday follows the reader's zone
 
 - **WHEN** a kickoff is at 2026-10-13T00:15:00Z
-- **THEN** the served markup reads `Mon 7:15 PM`, and a browser whose timezone is `Europe/London`
-  shows `Tue 1:15 AM`
+- **THEN** the served markup reads `Mon 7:15p`, and a browser whose timezone is `Europe/London`
+  shows `Tue 1:15a`
 
 #### Scenario: A reader in Central sees the same clock time
 

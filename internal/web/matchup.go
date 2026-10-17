@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 	// The binary carries its own zone database, so America/Chicago loads the
 	// same whether or not the deploy image ships /usr/share/zoneinfo.
@@ -86,10 +87,13 @@ func versionToken(fetchedAt time.Time) string {
 // against their own.
 const fetchedAtLayout = "Mon, Jan 2 2006 3:04 PM MST"
 
-// kickoffLayout has no zone abbreviation: with one, the meta line wrapped to
-// three lines on a phone. A reader whose script does not run sees an
-// unlabelled Central time.
-const kickoffLayout = "Mon 3:04 PM"
+// kickoffText is compact, with no zone abbreviation and a one-letter a or p,
+// because anything longer wrapped the meta line onto a third line on a phone.
+// A reader whose script does not run sees an unlabelled Central time.
+func kickoffText(kickoff time.Time) string {
+	clock := strings.TrimSuffix(kickoff.Format("Mon 3:04"), ":00")
+	return clock + strings.ToLower(kickoff.Format("PM")[:1])
+}
 
 type column struct {
 	Team     string
@@ -276,7 +280,7 @@ func scoreColumn(team string, l lineup.Lineup, weekStats score.WeekStats, weekGa
 		s.Game, kickoff = gameState(rec.Team, weekGames, gamesAvailable)
 		if !kickoff.IsZero() {
 			s.KickoffRFC3339 = kickoff.Format(time.RFC3339)
-			s.KickoffText = kickoff.In(chicagoLoc).Format(kickoffLayout)
+			s.KickoffText = kickoffText(kickoff.In(chicagoLoc))
 		}
 
 		// Absence and a scoreless week are different facts, and Player's

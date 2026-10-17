@@ -108,7 +108,7 @@ func TestARewriteInNewYork(t *testing.T) {
 
 	dom := servedInZone(t, "America/New_York", kickoff, fetchedAt)
 
-	if got, want := timeText(t, dom, kickoff), "Sun 1:00 PM"; got != want {
+	if got, want := timeText(t, dom, kickoff), "Sun 1p"; got != want {
 		t.Errorf("kickoff reads %q, want %q", got, want)
 	}
 	if got, want := timeText(t, dom, fetchedAt), "Sun, Oct 11 2026 6:07 PM EDT"; got != want {
@@ -123,7 +123,7 @@ func TestARewriteInLondonMovesTheWeekday(t *testing.T) {
 
 	dom := servedInZone(t, "Europe/London", kickoff, asOfInstant)
 
-	if got, want := timeText(t, dom, kickoff), "Tue 1:15 AM"; got != want {
+	if got, want := timeText(t, dom, kickoff), "Tue 1:15a"; got != want {
 		t.Errorf("kickoff reads %q, want %q", got, want)
 	}
 }
@@ -134,7 +134,7 @@ func TestARewriteInChicagoKeepsTheServedClock(t *testing.T) {
 		time.Date(2026, 10, 13, 0, 15, 0, 0, time.UTC),
 	} {
 		t.Run(kickoff.Format(time.RFC3339), func(t *testing.T) {
-			want := kickoff.In(chicagoLoc).Format(kickoffLayout)
+			want := kickoffText(kickoff.In(chicagoLoc))
 
 			dom := servedInZone(t, "America/Chicago", kickoff, asOfInstant)
 

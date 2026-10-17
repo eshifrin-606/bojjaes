@@ -94,10 +94,12 @@
     display: none;
   }
 
+  /* The points box sits only on the name's line, so the meta line runs under
+     it too rather than wrapping a kickoff beside an empty cell. */
   .meta {
     color: #666;
     font-size: 0.8125rem;
-    grid-column: 1;
+    grid-column: 1 / -1;
   }
 
   /* A box that never gives way to a name, so every row's name gets the same
@@ -218,9 +220,11 @@
       });
       var clock = part.hour + ":" + part.minute + " " + part.dayPeriod;
       // A kickoff is now on the reader's own clock, so it drops the zone
-      // label; the as-of line keeps the server's full form.
+      // label and takes the server's compact form; the as-of line keeps the
+      // server's full form.
+      var kickoff = part.hour + (part.minute === "00" ? "" : ":" + part.minute) + part.dayPeriod.charAt(0).toLowerCase();
       el.textContent = el.parentNode.classList.contains("game")
-        ? part.weekday + " " + clock
+        ? part.weekday + " " + kickoff
         : part.weekday + ", " + part.month + " " + part.day + " " + part.year + " " + clock + " " + part.timeZoneName;
     } catch (e) {
     }

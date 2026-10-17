@@ -1122,7 +1122,7 @@ func TestTheStyleSheetDeclares(t *testing.T) {
 		{name: "an unbreakable name wraps instead of pushing the points out", block: []string{".player"}, declaration: "overflow-wrap: break-word"},
 		{name: "a row is a two-column grid", block: []string{".column li"}, declaration: "display: grid"},
 		{name: "a row's grid has a flexible name column and an auto points column", block: []string{".column li"}, declaration: "grid-template-columns: minmax(0, 1fr) auto"},
-		{name: "the meta line sits under the name, not the points", block: []string{".meta"}, declaration: "grid-column: 1"},
+		{name: "the meta line runs under both the name and the points", block: []string{".meta"}, declaration: "grid-column: 1 / -1"},
 		{name: "a narrow viewport has less body padding", block: []string{"@media (max-width: 33rem)", "body"}, declaration: "padding: 0.5rem"},
 		{name: "a narrow viewport has a narrower gap between the cards", block: []string{"@media (max-width: 33rem)", ".matchup"}, declaration: "column-gap: 0.5rem"},
 		{name: "a narrow viewport has less card padding", block: []string{"@media (max-width: 33rem)", ".column"}, declaration: "padding: 0 0.5rem 0.5rem"},

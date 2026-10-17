@@ -31,6 +31,7 @@ type columnLayout struct {
 	FirstPlayer *rect
 	FirstMeta   *rect
 	FirstGame   *rect
+	MetaLines   int
 	LiTops      []float64
 	Column      rect
 }
@@ -68,6 +69,16 @@ const measuringScript = `<pre id="layout"></pre>
     var r = el.getBoundingClientRect();
     return {Top: r.top, Bottom: r.bottom, Left: r.left, Right: r.right, Width: r.width, Height: r.height};
   }
+  // An inline box splits into one rect per line it sits on, so the distinct
+  // tops of the meta's contents count its lines.
+  function lines(el) {
+    if (!el) return 0;
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    var tops = {};
+    Array.prototype.forEach.call(range.getClientRects(), function (r) { tops[Math.round(r.top)] = true; });
+    return Object.keys(tops).length;
+  }
   var columns = Array.prototype.map.call(document.querySelectorAll(".column"), function (c) {
     return {
       Header: box(c.querySelector("header")),
@@ -78,6 +89,7 @@ const measuringScript = `<pre id="layout"></pre>
       FirstPlayer: box(c.querySelector(".player")),
       FirstMeta: box(c.querySelector(".meta")),
       FirstGame: box(c.querySelector(".game")),
+      MetaLines: lines(c.querySelector(".meta")),
       LiTops: Array.prototype.map.call(c.querySelectorAll("li"), function (li) { return li.getBoundingClientRect().top; }),
       Column: box(c)
     };
@@ -326,10 +338,27 @@ func TestAPhoneFitsTheWeekBarOnOneLine(t *testing.T) {
 	}
 }
 
+func TestAPhoneFitsAKickoffOnTheMetaLine(t *testing.T) {
+	kickoff := time.Date(2026, 10, 11, 20, 25, 0, 0, time.UTC)
+	body := serveGames(chaseTree(), upcomingCIN(kickoff))
+	if !strings.Contains(body, "Sun 3:25p") {
+		t.Fatalf("the page shows no kickoff to measure")
+	}
+
+	l := renderedLayout(t, body+narrowCardCSS)
+
+	if len(l.Columns) != 2 {
+		t.Fatalf("measured %d columns, want 2", len(l.Columns))
+	}
+	if got := l.Columns[0].MetaLines; got != 1 {
+		t.Errorf("the meta line with a kickoff wraps onto %d lines, want 1", got)
+	}
+}
+
 func TestAPhoneKeepsAKickoffInsideItsColumn(t *testing.T) {
 	kickoff := time.Date(2026, 10, 11, 17, 0, 0, 0, time.UTC)
 	body := serveGames(chaseTree(), upcomingCIN(kickoff))
-	if !strings.Contains(body, "Sun 12:00 PM") {
+	if !strings.Contains(body, "Sun 12p") {
 		t.Fatalf("the page shows no kickoff to measure")
 	}
 
