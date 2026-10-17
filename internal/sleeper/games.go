@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/eshifrin/bojjaes/internal/games"
+	"github.com/eshifrin/bojjaes/internal/sleeper/internal/httpjson"
 )
 
 type gameRow struct {
@@ -29,7 +30,7 @@ func (c Client) WeekGames(ctx context.Context, season, week int) (games.Week, er
 	url := fmt.Sprintf("%s/scores/nfl/regular/%d/%d", c.BaseURL, season, week)
 
 	var rows []gameRow
-	if err := getJSON(ctx, url, fmt.Sprintf("sleeper games for season %d week %d", season, week), &rows); err != nil {
+	if err := httpjson.Get(ctx, url, fmt.Sprintf("sleeper games for season %d week %d", season, week), &rows); err != nil {
 		return games.Week{}, err
 	}
 	gs := make([]games.Game, 0, len(rows))

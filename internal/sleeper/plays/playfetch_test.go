@@ -1,4 +1,4 @@
-package sleeper
+package plays
 
 import (
 	"context"
@@ -24,8 +24,20 @@ func readFixture(t *testing.T, path string) []byte {
 	return b
 }
 
-func w3Identities(t *testing.T) identities {
-	return fixtureIdentities(t, "testdata/stats_2026_w3.json")
+// jsonServer serves one canned body regardless of path.
+func jsonServer(t *testing.T, body string) *httptest.Server {
+	t.Helper()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func w3Identities(t *testing.T) Identities {
+	return fixtureIdentities(t, "../testdata/stats_2026_w3.json")
 }
 
 func TestFetchRecentPlaysRequestsAndDecodes(t *testing.T) {
@@ -96,7 +108,7 @@ func TestFetchRecentPlaysErrors(t *testing.T) {
 func TestForcedFumblesPollsMergesAndAttributes(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.pollBody = readFixture(t, "testdata/plays_2026_w3.json")
-	store := NewPlayStore(ps.URL, 0, noLog)
+	store := NewStore(ps.URL, 0, noLog)
 
 	got := store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 
@@ -170,7 +182,7 @@ func awaitSignal(t *testing.T, ch <-chan struct{}, what string) {
 func TestForcedFumblesSeedsEmptyWeekInBackground(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.pollBody = readFixture(t, "testdata/plays_2026_w3.json")
-	store := NewPlayStore(ps.URL, 0, noLog)
+	store := NewStore(ps.URL, 0, noLog)
 
 	returned := make(chan struct{})
 	go func() {
@@ -197,7 +209,7 @@ func TestForcedFumblesGapStartsWholeWeekFetch(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.releaseWholeFetches()
 	ps.pollBody = jsonPlays(t, play{ID: "new", UpdatedAt: 200})
-	store := NewPlayStore(ps.URL, 0, noLog)
+	store := NewStore(ps.URL, 0, noLog)
 	store.now = func() time.Time { return time.UnixMilli(200) } // live week, so only the gap can trigger
 	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
 
@@ -212,7 +224,7 @@ func TestForcedFumblesGapStartsWholeWeekFetch(t *testing.T) {
 func TestForcedFumblesGapDoesNotWaitWhateverTheColdWait(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.pollBody = jsonPlays(t, play{ID: "new", UpdatedAt: 200})
-	store := NewPlayStore(ps.URL, time.Minute, noLog)
+	store := NewStore(ps.URL, time.Minute, noLog)
 	store.now = func() time.Time { return time.UnixMilli(200) }
 	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
 
@@ -230,7 +242,7 @@ func TestForcedFumblesOverlappingPollSkipsWholeWeekFetch(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.releaseWholeFetches()
 	ps.pollBody = jsonPlays(t, play{ID: "old", UpdatedAt: 100}, play{ID: "new", UpdatedAt: 200})
-	store := NewPlayStore(ps.URL, 0, noLog)
+	store := NewStore(ps.URL, 0, noLog)
 	store.now = func() time.Time { return time.UnixMilli(200) }
 	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
 
@@ -244,7 +256,7 @@ func TestForcedFumblesOverlappingPollSkipsWholeWeekFetch(t *testing.T) {
 
 func TestForcedFumblesConcurrentTriggersShareOneWholeWeekFetch(t *testing.T) {
 	ps := newPlayServer(t)
-	store := NewPlayStore(ps.URL, 0, noLog)
+	store := NewStore(ps.URL, 0, noLog)
 
 	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	awaitSignal(t, ps.wholeStarted, "first whole-week fetch to start")
@@ -260,7 +272,7 @@ func TestForcedFumblesConcurrentTriggersShareOneWholeWeekFetch(t *testing.T) {
 func TestForcedFumblesAttributesWholeWeekPlaysOnNextCall(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.wholeBody = readFixture(t, "testdata/plays_2026_w3.json")
-	store := NewPlayStore(ps.URL, 0, noLog)
+	store := NewStore(ps.URL, 0, noLog)
 
 	first := store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	awaitSignal(t, ps.wholeStarted, "whole-week fetch to start")
@@ -276,7 +288,7 @@ func TestForcedFumblesColdWeekWaitsForWholeWeekPlays(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.releaseWholeFetches()
 	ps.wholeBody = readFixture(t, "testdata/plays_2026_w3.json")
-	store := NewPlayStore(ps.URL, 5*time.Second, noLog)
+	store := NewStore(ps.URL, 5*time.Second, noLog)
 
 	got := store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 
@@ -287,7 +299,7 @@ func TestForcedFumblesColdWaitRunsOut(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.pollBody = readFixture(t, "testdata/plays_2026_w3.json")
 	ps.wholeBody = jsonPlays(t, play{ID: "whole-only", UpdatedAt: 1})
-	store := NewPlayStore(ps.URL, 10*time.Millisecond, noLog)
+	store := NewStore(ps.URL, 10*time.Millisecond, noLog)
 
 	got := make(chan map[string]int)
 	go func() { got <- store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t)) }()
@@ -307,7 +319,7 @@ func TestForcedFumblesColdWaitRunsOut(t *testing.T) {
 
 func TestForcedFumblesColdWaitEndsWithCallerContext(t *testing.T) {
 	ps := newPlayServer(t)
-	store := NewPlayStore(ps.URL, time.Minute, noLog)
+	store := NewStore(ps.URL, time.Minute, noLog)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
@@ -344,7 +356,7 @@ func TestForcedFumblesPollFailureWithNothingHeld(t *testing.T) {
 	ps.releaseWholeFetches()
 	ps.pollStatus = http.StatusBadGateway
 	logs := &logRecorder{}
-	store := NewPlayStore(ps.URL, 0, logs.logf)
+	store := NewStore(ps.URL, 0, logs.logf)
 
 	got := store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	store.wait()
@@ -360,7 +372,7 @@ func TestForcedFumblesPollFailureScoresHeldPlays(t *testing.T) {
 	ps.releaseWholeFetches()
 	ps.pollStatus = http.StatusBadGateway
 	logs := &logRecorder{}
-	store := NewPlayStore(ps.URL, 0, logs.logf)
+	store := NewStore(ps.URL, 0, logs.logf)
 	store.merge(2026, 3, loadPlays(t, "testdata/plays_2026_w3.json"))
 
 	got := store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
@@ -378,7 +390,7 @@ func TestForcedFumblesWholeWeekFailureKeepsHeldPlaysAndAllowsRetry(t *testing.T)
 	ps.wholeStatus = http.StatusBadGateway
 	ps.pollBody = jsonPlays(t, play{ID: "new", UpdatedAt: 200})
 	logs := &logRecorder{}
-	store := NewPlayStore(ps.URL, 0, logs.logf)
+	store := NewStore(ps.URL, 0, logs.logf)
 	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
 
 	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
@@ -403,7 +415,7 @@ func TestForcedFumblesColdWaitEndsWhenWholeWeekFetchFails(t *testing.T) {
 	ps.wholeStatus = http.StatusBadGateway
 	ps.pollBody = readFixture(t, "testdata/plays_2026_w3.json")
 	logs := &logRecorder{}
-	store := NewPlayStore(ps.URL, time.Minute, logs.logf)
+	store := NewStore(ps.URL, time.Minute, logs.logf)
 
 	got := make(chan map[string]int)
 	go func() { got <- store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t)) }()
@@ -424,7 +436,7 @@ func TestForcedFumblesBoundsHungPoll(t *testing.T) {
 	ps.pollBlock = make(chan struct{})
 	t.Cleanup(func() { close(ps.pollBlock) })
 	logs := &logRecorder{}
-	store := NewPlayStore(ps.URL, 0, logs.logf)
+	store := NewStore(ps.URL, 0, logs.logf)
 	store.pollTimeout = 10 * time.Millisecond
 
 	returned := make(chan struct{})
@@ -444,7 +456,7 @@ func TestForcedFumblesRefreshesQuietWeekOnce(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.releaseWholeFetches()
 	ps.pollBody = jsonPlays(t, play{ID: "a", UpdatedAt: changed.UnixMilli()})
-	store := NewPlayStore(ps.URL, 0, noLog)
+	store := NewStore(ps.URL, 0, noLog)
 	store.now = func() time.Time { return changed.Add(2 * time.Hour) }
 	store.merge(2026, 3, []play{{ID: "a", UpdatedAt: changed.UnixMilli()}})
 
@@ -463,13 +475,13 @@ func TestForcedFumblesRefreshesQuietWeekOnce(t *testing.T) {
 	}
 }
 
-func (s *PlayStore) wait() { s.bg.Wait() }
+func (s *Store) wait() { s.bg.Wait() }
 
 func TestForcedFumblesLogsPoll(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.pollBody = jsonPlays(t, play{ID: "old", UpdatedAt: 100}, play{ID: "new", UpdatedAt: 200})
 	logs := &logRecorder{}
-	store := NewPlayStore(ps.URL, 0, logs.logf)
+	store := NewStore(ps.URL, 0, logs.logf)
 	store.now = func() time.Time { return time.UnixMilli(200) }
 	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
 
@@ -483,7 +495,7 @@ func TestForcedFumblesLogsPoll(t *testing.T) {
 func TestForcedFumblesLogsColdWholeWeekStart(t *testing.T) {
 	ps := newPlayServer(t)
 	logs := &logRecorder{}
-	store := NewPlayStore(ps.URL, 0, logs.logf)
+	store := NewStore(ps.URL, 0, logs.logf)
 
 	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 
@@ -496,7 +508,7 @@ func TestForcedFumblesLogsGapWholeWeekStart(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.pollBody = jsonPlays(t, play{ID: "new", UpdatedAt: 200})
 	logs := &logRecorder{}
-	store := NewPlayStore(ps.URL, 0, logs.logf)
+	store := NewStore(ps.URL, 0, logs.logf)
 	store.now = func() time.Time { return time.UnixMilli(200) }
 	store.merge(2026, 3, []play{{ID: "old", UpdatedAt: 100}})
 
@@ -512,7 +524,7 @@ func TestForcedFumblesLogsPostGameWholeWeekStart(t *testing.T) {
 	ps := newPlayServer(t)
 	ps.pollBody = jsonPlays(t, play{ID: "a", UpdatedAt: changed.UnixMilli()})
 	logs := &logRecorder{}
-	store := NewPlayStore(ps.URL, 0, logs.logf)
+	store := NewStore(ps.URL, 0, logs.logf)
 	store.now = func() time.Time { return changed.Add(2 * time.Hour) }
 	store.merge(2026, 3, []play{{ID: "a", UpdatedAt: changed.UnixMilli()}})
 
@@ -526,7 +538,7 @@ func TestForcedFumblesLogsPostGameWholeWeekStart(t *testing.T) {
 func TestForcedFumblesJoiningWholeWeekFetchLogsNoStart(t *testing.T) {
 	ps := newPlayServer(t)
 	logs := &logRecorder{}
-	store := NewPlayStore(ps.URL, 0, logs.logf)
+	store := NewStore(ps.URL, 0, logs.logf)
 
 	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))
 	awaitSignal(t, ps.wholeStarted, "first whole-week fetch to start")
@@ -542,7 +554,7 @@ func TestForcedFumblesLogsWholeWeekFetch(t *testing.T) {
 	ps.releaseWholeFetches()
 	ps.wholeBody = jsonPlays(t, play{ID: "a", UpdatedAt: 100}, play{ID: "b", UpdatedAt: 200})
 	logs := &logRecorder{}
-	store := NewPlayStore(ps.URL, 0, logs.logf)
+	store := NewStore(ps.URL, 0, logs.logf)
 	store.now = func() time.Time { return time.UnixMilli(200) }
 
 	store.ForcedFumbles(context.Background(), 2026, 3, w3Identities(t))

@@ -1,4 +1,4 @@
-package sleeper
+package plays
 
 import (
 	"encoding/csv"
@@ -82,20 +82,20 @@ func TestAbbrevName(t *testing.T) {
 
 type rosterRow struct {
 	row playRow
-	who identity
+	who Identity
 }
 
 func row(id, first, last, team string, stats map[string]float64) rosterRow {
 	return rosterRow{
 		row: playRow{PlayerID: id, Stats: stats},
-		who: identity{name: abbrevName(first, last), team: team},
+		who: NewIdentity(first, last, team),
 	}
 }
 
 // fumblePlay builds one play and the aggregate lookup that identifies its rows.
-func fumblePlay(desc string, rows ...rosterRow) ([]play, identities) {
+func fumblePlay(desc string, rows ...rosterRow) ([]play, Identities) {
 	p := play{ID: "p1", Metadata: playMeta{Description: desc}}
-	ids := identities{}
+	ids := Identities{}
 	for _, r := range rows {
 		p.PlayStats = append(p.PlayStats, r.row)
 		ids[r.row.PlayerID] = r.who
@@ -135,7 +135,7 @@ func TestForcedFumbleTurnovers(t *testing.T) {
 
 	t.Run("forcer row with empty stats is credited", func(t *testing.T) {
 		plays := []play{fixturePlay(t, "testdata/plays_2026_w3.json", "ff5e0d30")}
-		ids := fixtureIdentities(t, "testdata/stats_2026_w3.json")
+		ids := fixtureIdentities(t, "../testdata/stats_2026_w3.json")
 		assertCredits(t, forcedFumbleTurnovers(plays, ids, noLog), map[string]int{"5991": 1})
 	})
 
@@ -164,13 +164,13 @@ func TestForcedFumbleTurnovers(t *testing.T) {
 
 	t.Run("double fumble is judged per fumble", func(t *testing.T) {
 		plays := []play{fixturePlay(t, "testdata/plays_2026_w3.json", "4ca72840")}
-		ids := fixtureIdentities(t, "testdata/stats_2026_w3.json")
+		ids := fixtureIdentities(t, "../testdata/stats_2026_w3.json")
 		assertCredits(t, forcedFumbleTurnovers(plays, ids, noLog), map[string]int{"10892": 1})
 	})
 
 	t.Run("sacker is not the forcer", func(t *testing.T) {
 		plays := []play{fixturePlay(t, "testdata/plays_2026_w3.json", "4d35c720")}
-		ids := fixtureIdentities(t, "testdata/stats_2026_w3.json")
+		ids := fixtureIdentities(t, "../testdata/stats_2026_w3.json")
 		assertCredits(t, forcedFumbleTurnovers(plays, ids, noLog), map[string]int{"2393": 1})
 	})
 
@@ -246,16 +246,27 @@ func loadPlays(t *testing.T, path string) []play {
 
 // fixtureIdentities builds the lookup from a recorded aggregate the way the
 // client does.
-func fixtureIdentities(t *testing.T, path string) identities {
+func fixtureIdentities(t *testing.T, path string) Identities {
 	t.Helper()
 	f, err := os.Open(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer f.Close()
-	_, ids, err := decodeWeekly(f)
-	if err != nil {
+	var rows []struct {
+		PlayerID string `json:"player_id"`
+		Team     string `json:"team"`
+		Player   struct {
+			FirstName string `json:"first_name"`
+			LastName  string `json:"last_name"`
+		} `json:"player"`
+	}
+	if err := json.NewDecoder(f).Decode(&rows); err != nil {
 		t.Fatal(err)
+	}
+	ids := make(Identities, len(rows))
+	for _, r := range rows {
+		ids[r.PlayerID] = NewIdentity(r.Player.FirstName, r.Player.LastName, r.Team)
 	}
 	return ids
 }
@@ -285,8 +296,8 @@ func TestForcedFumbleTurnoversOverturnedFixtures(t *testing.T) {
 	}
 	// Treadwell's OT fumble stood only before the overturn, so it has no idp_ff row.
 	want := map[string]int{"10914": 1, "7117": 1, "6896": 1}
-	ids := fixtureIdentities(t, "testdata/stats_2026_w2.json")
-	maps.Copy(ids, fixtureIdentities(t, "testdata/stats_2026_w3.json"))
+	ids := fixtureIdentities(t, "../testdata/stats_2026_w2.json")
+	maps.Copy(ids, fixtureIdentities(t, "../testdata/stats_2026_w3.json"))
 	assertCredits(t, forcedFumbleTurnovers(plays, ids, noLog), want)
 }
 
@@ -314,9 +325,9 @@ func TestForcedFumbleTurnoversMatchOfficialRecord(t *testing.T) {
 		"2": loadPlays(t, "testdata/plays_2026_w2.json"),
 		"3": loadPlays(t, "testdata/plays_2026_w3.json"),
 	}
-	ids := map[string]identities{
-		"2": fixtureIdentities(t, "testdata/stats_2026_w2.json"),
-		"3": fixtureIdentities(t, "testdata/stats_2026_w3.json"),
+	ids := map[string]Identities{
+		"2": fixtureIdentities(t, "../testdata/stats_2026_w2.json"),
+		"3": fixtureIdentities(t, "../testdata/stats_2026_w3.json"),
 	}
 	for _, rec := range records[1:] {
 		id, team, qtr, clock := col(rec, "sleeper_id"), col(rec, "team"), col(rec, "qtr"), col(rec, "time")

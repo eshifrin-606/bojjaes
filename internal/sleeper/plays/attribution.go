@@ -1,4 +1,4 @@
-package sleeper
+package plays
 
 import (
 	"regexp"
@@ -42,37 +42,20 @@ func abbrevName(first, last string) string {
 	return normalizeName(first[:1] + "." + last)
 }
 
-// identity names a player as play descriptions do, with the team they played
+// Identity names a player as play descriptions do, with the team they played
 // for that week. Play rows carry only a player ID.
-type identity struct{ name, team string }
+type Identity struct{ name, team string }
 
-type identities map[string]identity
-
-type play struct {
-	ID        string    `json:"play_id"`
-	UpdatedAt int64     `json:"updated_at"`
-	Metadata  playMeta  `json:"metadata"`
-	PlayStats []playRow `json:"play_stats"`
+func NewIdentity(first, last, team string) Identity {
+	return Identity{name: abbrevName(first, last), team: team}
 }
 
-type playMeta struct {
-	Description string `json:"description"`
-	Team        string `json:"team"`
-	Opponent    string `json:"opponent"`
-	QuarterName string `json:"quarter_name"`
-	Minutes     int    `json:"time_remaining_minutes"`
-	Seconds     int    `json:"time_remaining_seconds"`
-}
-
-type playRow struct {
-	PlayerID string             `json:"player_id"`
-	Stats    map[string]float64 `json:"stats"`
-}
+type Identities map[string]Identity
 
 // forcedFumbleTurnovers maps player ID to forced fumbles that were turnovers.
 // In play-by-play, idp_ff sits on the fumbler's row; the forcer is named only
 // in the description.
-func forcedFumbleTurnovers(plays []play, ids identities, logf func(format string, args ...any)) map[string]int {
+func forcedFumbleTurnovers(plays []play, ids Identities, logf func(format string, args ...any)) map[string]int {
 	credits := map[string]int{}
 	for _, p := range plays {
 		pairs := forcedByPairs(p.Metadata.Description)
@@ -93,7 +76,7 @@ func forcedFumbleTurnovers(plays []play, ids identities, logf func(format string
 
 // A row absent from ids gets the zero identity, whose empty name matches no
 // parsed name, so it is never the fumbler's pair or the forcer.
-func resolveForcer(p play, fumbler playRow, pairs []fumblePair, ids identities) (playRow, bool) {
+func resolveForcer(p play, fumbler playRow, pairs []fumblePair, ids Identities) (playRow, bool) {
 	fumblerID := ids[fumbler.PlayerID]
 	var forcerNames []string
 	for _, pair := range pairs {

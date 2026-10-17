@@ -18,6 +18,7 @@ import (
 
 	"github.com/eshifrin/bojjaes/internal/lineup"
 	"github.com/eshifrin/bojjaes/internal/sleeper"
+	"github.com/eshifrin/bojjaes/internal/sleeper/plays"
 	"github.com/eshifrin/bojjaes/internal/weekcache"
 )
 
@@ -34,16 +35,16 @@ func main() {
 
 	// Wrapped once, here: the cache bounds upstream volume only if everything
 	// that reads a week reads through the same one.
-	plays := sleeper.NewPlayStore(sleeper.BaseURL, coldWait, log.Printf)
+	playStore := plays.NewStore(sleeper.BaseURL, coldWait, log.Printf)
 	client := sleeper.Client{
-		BaseURL:   sleeper.BaseURL,
-		PlayStore: plays,
-		Logf:      log.Printf,
+		BaseURL: sleeper.BaseURL,
+		Plays:   playStore,
+		Logf:    log.Printf,
 	}
 	stats := weekcache.New("statscache", client.WeekStats, weekcache.TTL)
 	// A whole-week fetch that outlasts the cold wait lands after its week was
 	// cached from the poll alone; dropping the entry lets the next read see it.
-	plays.OnWholeWeekChanged(stats.Invalidate)
+	playStore.OnWholeWeekChanged(stats.Invalidate)
 	games := weekcache.New("gamescache", client.WeekGames, weekcache.TTL)
 
 	addr := resolveAddr(os.Getenv)

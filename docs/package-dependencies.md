@@ -23,6 +23,8 @@ graph TD
     end
     subgraph adapters["internal — adapters + transport"]
         sleeperpkg["internal/sleeper"]
+        plays["internal/sleeper/plays"]
+        httpjson["internal/sleeper/internal/httpjson"]
         weekcache["internal/weekcache"]
         web["internal/web"]
     end
@@ -33,13 +35,17 @@ graph TD
     main --> web
     main --> weekcache
     main --> sleeperpkg
+    main --> plays
     main --> lineup
     web --> score
     web --> games
     web --> lineup
     sleeperpkg --> score
     sleeperpkg --> games
-    sleeperpkg --> sleeper
+    sleeperpkg --> plays
+    sleeperpkg --> httpjson
+    plays --> httpjson
+    httpjson --> sleeper
     weekcache -. wraps at runtime .-> sleeperpkg
     lineup --> files
 ```
@@ -61,18 +67,20 @@ serialization decision. Read the direction of the arrows, not the length of the 
 
 | Package | Role | Imports (first-party) | Imports (stdlib) | Imported by |
 | --- | --- | --- | --- | --- |
-| `cmd/server` | Process entrypoint and composition root. Constructs the provider, wraps its stats and its games each in a cache, constructs the lineup tree, builds the mux, and owns the process lifecycle: listen address, connection timeouts, and the drain on `SIGTERM`. | `internal/lineup`, `internal/sleeper`, `internal/web`, `internal/weekcache` | `context`, `errors`, `fmt`, `io/fs`, `log`, `net`, `net/http`, `os`, `os/signal`, `path/filepath`, `syscall`, `time` | — |
+| `cmd/server` | Process entrypoint and composition root. Constructs the play store and the provider, wraps its stats and its games each in a cache, constructs the lineup tree, builds the mux, and owns the process lifecycle: listen address, connection timeouts, and the drain on `SIGTERM`. | `internal/lineup`, `internal/sleeper`, `internal/sleeper/plays`, `internal/web`, `internal/weekcache` | `context`, `errors`, `fmt`, `io/fs`, `log`, `net`, `net/http`, `os`, `os/signal`, `path/filepath`, `syscall`, `time` | — |
 | `internal/score` | The scoring domain: `StatLine`, `Points`, `WeekStats`, and the season/week bounds. | none | `fmt` | `internal/sleeper`, `internal/web` |
 | `internal/games` | A week's NFL games, provider-neutral: `Game`, its `State`, and `Week` with `ForTeam`. | none | `time` | `internal/sleeper`, `internal/web` |
-| `internal/sleeper` | The Sleeper adapter: the HTTP client, the base URL, the stat-key transform, and the scores endpoint read into `games.Week`. | `internal/games`, `internal/score` | `context`, `encoding/json`, `fmt`, `net/http`, `regexp`, `strconv`, `strings`, `sync`, `time` | `cmd/server` |
+| `internal/sleeper` | The Sleeper adapter: `Client`, the base URL, the stat-key transform, and the scores endpoint read into `games.Week`. | `internal/games`, `internal/score`, `internal/sleeper/internal/httpjson`, `internal/sleeper/plays` | `context`, `fmt`, `time` | `cmd/server` |
+| `internal/sleeper/plays` | The play store: the plays endpoint, Sleeper's play JSON, and forced-fumble attribution from play descriptions. | `internal/sleeper/internal/httpjson` | `context`, `fmt`, `regexp`, `strconv`, `strings`, `sync`, `time` | `cmd/server`, `internal/sleeper` |
+| `internal/sleeper/internal/httpjson` | `Get`: one GET decoded from JSON, over the one timed `http.Client`. | none | `context`, `encoding/json`, `fmt`, `net/http`, `time` | `internal/sleeper`, `internal/sleeper/plays` |
 | `internal/weekcache` | A caching decorator over any weekly fetch, generic over its value: TTL expiry, single-flight, the `TTL` constant. | none | `context`, `log`, `sync`, `time` | `cmd/server` |
 | `internal/web` | The HTML transport: `GET /{season}/{week}`, its view model, its template. | `internal/games`, `internal/lineup`, `internal/score` | `bytes`, `context`, `embed`, `encoding/json`, `errors`, `html/template`, `log`, `net/http`, `strconv`, `strings`, `time`, `time/tzdata` | `cmd/server` |
-| `internal/lineup` | Lineup knowledge: file format, tree layout, matchup resolution, starters/bench split, and the embedded tree itself. | none | `bufio`, `embed`, `errors`, `fmt`, `io`, `io/fs`, `path`, `path/filepath`, `strings` | `cmd/server`, `internal/web` |
+| `internal/lineup` | Lineup knowledge: file format, tree layout, matchup resolution, starters/bench split, and the embedded tree itself. | none | `bufio`, `embed`, `errors`, `fmt`, `io`, `io/fs`, `path`, `path/filepath`, `slices`, `strconv`, `strings`, `unicode`, `unicode/utf8` | `cmd/server`, `internal/web` |
 
 ### `cmd/server`
 
 Thin by design, and the only place the provider and the transport meet: it constructs a
-`sleeper.Client` and a `lineup.Tree` and hands them to `web.Handler`, which knows only the
+`plays.Store`, a `sleeper.Client` holding it in `Plays`, and a `lineup.Tree` and hands them to `web.Handler`, which knows only the
 one-method `AsOf` interfaces it declares for itself, `StatsSource` and `GamesSource`, satisfied by
 the two wrapped caches. If
 logic starts appearing here, it belongs in a package instead — `main()` should stay readable as a
@@ -87,8 +95,10 @@ Because the wiring is here, the TTL cache landed as pure addition: `weekcache.Ne
 and no handler file touched. Wrapping once matters — a cache per handler would be two upstream
 budgets for one league — and it is the kind of thing only a composition root can guarantee. Games
 arrived the same way: a second `weekcache.New("gamescache", client.WeekGames, weekcache.TTL)` over
-the same client. Only the stats cache is hooked to the play store's invalidation; dropping a week's
-stats leaves its games alone.
+the same client. Only the stats cache is hooked to the play store's invalidation —
+`playStore.OnWholeWeekChanged(stats.Invalidate)` — so dropping a week's stats leaves its games alone.
+`main` imports `plays` for that store, and passes it `sleeper.BaseURL` so the base URL stays named
+in one package.
 
 The package is no longer one file, and the split is what made it testable at all. `main()` is the
 untested few lines that name the real environment, the real signal disposition, and the real
@@ -139,8 +149,9 @@ status text ride along as sent, and the wording is `web`'s choice. `time` is its
 
 ### `internal/sleeper`
 
-The only package that talks to the network, and the only one in which a Sleeper stat key appears —
-a fact worth re-checking by grep rather than trusting. `FetchWeekStats` fetches once and transforms
+With its two subpackages, the only code that talks to the network, and the only package in which a
+Sleeper stat key appears — a fact worth re-checking by grep rather than trusting. Sleeper shapes
+appear only under `internal/sleeper/`. `FetchWeekStats` fetches once and transforms
 **every** entry in the payload, so the decoded `map[string]map[string]float64` never outlives the
 call. `Client` is the same thing with the base URL held in a field, so `main` wires a value.
 
@@ -148,10 +159,32 @@ call. `Client` is the same thing with the base URL held in a field, so `main` wi
 the schedule endpoint carries kickoff and quarter, and translates Sleeper's fields only. An unplayed
 week answers `[]`, an empty week rather than an error.
 
+Forced fumbles are not in the stats payload, so `Client` asks its `Plays *plays.Store` for them,
+handing over the `plays.Identities` it built from that payload. A nil `Plays` scores without them.
+`net/http` and `encoding/json` are gone from its imports: every request goes through `httpjson.Get`.
+
 Mapping the whole payload rather than the ~18 players a request wants is a deliberate cost, measured
 rather than assumed: about 0.7 ms against the 13 ms JSON decode that produced its input. See
 [ADR 0003](adr/0003-sleeper-as-initial-stat-provider.md) for why Sleeper is currently the only
 provider.
+
+### `internal/sleeper/plays`
+
+The play store, split out of `internal/sleeper` because it is a subsystem of its own: the plays
+endpoint, Sleeper's play JSON, and the parsing of play descriptions into forced-fumble credits. It
+sits under `internal/sleeper/` because those shapes and that text are Sleeper's. `Store` polls
+recent plays on each read and backs them with a whole-week fetch in the background;
+`OnWholeWeekChanged` tells a cache when that fetch lands. `sync` and `regexp` are the imports that
+mark it: shared state across requests, and description text read for names.
+
+`Identity` has unexported fields, so `NewIdentity` is the only way to build one and name
+normalization stays here. It cannot import `sleeper`, which imports it.
+
+### `internal/sleeper/internal/httpjson`
+
+A leaf both Sleeper packages import, so they share one 15-second `http.Client` and one set of error
+wording rather than two that drift. `internal/` limits its importers to the `internal/sleeper`
+tree. It has no tests of its own; its callers' `httptest` servers exercise it.
 
 ### `internal/lineup`
 
@@ -232,7 +265,7 @@ before it could fail.
   importing both, rather than `lineup` importing `score` (which would drag a transport concern into
   a pure domain package) or the reverse. Expect the same of the next consumer: a season-long view
   or a lineup submitter is another package beside `web`, not a new edge between the two domains.
-- **Growth pressure lands on the adapters, not the domain.** `internal/sleeper` carries the network
+- **Growth pressure lands on the adapters, not the domain.** The `internal/sleeper` tree carries the network
   dependency and `internal/web` the HTML one; `internal/score` has none of them, and a change to
   either cannot reach it without an import that is not there.
 - **A few tests add first-party edges the map does not show.** Every test is in-package, and there

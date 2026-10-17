@@ -3,13 +3,45 @@ package sleeper
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/eshifrin/bojjaes/internal/score"
+	"github.com/eshifrin/bojjaes/internal/sleeper/plays"
 )
+
+func readFixture(t *testing.T, path string) []byte {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
+func noLog(string, ...any) {}
+
+type logRecorder struct {
+	mu    sync.Mutex
+	lines []string
+}
+
+func (l *logRecorder) logf(format string, args ...any) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.lines = append(l.lines, fmt.Sprintf(format, args...))
+}
+
+func (l *logRecorder) joined() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return strings.Join(l.lines, "\n")
+}
 
 // weekServer serves a weekly aggregate and a plays poll from one host, as
 // Sleeper does.
@@ -61,8 +93,8 @@ func editCrosby(edit func(row map[string]any) map[string]any) func([]map[string]
 }
 
 func TestClientWeekStatsCreditsForcerFromPlays(t *testing.T) {
-	srv := weekServer(t, w3Aggregate(t, unchanged), readFixture(t, "testdata/plays_2026_w3.json"))
-	c := Client{BaseURL: srv.URL, PlayStore: NewPlayStore(srv.URL, 0, noLog)}
+	srv := weekServer(t, w3Aggregate(t, unchanged), readFixture(t, "plays/testdata/plays_2026_w3.json"))
+	c := Client{BaseURL: srv.URL, Plays: plays.NewStore(srv.URL, 0, noLog)}
 
 	week, err := c.WeekStats(context.Background(), 2026, 3)
 	if err != nil {
@@ -83,8 +115,8 @@ func TestClientWeekStatsCreditsForcerFromPlays(t *testing.T) {
 
 func TestClientWeekStatsCreditsForcerWithNullAggregateStats(t *testing.T) {
 	nullStats := editCrosby(func(r map[string]any) map[string]any { r["stats"] = nil; return r })
-	srv := weekServer(t, w3Aggregate(t, nullStats), readFixture(t, "testdata/plays_2026_w3.json"))
-	c := Client{BaseURL: srv.URL, PlayStore: NewPlayStore(srv.URL, 0, noLog)}
+	srv := weekServer(t, w3Aggregate(t, nullStats), readFixture(t, "plays/testdata/plays_2026_w3.json"))
+	c := Client{BaseURL: srv.URL, Plays: plays.NewStore(srv.URL, 0, noLog)}
 
 	week, err := c.WeekStats(context.Background(), 2026, 3)
 	if err != nil {
@@ -102,9 +134,9 @@ func TestClientWeekStatsCreditsForcerWithNullAggregateStats(t *testing.T) {
 
 func TestClientWeekStatsDoesNotCreditForcerMissingFromAggregate(t *testing.T) {
 	dropped := editCrosby(func(map[string]any) map[string]any { return nil })
-	srv := weekServer(t, w3Aggregate(t, dropped), readFixture(t, "testdata/plays_2026_w3.json"))
+	srv := weekServer(t, w3Aggregate(t, dropped), readFixture(t, "plays/testdata/plays_2026_w3.json"))
 	logs := &logRecorder{}
-	c := Client{BaseURL: srv.URL, PlayStore: NewPlayStore(srv.URL, 0, logs.logf)}
+	c := Client{BaseURL: srv.URL, Plays: plays.NewStore(srv.URL, 0, logs.logf)}
 
 	week, err := c.WeekStats(context.Background(), 2026, 3)
 	if err != nil {
@@ -128,7 +160,7 @@ func TestClientWeekStatsSurvivesPlayFailure(t *testing.T) {
 		w.Write([]byte(`[{"player_id":"9493","stats":{"rec_yd":167}}]`))
 	}))
 	t.Cleanup(srv.Close)
-	c := Client{BaseURL: srv.URL, PlayStore: NewPlayStore(srv.URL, 0, noLog)}
+	c := Client{BaseURL: srv.URL, Plays: plays.NewStore(srv.URL, 0, noLog)}
 
 	week, err := c.WeekStats(context.Background(), 2026, 3)
 	if err != nil {
@@ -149,7 +181,7 @@ func TestClientWeekStatsAggregateFailureStillErrors(t *testing.T) {
 		http.Error(w, "boom", http.StatusInternalServerError)
 	}))
 	t.Cleanup(srv.Close)
-	c := Client{BaseURL: srv.URL, PlayStore: NewPlayStore(srv.URL, 0, noLog)}
+	c := Client{BaseURL: srv.URL, Plays: plays.NewStore(srv.URL, 0, noLog)}
 
 	if _, err := c.WeekStats(context.Background(), 2026, 3); err == nil {
 		t.Fatal("want error")

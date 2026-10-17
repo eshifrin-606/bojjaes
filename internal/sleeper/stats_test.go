@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/eshifrin/bojjaes/internal/score"
+	"github.com/eshifrin/bojjaes/internal/sleeper/plays"
 )
 
 // The player the week 14 fixture is verified against: 9493 is Puka Nacua,
@@ -163,7 +164,7 @@ func TestFetchWeeklyUpstreamFailures(t *testing.T) {
 }
 
 // decodeWeekly is fetchWeekly without the HTTP, for fixtures read from disk.
-func decodeWeekly(r io.Reader) (map[string]map[string]float64, identities, error) {
+func decodeWeekly(r io.Reader) (map[string]map[string]float64, plays.Identities, error) {
 	var rows []weeklyRow
 	if err := json.NewDecoder(r).Decode(&rows); err != nil {
 		return nil, nil, err
@@ -181,7 +182,7 @@ func TestDecodeWeeklyIdentifiesPlayersByWeekTeam(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if want := (identities{"5991": {name: "m.crosby", team: "LV"}}); !reflect.DeepEqual(ids, want) {
+	if want := (plays.Identities{"5991": plays.NewIdentity("Maxx", "Crosby", "LV")}); !reflect.DeepEqual(ids, want) {
 		t.Errorf("identities = %v, want %v", ids, want)
 	}
 }
