@@ -1,0 +1,11 @@
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+8183,Brock Purdy,QB,SF
+9488,Jaxon Smith-Njigba,WR,SEA
+12506,Harold Fannin Jr.,TE,CLE
+4034,Christian McCaffrey,RB,SF
+6790,D'Andre Swift,RB,CHI
+9224,Chase Brown,RB,CIN
+8259,Cameron Dicker,K,LAC
+12573,Mason Graham,DL,CLE
+10917,Byron Young,LB,LAR
