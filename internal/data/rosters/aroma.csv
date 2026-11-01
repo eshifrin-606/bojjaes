@@ -1,0 +1,28 @@
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+9488,Jaxon Smith-Njigba,WR,SEA
+11624,Xavier Worthy,WR,KC
+11635,Ladd McConkey,WR,LAC
+13274,Germie Bernard,WR,PIT
+13296,Caleb Douglas,WR,MIA
+13317,Ted Hurst III,WR,TB
+12521,Elijah Arroyo,TE,SEA
+12506,Harold Fannin Jr.,TE,CLE
+13421,Eli Raridon,TE,NE
+4034,Christian McCaffrey,RB,SF
+6790,D'Andre Swift,RB,CHI
+9225,Tank Bigsby,RB,PHI
+9224,Chase Brown,RB,CIN
+11581,MarShawn Lloyd,RB,GB
+12504,Kaleb Johnson,RB,GB
+5870,Daniel Jones,QB,IND
+8183,Brock Purdy,QB,SF
+13289,Drew Allar,QB,PIT
+5119,Jason Sanders,K,NYJ
+8259,Cameron Dicker,K,LAC
+10917,Byron Young,LB,LAR
+12573,Mason Graham,DL,CLE
+13340,Rueben Bain Jr.,DL,TB
+13371,Dillon Thieneman,DB,CHI
+13353,Chris Brazzell II,WR,CAR
+13286,Jadarian Price,RB,SEA

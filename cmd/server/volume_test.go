@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/eshifrin/bojjaes/internal/data"
 	"github.com/eshifrin/bojjaes/internal/lineup"
 )
 
@@ -37,7 +38,7 @@ func TestResolveLineupVolumeIsEmptyWhenEmpty(t *testing.T) {
 
 func embeddedSeasons(t *testing.T) []int {
 	t.Helper()
-	entries, err := fs.ReadDir(lineup.Embedded, ".")
+	entries, err := fs.ReadDir(data.Lineups, ".")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +68,7 @@ func TestLineupTreeOverAnEmptyVolumeIsSeededFromEmbedded(t *testing.T) {
 
 	tree := lineup.New(mustLineupTree(t, volume))
 
-	embedded := lineup.New(lineup.Embedded)
+	embedded := lineup.New(data.Lineups)
 	for _, season := range embeddedSeasons(t) {
 		want, wantOK := embedded.LatestWeek(season)
 		got, ok := tree.LatestWeek(season)
@@ -84,7 +85,7 @@ func embeddedLatest(t *testing.T) (season, week int) {
 	t.Helper()
 	seasons := embeddedSeasons(t)
 	season = slices.Max(seasons)
-	week, ok := lineup.New(lineup.Embedded).LatestWeek(season)
+	week, ok := lineup.New(data.Lineups).LatestWeek(season)
 	if !ok {
 		t.Fatalf("embedded season %d has no week", season)
 	}
@@ -95,7 +96,7 @@ func TestLineupTreeServesAStoreEditMadeAfterSeeding(t *testing.T) {
 	volume := t.TempDir()
 	mustLineupTree(t, volume)
 	season, week := embeddedLatest(t)
-	_, opponent, err := lineup.New(lineup.Embedded).Matchup(season, week)
+	_, opponent, err := lineup.New(data.Lineups).Matchup(season, week)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,8 +128,8 @@ func TestLineupTreeWithoutVolumeIsEmbeddedAndWritesNothing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("lineupTree(\"\"): %v", err)
 	}
-	if tree != lineup.Embedded {
-		t.Errorf("lineupTree(\"\") = %v, want lineup.Embedded", tree)
+	if tree != data.Lineups {
+		t.Errorf("lineupTree(\"\") = %v, want data.Lineups", tree)
 	}
 	if entries, err := os.ReadDir(cwd); err != nil || len(entries) != 0 {
 		t.Errorf("working directory holds %v (%v), want nothing", entries, err)

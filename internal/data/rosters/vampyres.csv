@@ -1,0 +1,28 @@
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+6794,Justin Jefferson,WR,MIN
+9754,Quentin Johnston,WR,LAC
+10232,Michael Wilson,WR,ARI
+11628,Marvin Harrison Jr.,WR,HOU
+13294,Makai Lemon,WR,PHI
+5012,Mark Andrews,TE,BAL
+10859,Sam LaPorta,TE,DET
+4866,Saquon Barkley,RB,PHI
+9753,Zach Charbonnet,RB,SEA
+11643,Jaylen Wright,RB,MIA
+12495,Ollie Gordon II,RB,MIA
+13305,Mike Washington Jr.,RB,LV
+13418,Robert Henry Jr.,RB,SEA
+6797,Justin Herbert,QB,LAC
+11566,Jayden Daniels,QB,WAS
+13306,Taylen Green,QB,CLE
+12713,Andy Borregales,K,NE
+13833,Dominic Zvada,K,NYG
+11669,Laiatu Latu,DL,IND
+12602,Mykel Williams,DL,SF
+13341,Akheem Mesidor,DL,LAC
+13395,Keldric Faulk,DL,TEN
+13359,Malachi Lawrence,DL,DAL
+13455,TJ Parker,DE,BUF
+12487,Terrance Ferguson,TE,LAR
+11583,Jonathon Brooks,RB,CAR

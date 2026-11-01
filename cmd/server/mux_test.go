@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/eshifrin/bojjaes/internal/data"
 	"github.com/eshifrin/bojjaes/internal/games"
 	"github.com/eshifrin/bojjaes/internal/lineup"
 	"github.com/eshifrin/bojjaes/internal/score"
@@ -31,7 +32,7 @@ func (s stubGames) AsOf(_ context.Context, season, week int) (games.Week, time.T
 }
 
 func testMux() *http.ServeMux {
-	return newMux(stubStats{}, stubGames{}, lineup.New(lineup.Embedded))
+	return newMux(stubStats{}, stubGames{}, lineup.New(data.Lineups))
 }
 
 func TestMuxServesTheMatchupPage(t *testing.T) {
@@ -48,7 +49,7 @@ func TestMuxRendersTheGamesSourcesGameState(t *testing.T) {
 	detroit := stubGames{games: []games.Game{{Home: "DET", Away: "LAR", State: games.Complete}}}
 	rec := httptest.NewRecorder()
 
-	newMux(stubStats{}, detroit, lineup.New(lineup.Embedded)).
+	newMux(stubStats{}, detroit, lineup.New(data.Lineups)).
 		ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/2025/15", nil))
 
 	if body := rec.Body.String(); !strings.Contains(body, `<span class="game">Final</span>`) {
@@ -161,7 +162,7 @@ func (r recordingStats) FetchedAt(season, week int) (time.Time, bool) {
 // The season form would ask for the embedded tree's latest week, not week 5.
 func TestMuxStillRoutesANumberedWeeksVersionToTheWeekForm(t *testing.T) {
 	var asked [][2]int
-	mux := newMux(recordingStats{asked: &asked}, stubGames{}, lineup.New(lineup.Embedded))
+	mux := newMux(recordingStats{asked: &asked}, stubGames{}, lineup.New(data.Lineups))
 
 	mux.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/2025/5/version", nil))
 

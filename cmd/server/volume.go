@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/eshifrin/bojjaes/internal/data"
 	"github.com/eshifrin/bojjaes/internal/lineup"
 )
 
@@ -16,9 +17,9 @@ func resolveLineupVolume(getenv func(string) string) string {
 // subdirectory and nothing else on the mount (lost+found) reads as a season.
 func lineupTree(volume string, logf func(string, ...any)) (fs.FS, error) {
 	if volume == "" {
-		return lineup.Embedded, nil
+		return data.Lineups, nil
 	}
-	if err := lineup.Seed(lineup.Embedded, volume, logf); err != nil {
+	if err := lineup.Seed(data.Lineups, volume, logf); err != nil {
 		return nil, err
 	}
 	return os.DirFS(filepath.Join(volume, "lineups")), nil

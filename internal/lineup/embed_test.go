@@ -5,22 +5,14 @@ import (
 	"io/fs"
 	"strconv"
 	"testing"
+
+	"github.com/eshifrin/bojjaes/internal/data"
 )
-
-// The embedded tree starts at the seasons, not at the directory the embed
-// directive named: a Tree over it has no prefix to strip.
-func TestEmbeddedTreeStartsAtTheSeasons(t *testing.T) {
-	name := "2025/15/bojjaes.csv"
-
-	if _, err := fs.Stat(Embedded, name); err != nil {
-		t.Errorf("Stat(%q): %v", name, err)
-	}
-}
 
 // The embedded tree is the one the server serves, so it has to satisfy the
 // reader whole: a week resolves to its two teams and both lineups parse.
 func TestEmbeddedTreeResolvesAWeek(t *testing.T) {
-	tree := New(Embedded)
+	tree := New(data.Lineups)
 
 	ours, theirs, err := tree.Matchup(2025, 15)
 	if err != nil {
@@ -45,9 +37,9 @@ func TestEmbeddedTreeResolvesAWeek(t *testing.T) {
 // files: a malformed CSV or a week with three lineups in it would build clean
 // and fail at request time. This walk is a test of the data, not the reader.
 func TestEveryEmbeddedWeekIsAReadableMatchup(t *testing.T) {
-	tree := New(Embedded)
+	tree := New(data.Lineups)
 
-	seasons, err := fs.ReadDir(Embedded, ".")
+	seasons, err := fs.ReadDir(data.Lineups, ".")
 	if err != nil {
 		t.Fatalf("reading the embedded tree: %v", err)
 	}
@@ -62,7 +54,7 @@ func TestEveryEmbeddedWeekIsAReadableMatchup(t *testing.T) {
 			continue
 		}
 
-		weeks, err := fs.ReadDir(Embedded, seasonEntry.Name())
+		weeks, err := fs.ReadDir(data.Lineups, seasonEntry.Name())
 		if err != nil {
 			t.Errorf("reading season %d: %v", season, err)
 			continue

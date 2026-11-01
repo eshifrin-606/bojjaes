@@ -12,7 +12,7 @@ and Sleeper-as-sole-provider are untouched.
 
 ## Context
 
-Today a lineup is set by editing `internal/lineup/data/<season>/<week>/<team>.csv` in git and
+Today a lineup is set by editing `internal/data/lineups/<season>/<week>/<team>.csv` in git and
 deploying: the tree is compiled into the binary with `//go:embed`, so the running server reads
 no mutable file and every request sees identical, build-time-frozen data. We want to **set a
 lineup from a phone without a laptop, an editor, or a deploy**.

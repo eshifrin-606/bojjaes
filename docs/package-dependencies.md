@@ -4,8 +4,8 @@ A one-page picture of how the Go packages relate, so a design question ("where d
 "what would that import cost me?") can be answered by looking rather than by reading code.
 
 Scope: first-party packages only. Standard-library imports are listed per package below because
-they say a lot about what a package *is* — `net/http` marks a boundary, `io/fs` and `embed` mark
-the package that carries the lineup tree, `html/template` marks the one package that renders, and
+they say a lot about what a package *is* — `net/http` marks a boundary, `embed` marks
+the package that carries the league files, `html/template` marks the one package that renders, and
 `os/signal` marks the one package that owns the process's life and death.
 
 ## The map
@@ -19,7 +19,8 @@ graph TD
         score["internal/score"]
         games["internal/games"]
         lineup["internal/lineup"]
-        files[("internal/lineup/data/*.csv<br/><i>embedded</i>")]
+        data["internal/data"]
+        files[("internal/data/lineups/**<br/>internal/data/rosters/*.csv<br/><i>embedded</i>")]
     end
     subgraph adapters["internal — adapters + transport"]
         sleeperpkg["internal/sleeper"]
@@ -37,6 +38,7 @@ graph TD
     main --> sleeperpkg
     main --> plays
     main --> lineup
+    main --> data
     web --> score
     web --> games
     web --> lineup
@@ -47,7 +49,7 @@ graph TD
     plays --> httpjson
     httpjson --> sleeper
     weekcache -. wraps at runtime .-> sleeperpkg
-    lineup --> files
+    data --> files
 ```
 
 Every arrow into the domain points inward, and nothing but `main` names a provider. That is the
@@ -67,15 +69,16 @@ serialization decision. Read the direction of the arrows, not the length of the 
 
 | Package | Role | Imports (first-party) | Imports (stdlib) | Imported by |
 | --- | --- | --- | --- | --- |
-| `cmd/server` | Process entrypoint and composition root. Constructs the play store and the provider, wraps its stats and its games each in a cache, constructs the lineup tree, builds the mux, and owns the process lifecycle: listen address, connection timeouts, and the drain on `SIGTERM`. | `internal/lineup`, `internal/sleeper`, `internal/sleeper/plays`, `internal/web`, `internal/weekcache` | `context`, `errors`, `fmt`, `io/fs`, `log`, `net`, `net/http`, `os`, `os/signal`, `path/filepath`, `syscall`, `time` | — |
-| `internal/score` | The scoring domain: `StatLine`, `Points`, `WeekStats`, and the season/week bounds. | none | `fmt` | `internal/sleeper`, `internal/web` |
+| `cmd/server` | Process entrypoint and composition root. Constructs the play store and the provider, wraps its stats and its games each in a cache, constructs the lineup tree, builds the mux, and owns the process lifecycle: listen address, connection timeouts, and the drain on `SIGTERM`. | `internal/data`, `internal/lineup`, `internal/sleeper`, `internal/sleeper/plays`, `internal/web`, `internal/weekcache` | `context`, `errors`, `fmt`, `io/fs`, `log`, `net`, `net/http`, `os`, `os/signal`, `path/filepath`, `syscall`, `time` | — |
+| `internal/score` | The scoring domain: `StatLine`, `Points`, `WeekStats`, and the season/week bounds. |starters/bench split. It reads any `fs.FS` and embeds none. | none | `bufio`, | `fmt` | `internal/sleeper`, `internal/web` |
 | `internal/games` | A week's NFL games, provider-neutral: `Game`, its `State`, and `Week` with `ForTeam`. | none | `time` | `internal/sleeper`, `internal/web` |
 | `internal/sleeper` | The Sleeper adapter: `Client`, the base URL, the stat-key transform, and the scores endpoint read into `games.Week`. | `internal/games`, `internal/score`, `internal/sleeper/internal/httpjson`, `internal/sleeper/plays` | `context`, `fmt`, `time` | `cmd/server` |
 | `internal/sleeper/plays` | The play store: the plays endpoint, Sleeper's play JSON, and forced-fumble attribution from play descriptions. | `internal/sleeper/internal/httpjson` | `context`, `fmt`, `regexp`, `strconv`, `strings`, `sync`, `time` | `cmd/server`, `internal/sleeper` |
 | `internal/sleeper/internal/httpjson` | `Get`: one GET decoded from JSON, over the one timed `http.Client`. | none | `context`, `encoding/json`, `fmt`, `net/http`, `time` | `internal/sleeper`, `internal/sleeper/plays` |
 | `internal/weekcache` | A caching decorator over any weekly fetch, generic over its value: TTL expiry, single-flight, the `TTL` constant. | none | `context`, `log`, `sync`, `time` | `cmd/server` |
 | `internal/web` | The HTML transport: `GET /{season}/{week}`, its view model, its template. | `internal/games`, `internal/lineup`, `internal/score` | `bytes`, `context`, `embed`, `encoding/json`, `errors`, `html/template`, `log`, `net/http`, `strconv`, `strings`, `time`, `time/tzdata` | `cmd/server` |
-| `internal/lineup` | Lineup knowledge: file format, tree layout, matchup resolution, starters/bench split, and the embedded tree itself. | none | `bufio`, `embed`, `errors`, `fmt`, `io`, `io/fs`, `path`, `path/filepath`, `slices`, `strconv`, `strings`, `unicode`, `unicode/utf8` | `cmd/server`, `internal/web` |
+| `internal/lineup` | Lineup knowledge: file format, tree layout, matchup resolution, starters/bench split. It reads any `fs.FS` and embeds none. | none | `bufio`, `errors`, `fmt`, `io`, `io/fs`, `path`, `path/filepath`, `slices`, `strconv`, `strings`, `unicode`, `unicode/utf8` | `cmd/server`, `internal/web` |
+| `internal/data` | The league files carried in the binary: the lineup tree and the per-team rosters, each an `fs.FS` rooted below its directory. | none | `embed`, `io/fs` | `cmd/server`, `internal/lineup` (tests only) |
 
 ### `cmd/server`
 
@@ -87,7 +90,7 @@ logic starts appearing here, it belongs in a package instead — `main()` should
 table of contents for the service.
 
 The tree served is named here and only here: `main` hands `lineup.New` the embedded
-`lineup.Embedded`, so no path relative to the working directory survives. Serving a
+`data.Lineups`, so no path relative to the working directory survives. Serving a
 different tree — a live one off disk, say — is a different `fs.FS` at this one call site.
 
 Because the wiring is here, the TTL cache landed as pure addition: `weekcache.New` wraps the
@@ -186,15 +189,22 @@ A leaf both Sleeper packages import, so they share one 15-second `http.Client` a
 wording rather than two that drift. `internal/` limits its importers to the `internal/sleeper`
 tree. It has no tests of its own; its callers' `httptest` servers exercise it.
 
+### `internal/data`
+
+The league files and nothing else. `go:embed` cannot reach outside its own package directory, so
+the files and the directives that embed them live together here, and any package that wants them
+imports this leaf rather than reaching into another package's directory. `Lineups` (the
+`<season>/<week>/<team>.csv` tree) and `Rosters` (one `<team>.csv` per team, same
+`id,name,position,team` format) are each an `fs.FS` rooted below their directory, so a new season
+is a new directory rather than an edit to a directive.
+
 ### `internal/lineup`
 
 Pure domain plus a file reader; no network, no HTTP. It owns the `id,name` record format, the
 `<season>/<week>/<team>.csv` layout, and the positional rule that the first nine records are
 starters.
 
-It also holds the tree. `internal/lineup/data/**` is embedded with `//go:embed data` and exposed as
-an `fs.FS` rooted at the season directories, so a new season is a new directory rather than an edit
-to a directive. `Tree` reads through whatever `fs.FS` it is handed and never defaults to the
+It does not hold the tree; `internal/data` does. `Tree` reads through whatever `fs.FS` it is handed and never defaults to the
 embedded one — naming the tree is `main`'s job ([ADR 0004](adr/0004-web-frontend-stack.md) #3).
 
 It also answers a question the lineup files alone can't: *who is playing this week*.
@@ -281,7 +291,7 @@ before it could fail.
   discovered in `main`. They are also where the "read the arrows" advice needs the second `go list`.
   Both `lineup`'s matchup tests and `web`'s page tests build their fixtures with `fstest.MapFS`,
   so nothing writes to disk and almost nothing reads the real tree. The exception is deliberate: one
-  test in `lineup` walks every week of the embedded tree, asserting each is a matchup and that both
+  test in `lineup` walks every week of `data.Lineups`, asserting each is a matchup and that both
   lineups parse. It is a test of the data, not of the reader — with every other test on a `MapFS`,
   a malformed CSV or a week with three files would otherwise build clean and fail at request time.
 

@@ -1,0 +1,26 @@
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+5859,A.J. Brown,WR,NE
+5846,DK Metcalf,WR,PIT
+7525,DeVonta Smith,WR,PHI
+13279,Carnell Tate,WR,TEN
+13301,Antonio Williams,WR,WAS
+13320,Zachariah Branch,WR,ATL
+8110,Jake Ferguson,TE,DAL
+12518,Tyler Warren,TE,IND
+13319,Oscar Delp,TE,NO
+8151,Kenneth Walker III,RB,KC
+6806,J.K. Dobbins,RB,DEN
+9226,De'Von Achane,RB,MIA
+12527,Ashton Jeanty,RB,LV
+13405,Kaytron Allen,RB,MIA
+13288,Nicholas Singleton,RB,TEN
+13337,Emmett Johnson,RB,KC
+5849,Kyler Murray,QB,MIN
+12508,Jaxson Dart,QB,NYG
+13269,Fernando Mendoza,QB,LV
+7042,Tyler Bass,K,BUF
+11792,Will Reichard,K,MIN
+12530,Travis Hunter,DB,JAX
+12566,Jihaad Campbell,LB,PHI
+13375,Sonny Styles,LB,WAS
