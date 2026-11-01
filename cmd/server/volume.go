@@ -2,7 +2,6 @@ package main
 
 import (
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -15,9 +14,12 @@ func resolveLineupVolume(getenv func(string) string) string {
 
 // The volume names the mount, not the lineups directory, so the app owns the
 // subdirectory and nothing else on the mount (lost+found) reads as a season.
-func lineupTree(volume string) fs.FS {
+func lineupTree(volume string, logf func(string, ...any)) (fs.FS, error) {
 	if volume == "" {
-		return lineup.Embedded
+		return lineup.Embedded, nil
 	}
-	return lineup.Layered(lineup.Embedded, os.DirFS(filepath.Join(volume, "lineups")), log.Printf)
+	if err := lineup.Seed(lineup.Embedded, volume, logf); err != nil {
+		return nil, err
+	}
+	return os.DirFS(filepath.Join(volume, "lineups")), nil
 }

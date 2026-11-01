@@ -251,11 +251,11 @@ git, or a deploy.
 
 | Part | State |
 |---|---|
-| Two-layer read: embedded tree + volume (`internal/lineup/layered.go`) | **built** |
-| Stale volume weeks ignored and logged, never deleted | **built** |
+| Volume-only read: `os.DirFS(<mount>/lineups)` as the sole lineup tree | **built** |
+| Boot seeding from the embedded tree, per week, against `seed-manifest.json` (`internal/lineup/seed.go`) | **built** |
 | Phone form, passphrase, atomic write | planned |
-| Boot-time clear once git's week matches the volume | planned |
-| Fly volume mount, `LINEUP_VOLUME` set, `min_machines_running = 1` | planned — `fly.toml` has no mount and runs `min_machines_running = 0` |
+| Export of unarchived weeks | planned |
+| Fly volume mount, `LINEUP_VOLUME` set, one machine with `min_machines_running = 0` | planned — `fly.toml` has no mount and sets no `LINEUP_VOLUME`, so production reads the embedded tree |
 
 ### Deployment
 
@@ -263,26 +263,37 @@ git, or a deploy.
 graph LR
     phone(["📱 phone form"]) -->|"POST lineup (passphrase)"| server
     reader(["📱 reader"]) -->|"GET /2025/15"| server
-    subgraph fly["Fly machine — always on, min_machines_running = 1"]
+    subgraph fly["one Fly machine — scale-to-zero, min_machines_running = 0"]
         server["the same single Go binary"]
         tree[("embedded lineup tree<br/><i>git archive, in the binary</i>")]
-        vol[("Fly volume at &lt;mount&gt;<br/>lineups/&lt;season&gt;/&lt;week&gt;/&lt;team&gt;.csv<br/><i>at most one week</i>")]
-        server --- tree
+        vol[("Fly volume at &lt;mount&gt;<br/>lineups/&lt;season&gt;/&lt;week&gt;/&lt;team&gt;.csv<br/>seed-manifest.json<br/><i>every week</i>")]
+        tree -->|"seed at boot, per changed week"| vol
+        server -->|"every read"| vol
         server ---|"atomic write: temp + rename"| vol
     end
     server -->|"one fetch per week per 5 min"| sleeper(["Sleeper REST API"])
 ```
 
-The read is two layers, and is built. `LINEUP_VOLUME` names the mount; the server reads only
-`<mount>/lineups/`, so nothing else on the mount (`lost+found`) reads as a season. Unset, the
-embedded tree is the only tree. The volume's week wins **only if it is at or after** the embedded
-tree's latest week (a new week, or a phone edit of the latest archived one); every other week comes
-from the embedded tree. A volume week older than that is stale: **ignored and logged, never
-deleted** — it may hold edits that never reached git. If the volume holds more than one eligible
-week, only the latest is served and the rest are logged as superseded. The volume is re-scanned per
-read, so a week written while the server runs is served without a restart. An empty or missing
-volume reads exactly like the embedded tree alone. Sleeper is untouched: still one fetch per
+The read is the volume only, and is built. `LINEUP_VOLUME` names the mount; the server's lineup
+tree is `<mount>/lineups/` and nothing else, so neither the mount's own entries (`lost+found`) nor
+the seed manifest beside `lineups/` reads as a season. There is no layering and no per-week choice
+between sources: what the store holds is what is served. The volume is read through `os.DirFS` on
+every request, so a week changed while the server runs is served without a restart. Unset, the
+embedded tree is read directly and nothing is written. Sleeper is untouched: still one fetch per
 request.
+
+The embedded tree's job with a volume is to seed it. Before the server listens, it walks every
+embedded `<season>/<week>` and hashes git's copy of that week (file names and contents, not mtimes,
+so an unchanged rebuild hashes the same). `<mount>/seed-manifest.json` records, per week, the hash
+of git's copy at its last seed. A week whose hash differs from its entry, or has none, is replaced
+**whole** in the store — removed, then git's files copied in, so a changed opponent never leaves a
+third roster — and only then is its entry written (temp file, then rename). A matching week is not
+touched, whatever the store holds, so restarts and code-only deploys write nothing. A week git
+deleted stays in the store with its entry. If the week being replaced holds content git never
+seeded — a phone edit — every file is logged by name and full contents first, so the lineup can be
+recovered from the log. Seeding failing (an unwritable mount) stops the process before it listens:
+a store of unknown state is not served. Because the app scales to zero, seeding runs on every cold
+start; it is a hash per week and a no-op when git is unchanged.
 
 `PLAYS_COLD_WAIT` sits beside `LINEUP_VOLUME` in the environment. It bounds how long the first read
 of a week with no plays held waits for that week's whole-week play-by-play fetch, so turnover forced
@@ -290,36 +301,33 @@ fumbles show on first load. Unset means `30s`; `config/local.env` sets `10s` for
 `fly.toml` sets `3s`, so the deployed app waits only briefly. A malformed or negative value stops
 the server at startup.
 
-### What the volume holds (planned)
+### What happens to a week
 
-`G` = the embedded tree's latest week. The app, not a human, keeps the volume to the one in-flight
-week. Nothing writes or clears the volume yet: the transitions below need the write path and the
-boot-time clear.
+Each week is in one of four states (ADR 0005 decision 4). Seeding drives the git-side transitions
+and is built; the phone-side ones need the write path.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Empty
-    Empty: VOLUME EMPTY
-    Empty: writable G or G+1
-    Empty: every week served from git
-    Holds: VOLUME HOLDS WEEK v
-    Holds: writable v only
-    Holds: v served from the volume
-    Empty --> Holds: phone write
-    Holds --> Holds: phone rewrite, or boot with git's v differing → stays
-    Holds --> Empty: boot, git's week v starters match the volume copy → cleared
-    note right of Holds
-        Match is each team's set of starter ids
-        (first nine, any order), not bytes.
-        If git commits a later week first,
-        v falls behind G: stale, ignored,
-        not deleted — hidden but recoverable.
+    [*] --> None
+    None: NONE — neither git nor the store has it
+    UiOnly: UI-ONLY — the store has it, git does not
+    Synced: SYNCED — the store matches git
+    Diverged: DIVERGED — the store differs, git unchanged since its last seed
+    None --> Synced: git adds the week → seeded
+    None --> UiOnly: phone write
+    UiOnly --> Synced: git adds the week → seeded (phone copy logged if different)
+    Synced --> Diverged: phone edit
+    Diverged --> Synced: phone edit back to git's, or git changes the week → reseeded (phone copy logged)
+    Synced --> Synced: git changes the week → reseeded
+    note right of Diverged
+        Restarts and deploys that leave
+        git's copy unchanged keep the
+        phone version served.
     end note
 ```
 
-Archiving a week is committing the volume's version to git and deploying; the next boot sees the
-match and clears it. Clearing happens only at boot, so a phone edit that reverts to git's copy
-leaves the volume holding a duplicate until the next restart or deploy. That's harmless: it scores
-the same starters git would. Clearing on presence alone would erase a phone edit of an archived week
-on every deploy, which is why the starters must match. Starter order and bench rows are left out of
-the match: neither is scored, so losing them to git's version on a clear costs nothing.
+Archiving a week is committing the store's version to git and deploying; seeding then copies
+identical content and the week is synced. Unarchived (ui-only or diverged) weeks are the only thing
+lost with the volume, since a fresh volume re-seeds everything else from git. The accepted loss path
+is a git change to the *same* week merged after a phone edit: git wins, and the overwrite log is the
+recovery.

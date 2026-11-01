@@ -13,6 +13,7 @@ RUN CGO_ENABLED=0 go build -v -o /server ./cmd/server
 # Distroless rather than scratch: the server needs CA roots to reach https://api.sleeper.app.
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=builder /server /server
-# Repeats the tag's user so a switch to the plain tag cannot silently run the server as root.
-USER nonroot:nonroot
+# Root only to claim the Fly volume, which mounts root-owned; the server drops to nonroot itself
+# before seeding or listening.
+USER root
 ENTRYPOINT ["/server"]
