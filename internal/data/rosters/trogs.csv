@@ -1,0 +1,25 @@
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+11632,Malik Nabers,WR,NYG
+11631,Brian Thomas Jr.,WR,JAX
+12526,Tetairoa McMillan,WR,CAR
+10229,Rashee Rice,WR,KC
+4217,George Kittle,TE,SF
+13299,Nate Boerkircher,TE,JAX
+13307,Marlin Klein,TE,HOU
+13278,Max Klare,TE,LAR
+3198,Derrick Henry,RB,BAL
+12529,TreVeyon Henderson,RB,NE
+11584,Bucky Irving,RB,TB
+13277,CJ Donaldson,RB,NO
+13424,Seth McGowan,RB,IND
+4046,Patrick Mahomes,QB,KC
+9758,C.J. Stroud,QB,HOU
+13275,Ty Simpson,QB,LAR
+13272,Carson Beck,QB,ARI
+7839,Evan McPherson,K,CIN
+13804,Kansei Matsuzawa,K,LV
+8289,Aidan Hutchinson,DL,DET
+13361,Romello Height,LB,SF
+13501,Gracen Halton,DT,SF
+13369,Brandon Cisse,DB,GB

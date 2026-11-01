@@ -1,0 +1,27 @@
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+6786,CeeDee Lamb,WR,DAL
+8144,Chris Olave,WR,NO
+8146,Garrett Wilson,WR,NYJ
+9756,Jordan Addison,WR,MIN
+11646,Jalen Coker,WR,CAR
+13346,Denzel Boston,WR,CLE
+13413,Cyrus Allen,WR,KC
+13268,Elijah Sarratt,WR,BAL
+13394,Josh Cameron,WR,JAX
+13380,Brenen Thompson,WR,LAC
+11604,Brock Bowers,TE,LV
+8155,Breece Hall,RB,NYJ
+9509,Bijan Robinson,RB,ATL
+12512,Quinshon Judkins,RB,CLE
+6804,Jordan Love,QB,GB
+12522,Cam Ward,QB,TEN
+13303,Cade Klubnik,QB,NYJ
+13545,Trey Smack,K,GB
+12711,Tyler Loop,K,BAL
+5816,Nick Bosa,DE,SF
+11665,Jared Verse,DL,CLE
+12574,Abdul Carter,DL,NYG
+13377,Arvell Reese,LB,NYG
+13492,Dani Dennis-Sutton,DE,GB
+7640,Micah Parsons,LB,GB

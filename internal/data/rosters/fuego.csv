@@ -1,0 +1,27 @@
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+8148,Jameson Williams,WR,DET
+8137,George Pickens,WR,DAL
+9486,Dontayvion Wicks,WR,PHI
+9500,Josh Downs,WR,IND
+13298,KC Concepcion Jr.,WR,CLE
+12492,Pat Bryant,WR,DEN
+13477,Colbie Young,WR,CIN
+13402,Skyler Bell,WR,BUF
+10236,Dalton Kincaid,TE,BUF
+13434,Will Kacmarek,TE,MIA
+5892,David Montgomery,RB,HOU
+7588,Javonte Williams,RB,DAL
+11655,Tyrone Tracy Jr.,RB,NYG
+13347,Demond Claiborne,RB,MIN
+13423,Eli Heidenreich,RB,PIT
+13414,Kaelon Black,RB,SF
+3294,Dak Prescott,QB,DAL
+11560,Caleb Williams,QB,CHI
+13602,Jack Strand,QB,ATL
+13425,Jalon Daniels,QB,TB
+4195,Jake Elliott,K,PHI
+10883,Will McDonald IV,DE,NYJ
+11667,Dallas Turner,LB,MIN
+12556,Donovan Ezeiruaku,DL,DAL
+5862,Brian Burns,DE,NYG

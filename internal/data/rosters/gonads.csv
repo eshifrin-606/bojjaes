@@ -1,0 +1,28 @@
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+7564,Ja'Marr Chase,WR,CIN
+6801,Tee Higgins,WR,CIN
+11620,Rome Odunze,WR,CHI
+13420,Bryce Lance,WR,NO
+13311,Chris Bell,WR,MIA
+13285,Malachi Fields,WR,NYG
+9480,Brenton Strange,TE,JAX
+13324,Matt Hibner,TE,BAL
+13273,Josh Cuevas,TE,BAL
+6813,Jonathan Taylor,RB,IND
+9221,Jahmyr Gibbs,RB,DET
+11576,Braelon Allen,RB,NYJ
+13345,Jonah Coleman,RB,DEN
+12534,Kyle Monangai,RB,CHI
+6770,Joe Burrow,QB,CIN
+6904,Jalen Hurts,QB,PHI
+11559,Michael Penix Jr.,QB,ATL
+11565,J.J. McCarthy,QB,NYG
+11786,Cam Little,K,JAX
+12961,Ryan Fitzgerald,K,CAR
+10892,Will Anderson Jr.,DL,HOU
+13372,R Mason Thomas,DL,KC
+13457,Gabe Jacas,DE,NE
+13364,Cashius Howell,DL,CIN
+13302,Adam Randall,RB,BAL
+12585,James Pearce Jr.,DL,ATL

@@ -12,7 +12,7 @@ graph LR
     reader(["📱 reader"]) -->|"GET /2025/15"| server
     subgraph box["one Go process (one Fly machine)"]
         server["cmd/server<br/><i>net/http, nothing scheduled</i>"]
-        tree[("internal/lineup/data/<br/>2025/15/*.csv<br/><i>embedded in the binary</i>")]
+        tree[("internal/data/lineups/<br/>2025/15/*.csv<br/><i>embedded in the binary</i>")]
         server --- tree
     end
     server -->|"stats + games, one fetch each per week per 5 min"| sleeper(["Sleeper REST API"])

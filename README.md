@@ -43,7 +43,7 @@ A week that is not exactly one Bojjaes matchup is refused rather than guessed
 at: a week we never played is a `404`, a malformed week directory is a
 `500`, and a failed upstream fetch is a `502` rather than a page of zeros.
 
-Lineups are hand-edited at `internal/lineup/data/<season>/<week>/<team>.csv`.
+Lineups are hand-edited at `internal/data/lineups/<season>/<week>/<team>.csv`.
 The tree is compiled into the binary with `//go:embed`, so the server reads no
 file off the working directory — and an edited lineup reaches the page only
 after a rebuild.

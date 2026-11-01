@@ -1,0 +1,26 @@
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+4983,DJ Moore,WR,BUF
+7526,Jaylen Waddle,WR,DEN
+9997,Zay Flowers,WR,BAL
+11627,Troy Franklin,WR,DEN
+12505,Jalen Royals,WR,KC
+13293,Ja'Kobi Lane,WR,BAL
+8111,Cade Otton,TE,TB
+13349,Eli Stowers,TE,PHI
+12502,Gunnar Helm,TE,TEN
+12493,Oronde Gadsden,TE,LAC
+13408,Tanner Koziol,TE,JAX
+8138,James Cook III,RB,BUF
+12489,RJ Harvey,RB,DEN
+11586,Blake Corum,RB,LAR
+11575,Ray Davis,RB,BUF
+4881,Lamar Jackson,QB,BAL
+7523,Trevor Lawrence,QB,JAX
+11563,Bo Nix,QB,DEN
+11256,Tyson Bagent,QB,CHI
+6650,Chase McLaughlin,K,TB
+13968,Drew Stevens,K,WAS
+13363,David Bailey,LB,NYJ
+12567,Malaki Starks,DB,BAL
+13385,Mansoor Delane,DB,KC

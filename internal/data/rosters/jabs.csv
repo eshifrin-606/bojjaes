@@ -1,0 +1,24 @@
+# Sleeper player IDs. Header row "id,name,position,team", then one record per line; blank lines and # comments ignored.
+id,name,position,team
+12514,Emeka Egbuka,WR,TB
+12501,Matthew Golden,WR,GB
+10222,Jayden Reed,WR,GB
+11650,Luke McCaffrey,WR,WAS
+13417,De'Zhaun Stribling,WR,SF
+13276,Omar Cooper Jr.,WR,NYJ
+5022,Dallas Goedert,TE,PHI
+9484,Tucker Kraft,TE,GB
+11603,AJ Barner,TE,SEA
+7543,Travis Etienne Jr.,RB,NO
+12507,Omarion Hampton,RB,LAC
+13287,Jeremiyah Love,RB,ARI
+12490,Bhayshul Tuten,RB,JAX
+3163,Jared Goff,QB,DET
+7591,Justin Fields,QB,KC
+12545,Tyler Shough,QB,NO
+5095,Daniel Carlson,K,NO
+11058,Blake Grupe,K,LAR
+7627,Greg Rousseau,DE,BUF
+7635,Jaelan Phillips,LB,CAR
+8308,Derek Stingley Jr.,DB,HOU
+13376,Caleb Downs,DB,DAL

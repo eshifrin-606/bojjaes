@@ -48,12 +48,12 @@ hosted on Fly.io.
 2. **Topology: one binary, one origin.** The same process serves the HTML page. No separate static
    host, no CORS, no per-environment API base URL.
 
-3. **Assets embedded.** Templates, CSS, and the lineup tree at `internal/lineup/data/**` are
+3. **Assets embedded.** Templates, CSS, and the lineup tree at `internal/data/lineups/**` are
    pulled into the binary with `//go:embed`. A deploy is therefore also the lineup update, which is
    what we want while lineups remain hand-edited files in git.
 
 4. **URL: `/{season}/{week}`,** e.g. `/2025/15`. The week directory
-   `internal/lineup/data/<season>/<week>/` holds exactly two lineups — `bojjaes.csv` and the
+   `internal/data/lineups/<season>/<week>/` holds exactly two lineups — `bojjaes.csv` and the
    opponent's — and the opponent is resolved as "the file that is not `bojjaes.csv`". The Bojjaes
    are always the left column. A directory that does not hold exactly two lineups is an error, not
    a guess.
