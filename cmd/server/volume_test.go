@@ -3,8 +3,8 @@ package main
 import (
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"testing"
 
@@ -35,17 +35,55 @@ func TestResolveLineupVolumeIsEmptyWhenEmpty(t *testing.T) {
 	}
 }
 
-func embeddedLatest(t *testing.T) (season, week int) {
+func embeddedSeasons(t *testing.T) []int {
 	t.Helper()
-	seasons, err := fs.ReadDir(lineup.Embedded, ".")
+	entries, err := fs.ReadDir(lineup.Embedded, ".")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, s := range seasons {
-		if n, err := strconv.Atoi(s.Name()); err == nil && n > season {
-			season = n
+	var seasons []int
+	for _, e := range entries {
+		if n, err := strconv.Atoi(e.Name()); err == nil && e.IsDir() {
+			seasons = append(seasons, n)
 		}
 	}
+	if len(seasons) == 0 {
+		t.Fatal("no embedded seasons")
+	}
+	return seasons
+}
+
+func mustLineupTree(t *testing.T, volume string) fs.FS {
+	t.Helper()
+	tree, err := lineupTree(volume, t.Logf)
+	if err != nil {
+		t.Fatalf("lineupTree(%q): %v", volume, err)
+	}
+	return tree
+}
+
+func TestLineupTreeOverAnEmptyVolumeIsSeededFromEmbedded(t *testing.T) {
+	volume := t.TempDir()
+
+	tree := lineup.New(mustLineupTree(t, volume))
+
+	embedded := lineup.New(lineup.Embedded)
+	for _, season := range embeddedSeasons(t) {
+		want, wantOK := embedded.LatestWeek(season)
+		got, ok := tree.LatestWeek(season)
+		if got != want || ok != wantOK {
+			t.Errorf("LatestWeek(%d) = %d, %v; want %d, %v", season, got, ok, want, wantOK)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(volume, "seed-manifest.json")); err != nil {
+		t.Errorf("seed manifest: %v", err)
+	}
+}
+
+func embeddedLatest(t *testing.T) (season, week int) {
+	t.Helper()
+	seasons := embeddedSeasons(t)
+	season = slices.Max(seasons)
 	week, ok := lineup.New(lineup.Embedded).LatestWeek(season)
 	if !ok {
 		t.Fatalf("embedded season %d has no week", season)
@@ -53,41 +91,61 @@ func embeddedLatest(t *testing.T) (season, week int) {
 	return season, week
 }
 
-func TestLineupTreeWithoutVolumeIsEmbedded(t *testing.T) {
-	season, week := embeddedLatest(t)
-
-	got, ok := lineup.New(lineupTree("")).LatestWeek(season)
-
-	if !ok || got != week {
-		t.Errorf("LatestWeek(%d) = %d, %v; want %d, true", season, got, ok, week)
-	}
-}
-
-func TestLineupTreeServesVolumeWeekAfterEmbedded(t *testing.T) {
-	season, week := embeddedLatest(t)
+func TestLineupTreeServesAStoreEditMadeAfterSeeding(t *testing.T) {
 	volume := t.TempDir()
-	src := path.Join(strconv.Itoa(season), strconv.Itoa(week))
-	dst := filepath.Join(volume, "lineups", strconv.Itoa(season), strconv.Itoa(week+1))
-	if err := os.MkdirAll(dst, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	rosters, err := fs.ReadDir(lineup.Embedded, src)
+	mustLineupTree(t, volume)
+	season, week := embeddedLatest(t)
+	_, opponent, err := lineup.New(lineup.Embedded).Matchup(season, week)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, r := range rosters {
-		data, err := fs.ReadFile(lineup.Embedded, path.Join(src, r.Name()))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(filepath.Join(dst, r.Name()), data, 0o644); err != nil {
-			t.Fatal(err)
-		}
+	dir := filepath.Join(volume, "lineups", strconv.Itoa(season), strconv.Itoa(week))
+	roster, err := os.ReadFile(filepath.Join(dir, opponent+".csv"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(dir, opponent+".csv")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "phoneedit.csv"), roster, 0o644); err != nil {
+		t.Fatal(err)
 	}
 
-	got, ok := lineup.New(lineupTree(volume)).LatestWeek(season)
+	_, got, err := lineup.New(mustLineupTree(t, volume)).Matchup(season, week)
 
-	if !ok || got != week+1 {
-		t.Errorf("LatestWeek(%d) = %d, %v; want %d, true", season, got, ok, week+1)
+	if err != nil || got != "phoneedit" {
+		t.Errorf("Matchup(%d, %d) opponent = %q, %v; want %q", season, week, got, err, "phoneedit")
+	}
+}
+
+func TestLineupTreeWithoutVolumeIsEmbeddedAndWritesNothing(t *testing.T) {
+	cwd := t.TempDir()
+	t.Chdir(cwd)
+
+	tree, err := lineupTree("", t.Logf)
+
+	if err != nil {
+		t.Fatalf("lineupTree(\"\"): %v", err)
+	}
+	if tree != lineup.Embedded {
+		t.Errorf("lineupTree(\"\") = %v, want lineup.Embedded", tree)
+	}
+	if entries, err := os.ReadDir(cwd); err != nil || len(entries) != 0 {
+		t.Errorf("working directory holds %v (%v), want nothing", entries, err)
+	}
+}
+
+func TestLineupTreeFailsOnAnUnwritableVolume(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root writes through directory permissions")
+	}
+	volume := t.TempDir()
+	if err := os.Chmod(volume, 0o555); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(volume, 0o755) })
+
+	if _, err := lineupTree(volume, t.Logf); err == nil {
+		t.Error("lineupTree over a read-only volume returned nil error")
 	}
 }

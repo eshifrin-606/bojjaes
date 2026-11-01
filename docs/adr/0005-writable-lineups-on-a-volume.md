@@ -81,7 +81,9 @@ read path. **Option C.**
    Before the server listens, the app walks the embedded tree and seeds the volume from it. A
    manifest at `<mount>/seed-manifest.json` — outside `lineups/`, so it never reads as a season —
    records, per `<season>/<week>`, a hash of git's version of that week at its last seed. The
-   hash covers file contents only, so it is stable across rebuilds. For each embedded week:
+   hash covers file names and contents but not metadata such as mtimes, so it is stable across
+   rebuilds; names are included so a swapped opponent file counts as a change even if the bytes
+   match. For each embedded week:
 
    - **git's hash differs from the manifest entry, or there is no entry** → the store's week is
      replaced **whole** with git's — the directory as a unit, never file by file, since if the

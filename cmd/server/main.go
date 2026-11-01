@@ -47,8 +47,13 @@ func main() {
 	playStore.OnWholeWeekChanged(stats.Invalidate)
 	games := weekcache.New("gamescache", client.WeekGames, weekcache.TTL)
 
+	lineups, err := lineupTree(resolveLineupVolume(os.Getenv), log.Printf)
+	if err != nil {
+		log.Fatalf("lineups: %v", err)
+	}
+
 	addr := resolveAddr(os.Getenv)
-	srv := newServer(addr, newMux(stats, games, lineup.New(lineupTree(resolveLineupVolume(os.Getenv)))))
+	srv := newServer(addr, newMux(stats, games, lineup.New(lineups)))
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)

@@ -7,12 +7,12 @@ setting the current week's lineup from a phone, no laptop or deploy. Too big for
 change; sliced into independently shippable steps below. One line each, roughly in dependency
 order. Not sized, not prioritized. Each row is its own `/opsx:propose` when picked up.
 
-- [ ] Read lineups from the volume only, seeded from git per week at boot — `os.DirFS(<path>/lineups)`
+- [x] Read lineups from the volume only, seeded from git per week at boot — `os.DirFS(<path>/lineups)`
   as the sole read source; before listening, copy each embedded week whose content hash differs
   from `<path>/seed-manifest.json` (or has no entry) over the store's week whole, then record the
   hash; leave matching weeks alone, never delete a week git dropped, and log any phone edit the
-  copy overwrites. ADR 0005 decision 4. Removes `internal/lineup/layered.go`. Replaces the
-  two-layer read below.
+  copy overwrites. ADR 0005 decision 4. Removed `internal/lineup/layered.go`; replaced the
+  two-layer read below. Ships dark: `fly.toml` sets no `LINEUP_VOLUME`.
 - [x] Serve lineups from two layers — the embedded archive plus an optional volume directory
   (`<path>/lineups`, path via config; unset means embedded only). The volume week wins when it
   is at or after the embedded latest; an older volume week is ignored and logged, never deleted.
@@ -34,7 +34,7 @@ order. Not sized, not prioritized. Each row is its own `/opsx:propose` when pick
   persists across stops (ADR 0005 decision 6). Confirm that in the spike. Spike first: the image runs as distroless `nonroot`, and a Fly
   volume mount is likely root-owned, so the app may not be able to create `lineups/` or the
   manifest. Boot seeding writes to the volume, so this now blocks reads too, not just the write
-  path — do the spike before, or with, the seeding step.
+  path — do the spike before, or with, setting `LINEUP_VOLUME` in `fly.toml`.
 
 ## Open threads
 
