@@ -27,6 +27,11 @@ import (
 const shutdownGrace = 15 * time.Second
 
 func main() {
+	// Before anything else, so nothing past this line runs as root.
+	if err := claimVolumeAndDropRoot(resolveLineupVolume(os.Getenv)); err != nil {
+		log.Fatalf("privileges: %v", err)
+	}
+
 	coldWait, err := resolvePlaysColdWait(os.Getenv)
 	if err != nil {
 		log.Fatalf("config: %v", err)

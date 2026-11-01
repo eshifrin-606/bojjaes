@@ -53,6 +53,12 @@ read path. **Option C.**
    0004 decision #9 is unchanged — header row `id,name,position,team`, closed sets for position
    and team, Sleeper-ID as sole identity, labels frozen at write time.
 
+   Fly mounts a new volume root-owned, but the server runs as distroless `nonroot` (65532). So
+   the container starts as root, and the server's first act is to `lchown` the mount root (not
+   recursively) to `nonroot` and drop to it — groups, then gid, then uid — failing if still root.
+   Seeding and listening happen only after the drop. This keeps the distroless image with no
+   shell or entrypoint script, at the cost of a brief root window at the start of every boot.
+
 2. **Read: the volume only.** `lineup.New` is handed `os.DirFS(<mount>/lineups)` and nothing
    else. There is no layering, no per-week choice between sources, and no volume week that is
    stale, superseded, or ignored: what the store holds is what is served. `Read`, matchup
@@ -201,7 +207,8 @@ read path. **Option C.**
   to make that true.
 
 - **Boot writes to the volume.** Seeding runs before the server listens, so a volume the app
-  cannot write to blocks reads, not just phone writes.
+  cannot write to blocks reads, not just phone writes. That is why the container starts as root
+  and the server claims the mount before dropping to `nonroot` (decision 1).
 
 - **New concurrency and atomicity surface.** Read-during-write and partial-write hazards exist
   for the first time; atomic temp-then-rename (decision 3) is a correctness requirement, not an
