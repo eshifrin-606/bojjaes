@@ -79,9 +79,9 @@ serialization decision. Read the direction of the arrows, not the length of the 
 | `internal/sleeper/internal/httpjson` | `Get`: one GET decoded from JSON, over the one timed `http.Client`. | none | `context`, `encoding/json`, `fmt`, `net/http`, `time` | `internal/sleeper`, `internal/sleeper/plays` |
 | `internal/weekcache` | A caching decorator over any weekly fetch, generic over its value: TTL expiry, single-flight, the `TTL` constant. | none | `context`, `log`, `sync`, `time` | `cmd/server` |
 | `internal/web` | The HTML transport: `GET /{season}/{week}`, its view model, its template. | `internal/games`, `internal/lineup`, `internal/score` | `bytes`, `context`, `embed`, `encoding/json`, `errors`, `html/template`, `log`, `net/http`, `strconv`, `strings`, `time`, `time/tzdata` | `cmd/server` |
-| `internal/lineup` | Lineup knowledge: file format, tree layout, matchup resolution, starters/bench split. It reads any `fs.FS` and embeds none. | none | `bufio`, `errors`, `fmt`, `io`, `io/fs`, `path`, `path/filepath`, `slices`, `strconv`, `strings`, `unicode`, `unicode/utf8` | `cmd/server`, `internal/web`, `internal/volume` (tests only) |
+| `internal/lineup` | Lineup knowledge: file format, tree layout, matchup resolution, starters/bench split. It reads any `fs.FS` and embeds none. | none | `bufio`, `errors`, `fmt`, `io`, `io/fs`, `path`, `path/filepath`, `slices`, `strconv`, `strings`, `unicode`, `unicode/utf8` | `cmd/server`, `internal/web`, `internal/data` (tests only), `internal/volume` (tests only) |
 | `internal/volume` | Seeds the lineup store on the Fly volume from the embedded tree, per week, against a hash manifest. The only package that writes lineup files. | none | `crypto/sha256`, `encoding/hex`, `encoding/json`, `errors`, `io/fs`, `os`, `path`, `path/filepath`, `strconv` | `cmd/server` |
-| `internal/data` | The league files carried in the binary: the lineup tree and the per-team rosters, each an `fs.FS` rooted below its directory. | none | `embed`, `io/fs` | `cmd/server`, `internal/lineup` (tests only) |
+| `internal/data` | The league files carried in the binary: the lineup tree and the per-team rosters, each an `fs.FS` rooted below its directory. | none | `embed`, `io/fs` | `cmd/server` |
 
 ### `cmd/server`
 
@@ -311,8 +311,8 @@ before it could fail.
   `internal/volume`'s tests import `internal/lineup` once, to check that a seeded store reads back
   as a matchup.
   Both `lineup`'s matchup tests and `web`'s page tests build their fixtures with `fstest.MapFS`,
-  so nothing writes to disk and almost nothing reads the real tree. The exception is deliberate: one
-  test in `lineup` walks every week of `data.Lineups`, asserting each is a matchup and that both
+  so nothing writes to disk and almost nothing reads the real tree. The exception is deliberate:
+  `internal/data`'s tests (as the external `data_test` package) import `lineup` and walk every week of `data.Lineups`, asserting each is a matchup and that both
   lineups parse. It is a test of the data, not of the reader — with every other test on a `MapFS`,
   a malformed CSV or a week with three files would otherwise build clean and fail at request time.
 

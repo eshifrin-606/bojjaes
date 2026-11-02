@@ -198,9 +198,9 @@ func TestTreeReadKeepsCollidingShortNames(t *testing.T) {
 	}
 
 	wantBench := []string{"J Allen", "J Allen", "D Prescott"}
-	if len(got.Starters()) != starterCount || len(got.Bench()) != len(wantBench) {
+	if len(got.Starters()) != StarterCount || len(got.Bench()) != len(wantBench) {
 		t.Fatalf("Read() split = %d starters, %d bench, want %d starters, %d bench",
-			len(got.Starters()), len(got.Bench()), starterCount, len(wantBench))
+			len(got.Starters()), len(got.Bench()), StarterCount, len(wantBench))
 	}
 
 	wantStarters := map[int]string{
