@@ -11,6 +11,7 @@ package weekcache
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -69,9 +70,12 @@ const defaultFetchTimeout = 30 * time.Second
 type Cache[V any] struct {
 	// label opens every log line, so lines from caches over different
 	// fetches can be told apart.
-	label  string
-	source Source[V]
-	ttl    time.Duration
+	label string
+	// describe names a key in log lines: a keyed cache's season and week, or
+	// a fixed word for a Single, whose one key is not a real week.
+	describe func(season, week int) string
+	source   Source[V]
+	ttl      time.Duration
 
 	// fetchTimeout is a seam like now: a test cannot wait out the real bound.
 	fetchTimeout time.Duration
@@ -113,6 +117,7 @@ func New[V any](label string, source Source[V], ttl time.Duration, opts ...Optio
 	}
 	return &Cache[V]{
 		label:        label,
+		describe:     describeWeek,
 		source:       source,
 		ttl:          ttl,
 		fetchTimeout: defaultFetchTimeout,
@@ -150,7 +155,7 @@ func (c *Cache[V]) AsOf(ctx context.Context, season, week int) (V, time.Time, er
 	if ok && !c.expired(cached) {
 		age := c.now().Sub(cached.fetchedAt)
 		c.mu.Unlock()
-		c.logf("%s hit: %d week %d, %s old", c.label, season, week, age)
+		c.logf("%s hit: %s, %s old", c.label, c.describe(season, week), age)
 		return cached.value, cached.fetchedAt, nil
 	}
 	flight := &entry[V]{done: make(chan struct{})}
@@ -203,10 +208,14 @@ func (c *Cache[V]) Invalidate(season, week int) {
 
 func (c *Cache[V]) logMiss(season, week int, elapsed time.Duration, err error) {
 	if err != nil {
-		c.logf("%s miss: %d week %d failed after %s: %v", c.label, season, week, elapsed, err)
+		c.logf("%s miss: %s failed after %s: %v", c.label, c.describe(season, week), elapsed, err)
 		return
 	}
-	c.logf("%s miss: %d week %d fetched in %s", c.label, season, week, elapsed)
+	c.logf("%s miss: %s fetched in %s", c.label, c.describe(season, week), elapsed)
+}
+
+func describeWeek(season, week int) string {
+	return fmt.Sprintf("%d week %d", season, week)
 }
 
 // expired is checked on read; nothing sweeps. The key space is a handful of

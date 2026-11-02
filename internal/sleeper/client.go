@@ -9,12 +9,17 @@ import (
 	"time"
 
 	"github.com/eshifrin/bojjaes/internal/games"
+	"github.com/eshifrin/bojjaes/internal/nflweek"
 	"github.com/eshifrin/bojjaes/internal/score"
 	"github.com/eshifrin/bojjaes/internal/sleeper/plays"
 )
 
 // BaseURL is the live REST host; tests pass an httptest.Server URL.
 const BaseURL = "https://api.sleeper.com"
+
+// V1BaseURL is the documented v1 host, which serves the NFL state endpoint
+// that BaseURL does not.
+const V1BaseURL = "https://api.sleeper.app/v1"
 
 // Client is a handle on one Sleeper host. Its WeekStats and WeekGames methods
 // satisfy the source interfaces the serving packages declare for themselves.
@@ -24,9 +29,10 @@ const BaseURL = "https://api.sleeper.com"
 // redeclaring the same adapter. Nothing in this package names the interfaces it
 // happens to satisfy, so the dependency still points one way.
 type Client struct {
-	BaseURL string
-	Plays   *plays.Store
-	Logf    func(format string, args ...any) // nil is silent
+	BaseURL   string
+	V1BaseURL string
+	Plays     *plays.Store
+	Logf      func(format string, args ...any) // nil is silent
 }
 
 func (c Client) WeekStats(ctx context.Context, season, week int) (score.WeekStats, error) {
@@ -48,6 +54,20 @@ func (c Client) WeekGames(ctx context.Context, season, week int) (games.Week, er
 	}
 	c.logf("sleeper games %d w%d: %d games in %s", season, week, len(gs), time.Since(start))
 	return games.NewWeek(season, week, gs), nil
+}
+
+func (c Client) CurrentWeek(ctx context.Context) (nflweek.Current, error) {
+	start := time.Now()
+	row, err := fetchState(ctx, c.V1BaseURL)
+	if err != nil {
+		return nflweek.Current{}, err
+	}
+	current, err := row.current()
+	if err != nil {
+		return nflweek.Current{}, err
+	}
+	c.logf("sleeper state: %s %s w%d in %s", row.Season, row.SeasonType, row.Week, time.Since(start))
+	return current, nil
 }
 
 func (c Client) addForcedFumbles(ctx context.Context, season, week int, ids plays.Identities, players map[string]score.StatLine) {
