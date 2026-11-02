@@ -29,7 +29,7 @@ order. Not sized, not prioritized. Each row is its own `/opsx:propose` when pick
 - [x] Current NFL week from Sleeper `GET /v1/state/nfl`, cached. The week Sleeper reports is the
   week the form sets, even if it doesn't flip on Tuesday. The postseason and the
   offseason have no settable week.
-- [ ] Lineup form, read-only — `GET /lineup?team=…`; team picker (default bojjaes; changing it
+- [x] Lineup form, read-only — `GET /lineup?team=…`; team picker (default bojjaes; changing it
   reloads), season and week are the current week as labels; past NFL week 17 (the league's last)
   there is no week to set. Slots start from the team's file for
   that week, else its latest lineup. One dropdown per slot, filtered by position, showing NFL team

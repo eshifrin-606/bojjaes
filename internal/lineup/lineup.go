@@ -21,7 +21,7 @@ func newLineup(players []Player) (Lineup, error) {
 	claimed := make([]bool, len(players))
 	fill := func(slot int) {
 		for i, p := range players {
-			if !claimed[i] && slices.Contains(slotAccepts[slotOrder[slot]], p.Position) {
+			if !claimed[i] && slotOrder[slot].Accepts(p.Position) {
 				p.ShortName = shortName(p.Name)
 				l.starters[slot], filled[slot], claimed[i] = p, true, true
 				return
@@ -62,4 +62,24 @@ func (l Lineup) WriteCSV(w io.Writer) error {
 
 func (l Lineup) Starters() []Player {
 	return l.starters[:]
+}
+
+// FromSlots builds a lineup that keeps each player in the slot given, unlike
+// a read, which assigns slots by position.
+func FromSlots(players [StarterCount]Player) (Lineup, error) {
+	seen := make(map[string]bool, len(players))
+	for i, p := range players {
+		slot := slotOrder[i]
+		if p.ID == "" {
+			return Lineup{}, fmt.Errorf("slot %s is empty", slot)
+		}
+		if !slot.Accepts(p.Position) {
+			return Lineup{}, fmt.Errorf("slot %s: %s cannot play it", slot, p.Position)
+		}
+		if seen[p.ID] {
+			return Lineup{}, fmt.Errorf("slot %s: %s is already in another slot", slot, p.ID)
+		}
+		seen[p.ID] = true
+	}
+	return Lineup{starters: players}, nil
 }

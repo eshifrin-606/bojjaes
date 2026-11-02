@@ -1,5 +1,7 @@
 package lineup
 
+import "slices"
+
 // StarterCount is the league's starting lineup size.
 const StarterCount = len(slotOrder)
 
@@ -25,4 +27,12 @@ var slotAccepts = map[Slot][]string{
 	FLEX: {"RB", "FB", "WR", "TE"},
 	K:    {"K"},
 	D:    {"DL", "DE", "DT", "NT", "LB", "OLB", "ILB", "DB", "CB", "S", "SS", "FS"},
+}
+
+func Slots() [StarterCount]Slot {
+	return slotOrder
+}
+
+func (s Slot) Accepts(position string) bool {
+	return slices.Contains(slotAccepts[s], position)
 }

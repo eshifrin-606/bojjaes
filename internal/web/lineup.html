@@ -1,0 +1,73 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{if .NoWeek}}Lineup{{else}}{{.Season}} week {{.Week}} lineup{{end}}</title>
+<style>
+  /* Body, card, and breakpoint copy matchup.html so the two pages read as one
+     site; see the lineup-form design.md, decision 6. */
+  body {
+    font: 16px/1.5 system-ui, sans-serif;
+    margin: 0 auto;
+    max-width: 48rem;
+    padding: 1rem;
+  }
+
+  h1 {
+    font-size: 1.125rem;
+    margin: 0 0 1rem;
+  }
+
+  form {
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    padding: 0.5rem 1rem 1rem;
+  }
+
+  label {
+    display: block;
+    font-weight: 600;
+    margin-top: 0.5rem;
+  }
+
+  /* Below 16px, iOS Safari zooms the page when a select takes focus. */
+  select,
+  button,
+  textarea {
+    box-sizing: border-box;
+    font-size: 16px;
+    width: 100%;
+  }
+
+  button {
+    margin-top: 0.75rem;
+  }
+
+  @media (max-width: 33rem) {
+    body {
+      padding: 0.5rem;
+    }
+
+    form {
+      padding: 0.25rem 0.5rem 0.5rem;
+    }
+  }
+</style>
+{{if .NoWeek}}<h1>No week to set</h1>{{else}}<h1>{{.Season}} · Week {{.Week}}</h1>
+<form method="get" action="/lineup">
+  <label for="team">Team</label>
+  <select name="team" id="team" onchange="this.form.submit()">{{range .Teams}}<option value="{{.}}"{{if eq . $.Team}} selected{{end}}>{{.}}</option>{{end}}</select>
+  <button>Show</button>
+</form>
+{{with .Problems}}<ul class="problems">{{range .}}<li>{{.}}</li>{{end}}</ul>{{end}}
+{{if .StartingUnreadable}}<p>The starting lineup could not be read, so every slot starts empty.</p>{{end}}
+<form method="get" action="/lineup">
+  <input type="hidden" name="team" value="{{.Team}}">
+  {{range $i, $s := .Slots}}<label for="slot{{$i}}">{{$s.Label}}</label>
+  <select name="{{$s.Name}}" id="slot{{$i}}"><option value=""{{if $s.Empty}} selected{{end}}></option>{{range $s.Options}}<option value="{{.ID}}"{{if .Selected}} selected{{end}}>{{.Text}}</option>{{end}}</select>
+  {{end}}
+  <button>Check</button>
+</form>
+{{if .Summary}}<textarea readonly rows="10">{{.Summary}}</textarea>
+<p><a href="{{.CSVLink}}">Download {{.Team}}.csv</a> and commit it as <code>{{.CommitPath}}</code>.</p>{{end}}
+{{end}}
