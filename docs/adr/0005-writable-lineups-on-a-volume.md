@@ -171,7 +171,7 @@ read path. **Option C.**
   it; B additionally adds a schema, migrations, and a query engine.
 
 - **The mutable data is document-shaped, not relational.** A lineup is a small, self-contained
-  thing keyed by `(season, week, team)` — nine starters plus bench, per team, with no join inside
+  thing keyed by `(season, week, team)` — nine starters, per team, with no join inside
   it. That is a file almost by definition. Modeling it as rows buys no relational benefit while
   costing schema and migrations, and it forfeits the genuinely useful property C keeps: lineups
   stay human-readable and git-diffable.

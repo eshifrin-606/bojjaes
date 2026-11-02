@@ -35,8 +35,9 @@ func TestEmbeddedTreeResolvesAWeek(t *testing.T) {
 }
 
 // The unit tests all run on fstest.MapFS, so nothing else reads the real
-// files: a malformed CSV or a week with three lineups in it would build clean
-// and fail at request time. This walk is a test of the data, not the reader.
+// files: a malformed CSV, a roster that cannot fill the nine slots, or a week
+// with three lineups in it would build clean and fail at request time. This
+// walk is a test of the data, not the reader.
 func TestEveryEmbeddedWeekIsAReadableMatchup(t *testing.T) {
 	tree := lineup.New(data.Lineups)
 

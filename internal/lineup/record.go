@@ -95,8 +95,7 @@ func parse(r io.Reader) ([]Record, error) {
 
 		id := field("id")
 		if id == "" {
-			// A skipped line would shift every later record up one slot,
-			// silently promoting a bench player into the starting nine.
+			// A skipped line would silently drop a player from the lineup.
 			// Refusing the file is loud; skipping it would not be.
 			return nil, fmt.Errorf("line %d: no id", lineNum)
 		}
@@ -137,45 +136,89 @@ func parse(r io.Reader) ([]Record, error) {
 	return records, nil
 }
 
-// StarterCount is the league's starting lineup size: the first StarterCount
-// records in a lineup are starters, and everything after is bench.
-const StarterCount = 9
+// StarterCount is the league's starting lineup size.
+const StarterCount = len(slotOrder)
 
-// Lineup is a parsed, ordered set of records with the starters/bench split
-// layered on top as a view — it never re-parses or reorders the records.
-//
-// The split is purely positional: a record's position is a label, not a slot, so
-// moving a record above the ninth line promotes it and demotes whatever it
-// displaced. That is intended behaviour of a hand-maintained lineup card,
-// not an accident of the split.
+type Slot string
+
+const (
+	QB   Slot = "QB"
+	RB   Slot = "RB"
+	WR   Slot = "WR"
+	TE   Slot = "TE"
+	FLEX Slot = "FLEX"
+	K    Slot = "K"
+	D    Slot = "D"
+)
+
+var slotOrder = [9]Slot{QB, RB, WR, TE, FLEX, FLEX, K, D, D}
+
+var slotAccepts = map[Slot][]string{
+	QB:   {"QB"},
+	RB:   {"RB", "FB"},
+	WR:   {"WR"},
+	TE:   {"TE"},
+	FLEX: {"RB", "FB", "WR", "TE"},
+	K:    {"K"},
+	D:    {"DL", "DE", "DT", "NT", "LB", "OLB", "ILB", "DB", "CB", "S", "SS", "FS"},
+}
+
+// Lineup is a roster's records, one per slot, in slot order.
 type Lineup struct {
-	records []Record
+	starters [StarterCount]Record
 }
 
-func newLineup(records []Record) Lineup {
-	for i := range records {
-		records[i].ShortName = shortName(records[i].Name)
+func newLineup(records []Record) (Lineup, error) {
+	if len(records) != StarterCount {
+		return Lineup{}, fmt.Errorf("%d records, want %d", len(records), StarterCount)
 	}
-	return Lineup{records: records}
+	var l Lineup
+	var filled [StarterCount]bool
+	claimed := make([]bool, len(records))
+	fill := func(slot int) {
+		for i, rec := range records {
+			if !claimed[i] && slices.Contains(slotAccepts[slotOrder[slot]], rec.Position) {
+				rec.ShortName = shortName(rec.Name)
+				l.starters[slot], filled[slot], claimed[i] = rec, true, true
+				return
+			}
+		}
+	}
+	// The dedicated slots claim first, so a FLEX gets only the skill players
+	// they leave over. Within each pass, file order breaks ties.
+	for slot, s := range slotOrder {
+		if s != FLEX && s != D {
+			fill(slot)
+		}
+	}
+	for slot, s := range slotOrder {
+		if s == FLEX || s == D {
+			fill(slot)
+		}
+	}
+	// With exactly nine records, any record no slot accepted leaves a slot
+	// empty, so naming the empty slot also accounts for the misfit.
+	if empty := slices.Index(filled[:], false); empty >= 0 {
+		return Lineup{}, fmt.Errorf("no record fills slot %s", slotOrder[empty])
+	}
+	return l, nil
 }
 
-func benchStart(records []Record) int {
-	return min(len(records), StarterCount)
+// WriteCSV renders the lineup as a roster file in slot order. ShortName is
+// derived on read, so it is not written.
+func (l Lineup) WriteCSV(w io.Writer) error {
+	var b strings.Builder
+	b.WriteString("id,name,position,team\n")
+	for _, rec := range l.starters {
+		fmt.Fprintf(&b, "%s,%s,%s,%s\n", rec.ID, rec.Name, rec.Position, rec.Team)
+	}
+	_, err := io.WriteString(w, b.String())
+	return err
 }
 
-// Starters returns the lineup's starters, in file order.
+// Starters returns the lineup's records in slot order.
 func (l Lineup) Starters() []Record {
-	return l.records[:benchStart(l.records)]
-}
-
-// Bench returns the lineup's bench, in file order and non-nil even when
-// empty.
-func (l Lineup) Bench() []Record {
-	bench := l.records[benchStart(l.records):]
-	if bench == nil {
-		return []Record{}
-	}
-	return bench
+	return l.starters[:]
 }
 
 var generationalSuffixes = []string{"Jr.", "Jr", "Sr.", "Sr", "II", "III", "IV", "V"}

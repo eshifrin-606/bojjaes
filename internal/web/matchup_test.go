@@ -93,15 +93,15 @@ var (
 		points                   float64
 		stats                    score.StatLine
 	}{
-		{id: "1", name: "Puka Nacua", position: "WR", team: "LAR", points: 12, stats: score.StatLine{RushTD: 2}},
+		{id: "1", name: "Puka Nacua", position: "QB", team: "LAR", points: 12, stats: score.StatLine{RushTD: 2}},
 		{id: "2", name: "Bijan Robinson", position: "RB", team: "ATL", points: 0},
-		{id: "3", name: "Rachaad White", position: "RB", team: "TB", points: 6, stats: score.StatLine{RushTD: 1}},
-		{id: "4", name: "Cam Little", position: "K", team: "JAX", points: 3, stats: score.StatLine{FGMade: 1}},
+		{id: "3", name: "Rachaad White", position: "WR", team: "TB", points: 6, stats: score.StatLine{RushTD: 1}},
+		{id: "4", name: "Cam Little", position: "TE", team: "JAX", points: 3, stats: score.StatLine{FGMade: 1}},
 		{id: "5", name: "Jaxon Smith-Njigba", position: "WR", team: "SEA", points: 9, stats: score.StatLine{RushTD: 1, FGMade: 1}},
 		{id: "6", name: "Tyreek Hill", position: "WR", team: "MIA", points: 0},
 		{id: "7", name: "Brandon Aubrey", position: "K", team: "DAL", points: 15, stats: score.StatLine{FGMade: 5}},
-		{id: "8", name: "Chase McLaughlin", position: "K", team: "TB", points: 4, stats: score.StatLine{XPMade: 4}},
-		{id: "9", name: "Kyren Williams", position: "RB", team: "LAR", points: 7, stats: score.StatLine{RushTD: 1, XPMade: 1}},
+		{id: "8", name: "Chase McLaughlin", position: "LB", team: "TB", points: 4, stats: score.StatLine{XPMade: 4}},
+		{id: "9", name: "Kyren Williams", position: "CB", team: "LAR", points: 7, stats: score.StatLine{RushTD: 1, XPMade: 1}},
 	}
 
 	theirLine = []struct {
@@ -112,12 +112,12 @@ var (
 		{id: "11", name: "Josh Allen", position: "QB", team: "BUF", points: 6, stats: score.StatLine{RushTD: 1}},
 		{id: "12", name: "Saquon Barkley", position: "RB", team: "PHI", points: 6, stats: score.StatLine{RushTD: 1}},
 		{id: "13", name: "CeeDee Lamb", position: "WR", team: "DAL", points: 6, stats: score.StatLine{RecTD: 1}},
-		{id: "14", name: "Amon-Ra St. Brown", position: "WR", team: "DET", points: 6, stats: score.StatLine{RecTD: 1}},
+		{id: "14", name: "Amon-Ra St. Brown", position: "TE", team: "DET", points: 6, stats: score.StatLine{RecTD: 1}},
 		{id: "15", name: "Derrick Henry", position: "RB", team: "BAL", points: 6, stats: score.StatLine{RushTD: 1}},
 		{id: "16", name: "Malik Nabers", position: "WR", team: "NYG", points: 6, stats: score.StatLine{RecTD: 1}},
-		{id: "17", name: "Trey McBride", position: "TE", team: "ARI", points: 6, stats: score.StatLine{RecTD: 1}},
-		{id: "18", name: "Jayden Daniels", position: "QB", team: "WAS", points: 0},
-		{id: "19", name: "Ladd McConkey", position: "WR", team: "LAC", points: 0},
+		{id: "17", name: "Trey McBride", position: "K", team: "ARI", points: 6, stats: score.StatLine{RecTD: 1}},
+		{id: "18", name: "Jayden Daniels", position: "LB", team: "WAS", points: 0},
+		{id: "19", name: "Ladd McConkey", position: "CB", team: "LAC", points: 0},
 	}
 )
 
@@ -133,6 +133,34 @@ func lineupCSV(records []struct {
 		fmt.Fprintf(&b, "%s,%s,%s,%s\n", r.id, r.name, r.position, r.team)
 	}
 	return b.String()
+}
+
+// lineupWith is a fixture lineup file in which each row given takes the place
+// of the fixture's first remaining record at the same position, so the file
+// stays a legal lineup while a test names only the records it is about.
+func lineupWith(t *testing.T, fixture []struct {
+	id, name, position, team string
+	points                   float64
+	stats                    score.StatLine
+}, rows ...string) string {
+	t.Helper()
+	lines := strings.Split(strings.TrimSuffix(strings.TrimPrefix(lineupCSV(fixture), lineupHeader), "\n"), "\n")
+	replaced := make([]bool, len(lines))
+	for _, row := range rows {
+		position := strings.Split(row, ",")[2]
+		i := -1
+		for j, line := range lines {
+			if !replaced[j] && strings.Split(line, ",")[2] == position {
+				i = j
+				break
+			}
+		}
+		if i < 0 {
+			t.Fatalf("lineupWith: no fixture %s left for row %q", position, row)
+		}
+		lines[i], replaced[i] = row, true
+	}
+	return lineupHeader + strings.Join(lines, "\n") + "\n"
 }
 
 // fixtureGuardsPositionAndTeam stops the test suite unless the fixture can
@@ -410,8 +438,8 @@ func TestPostIsNotAllowed(t *testing.T) {
 
 func TestBothTeamsAppearWithUsFirst(t *testing.T) {
 	weekTree := weekFS(2025, 15, map[string]string{
-		"bojjaes": lineupHeader + "9493,Puka Nacua,WR,LAR\n",
-		"wood":    lineupHeader + "8138,Bijan Robinson,RB,ATL\n",
+		"bojjaes": lineupWith(t, ourLine, "9493,Puka Nacua,WR,LAR"),
+		"wood":    lineupWith(t, theirLine, "8138,Bijan Robinson,RB,ATL"),
 	})
 
 	rec := serve(Handler(lineup.New(weekTree), &fakeSource{}, noGames{}), http.MethodGet, "/2025/15")
@@ -433,8 +461,8 @@ func TestBothTeamsAppearWithUsFirst(t *testing.T) {
 // never from the directory listing.
 func TestAlphabeticallyEarlierOpponentStaysOnTheRight(t *testing.T) {
 	weekTree := weekFS(2025, 15, map[string]string{
-		"bojjaes":   lineupHeader + "9493,Puka Nacua,WR,LAR\n",
-		"aardvarks": lineupHeader + "8138,Bijan Robinson,RB,ATL\n",
+		"bojjaes":   lineupWith(t, ourLine, "9493,Puka Nacua,WR,LAR"),
+		"aardvarks": lineupWith(t, theirLine, "8138,Bijan Robinson,RB,ATL"),
 	})
 
 	rec := serve(Handler(lineup.New(weekTree), &fakeSource{}, noGames{}), http.MethodGet, "/2025/15")
@@ -463,7 +491,7 @@ func TestWeekRefusals(t *testing.T) {
 		{
 			name: "three lineups",
 			lineups: map[string]string{
-				"bojjaes": lineupHeader + "9493,Puka Nacua,WR,LAR\n",
+				"bojjaes": lineupWith(t, ourLine, "9493,Puka Nacua,WR,LAR"),
 				"wood":    lineupHeader + "8138,Bijan Robinson,RB,ATL\n",
 				"aroma":   lineupHeader + "7591,Rachaad White,RB,TB\n",
 			},
@@ -488,7 +516,7 @@ func TestWeekRefusals(t *testing.T) {
 		{
 			name: "a lineup line with no id",
 			lineups: map[string]string{
-				"bojjaes": lineupHeader + "9493,Puka Nacua,WR,LAR\n",
+				"bojjaes": lineupWith(t, ourLine, "9493,Puka Nacua,WR,LAR"),
 				"wood":    lineupHeader + "8138,Bijan Robinson,RB,ATL\n,Rachaad White,RB,TB\n",
 			},
 			week: 15,
@@ -536,6 +564,38 @@ func TestStartersRenderWithTheirPoints(t *testing.T) {
 	}
 	if got := renderedStarters(rec.Body.String()); !slices.Equal(got, want) {
 		t.Errorf("rendered starters:\n got %q\nwant %q", got, want)
+	}
+}
+
+func TestStartersRenderInSlotOrderWhateverTheFileOrder(t *testing.T) {
+	byID := map[string]int{}
+	for i, r := range ourLine {
+		byID[r.id] = i
+	}
+	kFirstQBLast := ourLine[:0:0]
+	for _, id := range []string{"7", "3", "4", "5", "2", "6", "8", "9", "1"} {
+		kFirstQBLast = append(kFirstQBLast, ourLine[byID[id]])
+	}
+	weekTree := weekFS(2025, 15, map[string]string{
+		"bojjaes": lineupCSV(kFirstQBLast),
+		"wood":    lineupCSV(theirLine),
+	})
+
+	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body)
+	}
+
+	want := []string{
+		"Puka Nacua=12", "Bijan Robinson=0", "Rachaad White=6",
+		"Cam Little=3", "Jaxon Smith-Njigba=9", "Tyreek Hill=0",
+		"Brandon Aubrey=15", "Chase McLaughlin=4", "Kyren Williams=7",
+	}
+	if got := renderedStarters(rec.Body.String())[:9]; !slices.Equal(got, want) {
+		t.Errorf("bojjaes column:\n got %q\nwant %q", got, want)
+	}
+	if got, want := string(weekTree["2025/15/bojjaes.csv"].Data), lineupCSV(kFirstQBLast); got != want {
+		t.Errorf("roster file changed:\n got %q\nwant %q", got, want)
 	}
 }
 
@@ -587,26 +647,6 @@ func TestEachColumnTotalsItsStarters(t *testing.T) {
 	want := []string{"56", "42"}
 	if got := renderedTotals(rec.Body.String()); !slices.Equal(got, want) {
 		t.Errorf("totals = %q, want %q", got, want)
-	}
-}
-
-func TestBenchPlayersAreNotRendered(t *testing.T) {
-	bench := "20,First Bench,WR,FA\n21,Second Bench,RB,FA\n22,Third Bench,TE,FA\n"
-	weekTree := weekFS(2025, 15, map[string]string{
-		"bojjaes": lineupCSV(ourLine) + bench,
-		"wood":    lineupCSV(theirLine),
-	})
-
-	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
-
-	body := rec.Body.String()
-	for _, name := range []string{"First Bench", "Second Bench", "Third Bench"} {
-		if strings.Contains(body, name) {
-			t.Errorf("bench player %q appears on the page", name)
-		}
-	}
-	if got := renderedTotals(body); !slices.Equal(got, []string{"56", "42"}) {
-		t.Errorf("totals = %q, want the starters-only totals [56 42]", got)
 	}
 }
 
@@ -785,8 +825,8 @@ func TestTheTeamNameAndTotalShareAHeading(t *testing.T) {
 // escaping is the only thing between a typo and injected markup.
 func TestLineupTextIsEscaped(t *testing.T) {
 	weekTree := weekFS(2025, 15, map[string]string{
-		"bojjaes": lineupHeader + "1,<b>Puka</b> Nacua,WR,LAR\n",
-		"wood":    lineupHeader + "11,Josh Allen,QB,BUF\n",
+		"bojjaes": lineupWith(t, ourLine, "1,<b>Puka</b> Nacua,QB,LAR"),
+		"wood":    lineupCSV(theirLine),
 	})
 
 	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
@@ -802,8 +842,8 @@ func TestLineupTextIsEscaped(t *testing.T) {
 
 func TestAShortNameIsEscaped(t *testing.T) {
 	weekTree := weekFS(2025, 15, map[string]string{
-		"bojjaes": lineupHeader + "1,Puka <b>Nacua</b>,WR,LAR\n",
-		"wood":    lineupHeader + "11,Josh Allen,QB,BUF\n",
+		"bojjaes": lineupWith(t, ourLine, "1,Puka <b>Nacua</b>,QB,LAR"),
+		"wood":    lineupCSV(theirLine),
 	})
 
 	ours, err := lineup.New(weekTree).Read(2025, 15, "bojjaes")
@@ -1405,8 +1445,8 @@ func TestTheScriptIsIdenticalAcrossWeeks(t *testing.T) {
 	first := serve(Handler(lineup.New(fixtureWeek()), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
 
 	otherFS := weekFS(2024, 3, map[string]string{
-		"bojjaes": lineupHeader + "31,Ja'Marr Chase,WR,CIN\n",
-		"aroma":   lineupHeader + "32,Travis Kelce,TE,KC\n",
+		"bojjaes": lineupWith(t, ourLine, "31,Ja'Marr Chase,WR,CIN"),
+		"aroma":   lineupWith(t, theirLine, "32,Travis Kelce,TE,KC"),
 	})
 	otherStats := score.NewWeekStats(2024, 3, map[string]score.StatLine{
 		"31": {PlayerID: "31", RecTD: 3},

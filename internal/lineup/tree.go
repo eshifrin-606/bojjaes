@@ -62,7 +62,11 @@ func (t *Tree) Read(season int, week int, team string) (Lineup, error) {
 		return Lineup{}, fmt.Errorf("%s: %w", path, err)
 	}
 
-	return newLineup(records), nil
+	lineup, err := newLineup(records)
+	if err != nil {
+		return Lineup{}, fmt.Errorf("%s: %w", path, err)
+	}
+	return lineup, nil
 }
 
 // ourTeam is the Bojjaes' lineup file name, without the extension. This repo

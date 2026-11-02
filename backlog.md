@@ -18,6 +18,23 @@ order. Not sized, not prioritized. Each row is its own `/opsx:propose` when pick
   is at or after the embedded latest; an older volume week is ignored and logged, never deleted.
   No seeding — an empty volume reads as embed alone. Read path and page unchanged; ships with no
   visible difference.
+- [x] Deploy on a Fly volume with exactly one machine — `fly.toml` volume mount,
+  `fly scale count 1`; scale-to-zero stays (ADR 0005 decision 6). The container starts as root,
+  claims the mount, then drops to `nonroot` before seeding.
+- [x] Lineup slots — OpenSpec change `lineup-slots`. Nine slots in canonical order
+  QB, RB, WR, TE, FLEX, FLEX, K, D, D (FLEX = RB/WR/TE, FB counts as RB; D = any defensive
+  position). Slot is assigned by position, no longer implied by file order; a file that isn't
+  exactly 9 rows or can't fill every slot is refused. Bench removed and the four over-9-row files
+  trimmed. Render back to CSV in slot order. Matchup page shows starters in slot order.
+- [ ] Current NFL week from Sleeper `GET /v1/state/nfl`, cached. The week Sleeper reports is the
+  week the form sets, even if it doesn't flip on Tuesday. Weeks past the league's 16 and the
+  offseason have no settable week.
+- [ ] Lineup form, read-only — `GET /lineup?team=…`; team picker (default bojjaes; changing it
+  reloads), season and week are the current week as labels. Slots start from the team's file for
+  that week, else its latest lineup. One dropdown per slot, filtered by position, showing NFL team
+  and kickoff. "Check" is a GET, so the URL is a shareable proposed lineup (for texting a
+  teammate); also shows a plain-text summary and a CSV download to commit to git. No write path.
+- [ ] Home page — `GET /` links to the scoreboard by season and to the lineup form.
 - [ ] Persist a submitted lineup — validated (ADR 0004 §9 invariants), atomic temp-then-rename,
   no UI. Writable weeks: the store's latest week or the week after it (2025/16 → 2026/1 explicit
   in the path); editing a week git already has is allowed. Rejects any other week, a third file
@@ -27,14 +44,8 @@ order. Not sized, not prioritized. Each row is its own `/opsx:propose` when pick
 - [ ] Export unarchived weeks (ui-only or diverged, ADR 0005 decision 4) so they can be committed
   to git — `fly ssh sftp get` documented, or a download link. Without it the archive step has
   nothing to commit.
-- [ ] Phone lineup-submission form — renders the current lineup and submits it; offers only the
-  writable weeks. The "from my phone" experience over the proven write handler.
-- [ ] Deploy on a Fly volume with exactly one machine — `fly.toml` volume mount,
-  `fly scale count 1`; scale-to-zero (`min_machines_running = 0`) stays, since the volume
-  persists across stops (ADR 0005 decision 6). Confirm that in the spike. Spike first: the image runs as distroless `nonroot`, and a Fly
-  volume mount is likely root-owned, so the app may not be able to create `lineups/` or the
-  manifest. Boot seeding writes to the volume, so this now blocks reads too, not just the write
-  path — do the spike before, or with, setting `LINEUP_VOLUME` in `fly.toml`.
+- [ ] Save from the lineup form — a `POST` button beside "Check" that submits to the persist
+  handler. The "from my phone" experience over the proven write handler.
 
 ## Open threads
 
@@ -45,3 +56,7 @@ order. Not sized, not prioritized. Each row is its own `/opsx:propose` when pick
   ordinary commit-and-deploy. Out of scope for the initial rollout.
 - [ ] Season-long stats — if it lands and Sleeper load justifies it, a *separate* stats cache
   (possibly SQLite) alongside file-based lineups, not a migration of lineups into a DB.
+- [ ] Writable weeks vs. current week — ADR 0005 decision 3 allows the store's latest week or the
+  next; the form targets Sleeper's current week. Reconcile when the persist step is picked up.
+- [ ] Roster transactions (adds/drops) — rosters stay git-edited and the form ignores drift.
+  Not planned.

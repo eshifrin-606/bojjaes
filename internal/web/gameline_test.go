@@ -41,7 +41,7 @@ func gamesWeek(gs ...games.Game) games.Week {
 // first starter, so a CIN game has a line to show on. Replacements are
 // old/new pairs applied to the opponent's lineup file.
 func chaseTree(replacements ...string) *lineup.Tree {
-	ours := strings.Replace(lineupCSV(ourLine), "1,Puka Nacua,WR,LAR", "1,Ja'Marr Chase,WR,CIN", 1)
+	ours := strings.Replace(lineupCSV(ourLine), "1,Puka Nacua,QB,LAR", "1,Ja'Marr Chase,QB,CIN", 1)
 	theirs := lineupCSV(theirLine)
 	for i := 0; i+1 < len(replacements); i += 2 {
 		theirs = strings.Replace(theirs, replacements[i], replacements[i+1], 1)
@@ -87,7 +87,7 @@ func TestACompleteGameReadsFinalAfterTheTeam(t *testing.T) {
 
 	meta := starterMeta(t, serveGames(chaseTree(), gs), "Ja'Marr Chase")
 
-	if got, want := metaText(meta), "WR · CIN · Final"; got != want {
+	if got, want := metaText(meta), "QB · CIN · Final"; got != want {
 		t.Errorf("meta line = %q, want %q", got, want)
 	}
 	if m := gamePattern.FindStringSubmatch(meta); m == nil || m[1] != "Final" {
@@ -112,7 +112,7 @@ func TestAFailedGamesFetchServesThePageWithoutGameStates(t *testing.T) {
 		t.Errorf("totals = %q, want %q", got, want)
 	}
 	meta := starterMeta(t, body, "Ja'Marr Chase")
-	if got, want := metaText(meta), "WR · CIN"; got != want {
+	if got, want := metaText(meta), "QB · CIN"; got != want {
 		t.Errorf("meta line = %q, want %q", got, want)
 	}
 	if strings.Contains(body, `class="game"`) {
@@ -123,7 +123,7 @@ func TestAFailedGamesFetchServesThePageWithoutGameStates(t *testing.T) {
 func TestAWeekWithNoGamesShowsNoByes(t *testing.T) {
 	body := serveGames(chaseTree(), &fakeGames{week: gamesWeek()})
 
-	if got, want := metaText(starterMeta(t, body, "Ja'Marr Chase")), "WR · CIN"; got != want {
+	if got, want := metaText(starterMeta(t, body, "Ja'Marr Chase")), "QB · CIN"; got != want {
 		t.Errorf("meta line = %q, want %q", got, want)
 	}
 	if strings.Contains(body, `class="game"`) || strings.Contains(body, "Bye") {
@@ -191,7 +191,7 @@ func TestBothColumnsStateTheirGamesFromOneReading(t *testing.T) {
 	}
 	ours := metaText(starterMeta(t, body, "Ja'Marr Chase"))
 	theirs := metaText(starterMeta(t, body, "Joe Burrow"))
-	if ours != "WR · CIN · Q1" || theirs != "QB · CIN · Q1" {
+	if ours != "QB · CIN · Q1" || theirs != "QB · CIN · Q1" {
 		t.Errorf("CIN starters read %q and %q, want both on Q1", ours, theirs)
 	}
 }
@@ -204,7 +204,7 @@ func TestAStarterWithoutStatsStillShowsTheirGame(t *testing.T) {
 	if !slices.Contains(renderedStarters(body), "Ja&#39;Marr Chase=--") {
 		t.Errorf("starters = %q, want Ja'Marr Chase at --", renderedStarters(body))
 	}
-	if got, want := metaText(starterMeta(t, body, "Ja'Marr Chase")), "WR · CIN · Sun 12p"; got != want {
+	if got, want := metaText(starterMeta(t, body, "Ja'Marr Chase")), "QB · CIN · Sun 12p"; got != want {
 		t.Errorf("meta line = %q, want %q", got, want)
 	}
 }
@@ -220,12 +220,12 @@ func TestATeamOutsideAWeekWithGamesIsOnBye(t *testing.T) {
 }
 
 func TestAFreeAgentShowsNothingAfterTheTeam(t *testing.T) {
-	tree := chaseTree("19,Ladd McConkey,WR,LAC", "19,Ladd McConkey,WR,FA")
+	tree := chaseTree("19,Ladd McConkey,CB,LAC", "19,Ladd McConkey,CB,FA")
 
 	body := serveGames(tree, upcomingCIN(time.Date(2026, 10, 11, 17, 0, 0, 0, time.UTC)))
 
-	if got := metaText(starterMeta(t, body, "Ladd McConkey")); got != "WR · FA" {
-		t.Errorf("meta line = %q, want exactly %q", got, "WR · FA")
+	if got := metaText(starterMeta(t, body, "Ladd McConkey")); got != "CB · FA" {
+		t.Errorf("meta line = %q, want exactly %q", got, "CB · FA")
 	}
 }
 

@@ -58,9 +58,10 @@ the right, regardless of file name order in the directory.
 
 ### Requirement: Each column is a team, its starters, and one total
 
-Each column SHALL show the team name, that team's starting lineup in file order, and the total of
-the starters' points. Starters are the roster's first nine records per `lineup-source`; bench
-players SHALL NOT appear on the page.
+Each column SHALL show the team name, that team's starting lineup in slot order, and the total of
+the starters' points. The starters are the lineup's nine slots, in the canonical order
+`lineup-source` defines (QB, RB, WR, TE, FLEX, FLEX, K, D, D), whatever order the roster file lists
+them in. The page SHALL NOT label the slots; each starter still shows his listed position.
 
 The team name and the total SHALL share one heading at the top of the column, above the first
 starter: the name at the left and the total at the right, on the same line. Nothing in the column
@@ -122,10 +123,11 @@ width.
 - **THEN** the name wraps onto further lines at the left, and the total stays on the name's first
   line inside the column
 
-#### Scenario: Bench players are not rendered
+#### Scenario: Starters are listed in slot order
 
-- **WHEN** a roster file holds twelve records
-- **THEN** the column shows the first nine and the page contains no mention of the last three
+- **WHEN** a roster file lists its K first and its QB last
+- **THEN** the column lists the QB first, the K seventh, and the two defenders last, and the
+  roster file is unchanged
 
 #### Scenario: Every starter line carries both name forms
 
@@ -206,7 +208,7 @@ SHALL be styled identically.
 The two columns SHALL share their row heights: the headings, which hold the team names and totals,
 SHALL start at the same height and occupy the same height, and the Nth starter in each column SHALL
 start at the same height and occupy the same height. This SHALL hold whichever column has more
-wrapped lines, and when a column has fewer than nine starters.
+wrapped lines.
 
 Separating the rows SHALL NOT add horizontal padding or borders inside a row, so the width left for
 a name beside the points box is unchanged.
@@ -234,11 +236,6 @@ a name beside the points box is unchanged.
 
 - **WHEN** a starter's row has a name line and a position-and-team line
 - **THEN** the points are on the name's first line, right-aligned in the points box
-
-#### Scenario: A short column still lines up
-
-- **WHEN** one roster has nine starters and the other has eight
-- **THEN** the first eight rows line up across the columns and the two totals are at the same height
 
 #### Scenario: Row styling does not depend on the score
 
@@ -1047,4 +1044,3 @@ The stats provider SHALL be asked for the latest week only.
 
 - **WHEN** the tree holds 2026 weeks 1 and 2, and `GET /2026` is requested
 - **THEN** the stats provider is asked for 2026 week 2 exactly once and for no other week
-

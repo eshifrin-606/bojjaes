@@ -3,7 +3,8 @@
 **Status:** Accepted 2026-09-05. Decisions #3 (embedded lineup tree, "a deploy is the lineup
 update") and #7 ("writes do not exist") are modified by
 [ADR 0005](0005-writable-lineups-on-a-volume.md), which adds a passphrase-gated write path over a
-persistent volume. All other decisions here remain in force.
+persistent volume. Decision #9 amended 2026-11-01: slot is assigned by position, not implied by
+file order, and a lineup file holds exactly nine records. All other decisions here remain in force.
 
 Settles decision #7 of [ADR 0002](0002-live-scoreboard-backend.md) ("Hosting: local first,
 cloud-ready") and refines its decision #4 (freshness). Everything else in ADR 0002 and
@@ -126,10 +127,14 @@ hosted on Fly.io.
 
    **Position is the player's listed position, not the lineup slot** (settled 2026-09-09). It
    answers "what is this guy" — the reader wants to know a name is a tight end — and it is how the
-   league has always read a roster on the spreadsheet. Slot stays where it already is: implied by
-   file order, which `internal/lineup` already depends on. A label that named the slot would
-   duplicate that ordering in a second place and could contradict it; a listed position cannot,
-   because it says nothing about where the player is playing.
+   league has always read a roster on the spreadsheet. A label that named the slot could
+   contradict the slot the player is assigned; a listed position cannot, because it says nothing
+   about where the player is playing.
+
+   **Slot is assigned from position on read, with file order breaking ties** (amended 2026-11-01;
+   previously slot was implied by file order). The slots are `QB RB WR TE FLEX FLEX K D D`. RB
+   accepts an FB; FLEX accepts anything RB, WR, or TE accepts. **A file holds exactly nine
+   records** — there is no bench — and a file whose positions leave a slot unfilled is refused.
 
 ## Rationale
 
