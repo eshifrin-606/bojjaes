@@ -19,19 +19,18 @@ type gameRow struct {
 	} `json:"metadata"`
 }
 
-// WeekGames reads a week's games from the scores endpoint, which, unlike the
-// schedule one, carries kickoff time and quarter. It translates Sleeper's
+// fetchWeekGames reads a week's games from the scores endpoint, which, unlike
+// the schedule one, carries kickoff time and quarter. It translates Sleeper's
 // fields only; display wording is the page's choice.
 //
-// An unplayed or out-of-season week answers 200 with `[]`, which is an empty
-// week, not an error.
-func (c Client) WeekGames(ctx context.Context, season, week int) (games.Week, error) {
-	start := time.Now()
-	url := fmt.Sprintf("%s/scores/nfl/regular/%d/%d", c.BaseURL, season, week)
+// An unplayed or out-of-season week answers 200 with `[]`, which is no games,
+// not an error.
+func fetchWeekGames(ctx context.Context, baseURL string, season, week int) ([]games.Game, error) {
+	url := fmt.Sprintf("%s/scores/nfl/regular/%d/%d", baseURL, season, week)
 
 	var rows []gameRow
 	if err := httpjson.Get(ctx, url, fmt.Sprintf("sleeper games for season %d week %d", season, week), &rows); err != nil {
-		return games.Week{}, err
+		return nil, err
 	}
 	gs := make([]games.Game, 0, len(rows))
 	for _, row := range rows {
@@ -42,8 +41,7 @@ func (c Client) WeekGames(ctx context.Context, season, week int) (games.Week, er
 		}
 		gs = append(gs, row.game())
 	}
-	c.logf("sleeper games %d w%d: %d games in %s", season, week, len(gs), time.Since(start))
-	return games.NewWeek(season, week, gs), nil
+	return gs, nil
 }
 
 func (r gameRow) game() games.Game {

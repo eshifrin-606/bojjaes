@@ -53,12 +53,12 @@ func jsonServer(t *testing.T, body string) *httptest.Server {
 	return srv
 }
 
-func TestFetchWeekly(t *testing.T) {
+func TestFetchWeeklyStats(t *testing.T) {
 	srv := fixtureServer(t)
 
-	weekly, _, err := fetchWeekly(context.Background(), srv.URL, 2025, 14)
+	weekly, _, err := fetchWeeklyStats(context.Background(), srv.URL, 2025, 14)
 	if err != nil {
-		t.Fatalf("fetchWeekly: %v", err)
+		t.Fatalf("fetchWeeklyStats: %v", err)
 	}
 
 	if got := len(weekly); got != 11 {
@@ -71,12 +71,12 @@ func TestFetchWeekly(t *testing.T) {
 
 // An unplayed week returns 200 with an empty array, which is an answer rather
 // than a failure.
-func TestFetchWeeklyEmptyPayload(t *testing.T) {
+func TestFetchWeeklyStatsEmptyPayload(t *testing.T) {
 	srv := jsonServer(t, `[]`)
 
-	weekly, _, err := fetchWeekly(context.Background(), srv.URL, 2026, 1)
+	weekly, _, err := fetchWeeklyStats(context.Background(), srv.URL, 2026, 1)
 	if err != nil {
-		t.Fatalf("fetchWeekly: %v", err)
+		t.Fatalf("fetchWeeklyStats: %v", err)
 	}
 	if len(weekly) != 0 {
 		t.Errorf("decoded %d entries, want 0", len(weekly))
@@ -85,7 +85,7 @@ func TestFetchWeeklyEmptyPayload(t *testing.T) {
 
 // A stalled read must be interruptible, or a hung upstream pins the handler
 // goroutine for the life of the process.
-func TestFetchWeeklyContextCancelled(t *testing.T) {
+func TestFetchWeeklyStatsContextCancelled(t *testing.T) {
 	blocked := make(chan struct{})
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		<-blocked
@@ -98,7 +98,7 @@ func TestFetchWeeklyContextCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	go func() {
-		_, _, err := fetchWeekly(ctx, srv.URL, 2025, 14)
+		_, _, err := fetchWeeklyStats(ctx, srv.URL, 2025, 14)
 		done <- err
 	}()
 
@@ -107,14 +107,14 @@ func TestFetchWeeklyContextCancelled(t *testing.T) {
 	select {
 	case err := <-done:
 		if err == nil {
-			t.Fatal("fetchWeekly returned no error after its context was cancelled")
+			t.Fatal("fetchWeeklyStats returned no error after its context was cancelled")
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatal("fetchWeekly ignored context cancellation and blocked on the stalled server")
+		t.Fatal("fetchWeeklyStats ignored context cancellation and blocked on the stalled server")
 	}
 }
 
-func TestFetchWeeklyUpstreamFailures(t *testing.T) {
+func TestFetchWeeklyStatsUpstreamFailures(t *testing.T) {
 	unreachable := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	unreachableURL := unreachable.URL
 	unreachable.Close()
@@ -149,9 +149,9 @@ func TestFetchWeeklyUpstreamFailures(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := fetchWeekly(context.Background(), tt.baseURL(t), 2025, 14)
+			_, _, err := fetchWeeklyStats(context.Background(), tt.baseURL(t), 2025, 14)
 			if err == nil {
-				t.Fatal("fetchWeekly returned no error")
+				t.Fatal("fetchWeeklyStats returned no error")
 			}
 
 			// The message has to identify what was looked up, or a rotted
@@ -163,8 +163,8 @@ func TestFetchWeeklyUpstreamFailures(t *testing.T) {
 	}
 }
 
-// decodeWeekly is fetchWeekly without the HTTP, for fixtures read from disk.
-func decodeWeekly(r io.Reader) (map[string]map[string]float64, plays.Identities, error) {
+// decodeWeeklyStats is fetchWeeklyStats without the HTTP, for fixtures read from disk.
+func decodeWeeklyStats(r io.Reader) (map[string]map[string]float64, plays.Identities, error) {
 	var rows []weeklyRow
 	if err := json.NewDecoder(r).Decode(&rows); err != nil {
 		return nil, nil, err
@@ -177,7 +177,7 @@ func TestDecodeWeeklyIdentifiesPlayersByWeekTeam(t *testing.T) {
 	body := `[{"player_id":"5991","team":"LV","stats":null,
 		"player":{"first_name":"Maxx","last_name":"Crosby","team":"KC"}}]`
 
-	_, ids, err := decodeWeekly(strings.NewReader(body))
+	_, ids, err := decodeWeeklyStats(strings.NewReader(body))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +187,7 @@ func TestDecodeWeeklyIdentifiesPlayersByWeekTeam(t *testing.T) {
 	}
 }
 
-// fixtureWeekly decodes testdata/week14.json into the shape fetchWeekly
+// fixtureWeekly decodes testdata/week14.json into the shape fetchWeeklyStats
 // returns, so the per-player mapping can be tested without a server.
 func fixtureWeekly(t *testing.T) map[string]map[string]float64 {
 	t.Helper()

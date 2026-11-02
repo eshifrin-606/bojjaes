@@ -21,7 +21,7 @@ type weeklyRow struct {
 	} `json:"player"`
 }
 
-// fetchWeekly reads Sleeper's regular-season weekly stats rows and indexes
+// fetchWeeklyStats reads Sleeper's regular-season weekly stats rows and indexes
 // them by player ID.
 //
 // One call serves any number of players: the endpoint returns every player in
@@ -29,7 +29,7 @@ type weeklyRow struct {
 // line is wanted or a whole roster.
 //
 // An empty payload is not an error — an unplayed week returns 200 with `[]`.
-func fetchWeekly(ctx context.Context, baseURL string, season, week int) (map[string]map[string]float64, plays.Identities, error) {
+func fetchWeeklyStats(ctx context.Context, baseURL string, season, week int) (map[string]map[string]float64, plays.Identities, error) {
 	url := fmt.Sprintf("%s/stats/nfl/%d/%d?season_type=regular", baseURL, season, week)
 
 	// Sleeper sends every stat as a JSON number, so decode as float64 across
@@ -127,22 +127,11 @@ func statLineFrom(weekly map[string]map[string]float64, playerID string, season,
 	}, true
 }
 
-// FetchWeekStats reads one season and week's stats and returns them as a
-// provider-neutral snapshot.
-//
-// Every entry in the payload is transformed, not only the ones a caller will
-// ask for: that is what lets the decoded map's lifetime end in this function,
+// fetchPlayerStats transforms every entry in the payload, not only the ones a
+// caller will ask for: that is what lets the decoded map's lifetime end here,
 // so no Sleeper shape escapes the package.
-func FetchWeekStats(ctx context.Context, baseURL string, season, week int) (score.WeekStats, error) {
-	players, _, err := fetchPlayers(ctx, baseURL, season, week)
-	if err != nil {
-		return score.WeekStats{}, err
-	}
-	return score.NewWeekStats(season, week, players), nil
-}
-
-func fetchPlayers(ctx context.Context, baseURL string, season, week int) (map[string]score.StatLine, plays.Identities, error) {
-	weekly, ids, err := fetchWeekly(ctx, baseURL, season, week)
+func fetchPlayerStats(ctx context.Context, baseURL string, season, week int) (map[string]score.StatLine, plays.Identities, error) {
+	weekly, ids, err := fetchWeeklyStats(ctx, baseURL, season, week)
 	if err != nil {
 		return nil, nil, err
 	}
