@@ -22,12 +22,19 @@ func New(fsys fs.FS) *Tree {
 
 // Path resolves the lineup file for a season, week, and team.
 func (t *Tree) Path(season, week int, team string) (string, error) {
-	// A team name arrives as a URL segment once the page exists; refusing
-	// anything but a single, plain segment here keeps it from reaching
-	// outside the lineup tree, in the one place that knows the layout.
-	if team != filepath.Base(team) || strings.Contains(team, "..") {
-		return "", fmt.Errorf("lineup: invalid team name %q", team)
+	if err := checkTeam(team); err != nil {
+		return "", err
 	}
 
 	return path.Join(t.weekDir(season, week), team+".csv"), nil
+}
+
+// A team name arrives as a URL segment once the page exists; refusing
+// anything but a single, plain segment keeps it from reaching outside the
+// lineup tree.
+func checkTeam(team string) error {
+	if team != filepath.Base(team) || strings.Contains(team, "..") {
+		return fmt.Errorf("lineup: invalid team name %q", team)
+	}
+	return nil
 }
