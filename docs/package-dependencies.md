@@ -18,6 +18,7 @@ graph TD
     subgraph domain["internal — domain"]
         score["internal/score"]
         games["internal/games"]
+        nflweek["internal/nflweek"]
         lineup["internal/lineup"]
         data["internal/data"]
         files[("internal/data/lineups/**<br/>internal/data/rosters/*.csv<br/><i>embedded</i>")]
@@ -46,6 +47,7 @@ graph TD
     web --> lineup
     sleeperpkg --> score
     sleeperpkg --> games
+    sleeperpkg --> nflweek
     sleeperpkg --> plays
     sleeperpkg --> httpjson
     plays --> httpjson
@@ -74,10 +76,11 @@ serialization decision. Read the direction of the arrows, not the length of the 
 | `cmd/server` | Process entrypoint and composition root. Reads its configuration from the environment, claims the volume and drops root, constructs the play store and the provider, wraps its stats and its games each in a cache, constructs the lineup tree, builds the mux, and owns the process lifecycle: listen address, connection timeouts, and the drain on `SIGTERM`. | `internal/data`, `internal/lineup`, `internal/sleeper`, `internal/sleeper/plays`, `internal/volume`, `internal/web`, `internal/weekcache` | `context`, `errors`, `fmt`, `log`, `net`, `net/http`, `os`, `os/signal`, `syscall`, `time` | — |
 | `internal/score` | The scoring domain: `StatLine`, `Points`, `WeekStats`, and the season/week bounds. | none | `fmt` | `internal/sleeper`, `internal/web` |
 | `internal/games` | A week's NFL games, provider-neutral: `Game`, its `State`, and `Week` with `ForTeam`. | none | `time` | `internal/sleeper`, `internal/web` |
-| `internal/sleeper` | The Sleeper adapter: `Client`, the base URL, the stat-key transform, and the scores endpoint read into `games.Week`. | `internal/games`, `internal/score`, `internal/sleeper/internal/httpjson`, `internal/sleeper/plays` | `context`, `fmt`, `time` | `cmd/server` |
+| `internal/nflweek` | The current point in the NFL calendar, provider-neutral: `Current`, its `Phase`, and `Settable`. | none | none | `internal/sleeper` |
+| `internal/sleeper` | The Sleeper adapter: `Client`, the base URLs, the stat-key transform, the scores endpoint read into `games.Week`, and the state endpoint read into `nflweek.Current`. | `internal/games`, `internal/nflweek`, `internal/score`, `internal/sleeper/internal/httpjson`, `internal/sleeper/plays` | `context`, `fmt`, `strconv`, `time` | `cmd/server` |
 | `internal/sleeper/plays` | The play store: the plays endpoint, Sleeper's play JSON, and forced-fumble attribution from play descriptions. | `internal/sleeper/internal/httpjson` | `context`, `fmt`, `regexp`, `strconv`, `strings`, `sync`, `time` | `cmd/server`, `internal/sleeper` |
 | `internal/sleeper/internal/httpjson` | `Get`: one GET decoded from JSON, over the one timed `http.Client`. | none | `context`, `encoding/json`, `fmt`, `net/http`, `time` | `internal/sleeper`, `internal/sleeper/plays` |
-| `internal/weekcache` | A caching decorator over any weekly fetch, generic over its value: TTL expiry, single-flight, the `TTL` constant. | none | `context`, `log`, `sync`, `time` | `cmd/server` |
+| `internal/weekcache` | A caching decorator over any weekly fetch, generic over its value: TTL expiry, single-flight, the `TTL` and `CurrentWeekTTL` constants, and `Single` for an unkeyed fetch. | none | `context`, `fmt`, `log`, `sync`, `time` | `cmd/server` |
 | `internal/web` | The HTML transport: `GET /{season}/{week}`, its view model, its template. | `internal/games`, `internal/lineup`, `internal/score` | `bytes`, `context`, `embed`, `encoding/json`, `errors`, `html/template`, `log`, `net/http`, `strconv`, `strings`, `time`, `time/tzdata` | `cmd/server` |
 | `internal/lineup` | Lineup knowledge: file format, tree layout, matchup resolution, slot assignment. It reads any `fs.FS` and embeds none. | none | `bufio`, `errors`, `fmt`, `io`, `io/fs`, `path`, `path/filepath`, `slices`, `strconv`, `strings`, `unicode`, `unicode/utf8` | `cmd/server`, `internal/web`, `internal/data` (tests only), `internal/volume` (tests only) |
 | `internal/volume` | Chooses the lineup tree to serve (embedded, or the store on the Fly volume), and seeds that store from the embedded tree, per week, against a hash manifest. The only package that writes lineup files. | none | `crypto/sha256`, `encoding/hex`, `encoding/json`, `errors`, `io/fs`, `os`, `path`, `path/filepath`, `strconv` | `cmd/server` |
@@ -163,6 +166,14 @@ apart from one team's bye. `State` maps the provider's status into upcoming, in 
 or `Other`, which keeps a status never seen before rather than guessing; the provider's quarter and
 status text ride along as sent, and the wording is `web`'s choice. `time` is its only import.
 
+### `internal/nflweek`
+
+A point in the NFL calendar rather than a week's content, which is why it is not `games`. `Current`
+holds a season, week, and `Phase` (preseason, regular, postseason, offseason, or `Other`) and
+answers one question: `Settable` gives a season and week only for a regular-season week of at
+least 1, so "no settable week" is `ok == false`, never a zero week. The league's last week is a
+league rule and is left to the lineup form. It imports nothing.
+
 ### `internal/sleeper`
 
 With its two subpackages, the only code that talks to the network, and the only package in which a
@@ -177,6 +188,11 @@ one.
 `Client.WeekGames` reads the scores endpoint (`/scores/nfl/regular/<season>/<week>`), which unlike
 the schedule endpoint carries kickoff and quarter, and translates Sleeper's fields only. An unplayed
 week answers `[]`, an empty week rather than an error.
+
+`Client.CurrentWeek` reads `state_endpoint.go`'s `/state/nfl`, which lives on the documented v1
+host, so `Client` carries a second `V1BaseURL` field. Sleeper's text season and its `season_type`
+strings are translated here and never leave the package; a season that is not a number fails the
+read rather than becoming "no settable week".
 
 Forced fumbles are not in the stats payload, so `Client` asks its `Plays *plays.Store` for them,
 handing over the `plays.Identities` it built from that payload. A nil `Plays` scores without them.
@@ -275,6 +291,11 @@ mutex is never held across the fetch, so a slow week cannot block a different on
 is in comments at each site and in the change's notes.
 
 `now` and `fetchTimeout` are unexported seams for tests, not configuration — `main` names neither.
+
+`Single[V]` is an unkeyed fetch, such as the current NFL week, held as a `Cache` over one fixed key,
+so it inherits single-flight, the detached fetch, and dropping failures rather than reimplementing
+them. Its log lines name the key `current` instead of a season and week. `CurrentWeekTTL` (an hour)
+sits beside `TTL` because the week flips once, overnight.
 
 ### `internal/web`
 

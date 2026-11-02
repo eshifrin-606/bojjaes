@@ -26,11 +26,12 @@ order. Not sized, not prioritized. Each row is its own `/opsx:propose` when pick
   position). Slot is assigned by position, no longer implied by file order; a file that isn't
   exactly 9 rows or can't fill every slot is refused. Bench removed and the four over-9-row files
   trimmed. Render back to CSV in slot order. Matchup page shows starters in slot order.
-- [ ] Current NFL week from Sleeper `GET /v1/state/nfl`, cached. The week Sleeper reports is the
-  week the form sets, even if it doesn't flip on Tuesday. Weeks past the league's 16 and the
+- [x] Current NFL week from Sleeper `GET /v1/state/nfl`, cached. The week Sleeper reports is the
+  week the form sets, even if it doesn't flip on Tuesday. The postseason and the
   offseason have no settable week.
 - [ ] Lineup form, read-only — `GET /lineup?team=…`; team picker (default bojjaes; changing it
-  reloads), season and week are the current week as labels. Slots start from the team's file for
+  reloads), season and week are the current week as labels; past NFL week 17 (the league's last)
+  there is no week to set. Slots start from the team's file for
   that week, else its latest lineup. One dropdown per slot, filtered by position, showing NFL team
   and kickoff. "Check" is a GET, so the URL is a shareable proposed lineup (for texting a
   teammate); also shows a plain-text summary and a CSV download to commit to git. No write path.

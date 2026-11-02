@@ -908,3 +908,17 @@ func TestAFetchThatOutlastsTheTimeoutFailsAndIsNotCached(t *testing.T) {
 		t.Errorf("upstream called %d times, want 2", got)
 	}
 }
+
+func TestAWeeklyHitLineNamesTheSeasonAndWeek(t *testing.T) {
+	source := &fakeSource{}
+	cache, clock := newTestCache(source, testTTL)
+	logs := recordLogs(cache)
+
+	cache.AsOf(context.Background(), 2026, 5)
+	clock.advance(time.Minute)
+	cache.AsOf(context.Background(), 2026, 5)
+
+	if len(*logs) != 2 || (*logs)[1] != "statscache hit: 2026 week 5, 1m0s old" {
+		t.Errorf("miss then hit logged %q, want the weekly hit line second", *logs)
+	}
+}
