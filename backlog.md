@@ -21,7 +21,7 @@ order. Not sized, not prioritized. Each row is its own `/opsx:propose` when pick
 - [x] Deploy on a Fly volume with exactly one machine — `fly.toml` volume mount,
   `fly scale count 1`; scale-to-zero stays (ADR 0005 decision 6). The container starts as root,
   claims the mount, then drops to `nonroot` before seeding.
-- [ ] Lineup slots — proposed as OpenSpec change `lineup-slots`. Nine slots in canonical order
+- [x] Lineup slots — OpenSpec change `lineup-slots`. Nine slots in canonical order
   QB, RB, WR, TE, FLEX, FLEX, K, D, D (FLEX = RB/WR/TE, FB counts as RB; D = any defensive
   position). Slot is assigned by position, no longer implied by file order; a file that isn't
   exactly 9 rows or can't fill every slot is refused. Bench removed and the four over-9-row files
