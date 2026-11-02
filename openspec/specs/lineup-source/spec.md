@@ -3,19 +3,20 @@
 ## Purpose
 
 Define what a roster file is, where it lives, and how it becomes a lineup: an ordered record list,
-under a header naming its `id`, `name`, `position`, and `team` columns, read from `<season>/<week>/<team>.csv` within a caller-supplied lineup tree, whose first nine records are the
-starting lineup.
+under a header naming its `id`, `name`, `position`, and `team` columns, read from `<season>/<week>/<team>.csv` within a caller-supplied lineup tree, whose nine records fill the
+lineup's slots by position.
 
 The roster file is a hand-maintained lineup card, so this capability governs reading it as written
-— file order is the lineup order, the id identifies the player and the name is only a label, and a
+— file order only breaks ties between records for a slot, the id identifies the player and the name is only a label, and a
 file that cannot serve as a lineup card is refused rather than silently repaired. Scoring belongs
 to `player-week-score`; presenting a scored roster belongs to `matchup-page`.
 ## Requirements
 ### Requirement: A roster file is an ordered list of records
 
 A roster file SHALL be read as a header row followed by records, one record per line, in file order.
-The records SHALL be returned in that order; reading a roster SHALL NOT sort, group, or otherwise
-rearrange them, because file order is the lineup card.
+Parsing SHALL yield the records in that order and SHALL NOT sort, group, or otherwise rearrange
+them. File order does not decide a record's slot; it only breaks ties when the records are assigned
+to slots, per *Records fill the slots by position, not by file order*.
 
 A line SHALL be split on every comma, and each field SHALL be taken by the column its position in
 the header names. Surrounding spaces SHALL be trimmed from every field and every header name, so
@@ -179,8 +180,8 @@ A non-blank, non-comment line after the header SHALL make reading the roster fai
 naming the file and the line number when it yields no id, or when its number of fields differs
 from the number of columns in the header. Reading SHALL NOT skip such a line.
 
-A silently skipped line is worse than a refused file: every record after it moves up one position,
-which changes which players are starters without changing anything visible in the report. A line
+A silently skipped line is worse than a refused file: it drops a player from the lineup, or changes
+which player fills a FLEX or D slot, without anything visible in the report saying so. A line
 with the wrong number of fields is refused rather than padded or truncated, because a missing or
 extra comma moves every later value into the wrong column.
 
@@ -578,49 +579,142 @@ are playing, and a directory of two other teams does not answer it.
 - **WHEN** a week directory holds `aroma.csv` and `fuego.csv`
 - **THEN** resolution fails, because neither file is the Bojjaes'
 
-### Requirement: The first nine records are the starting lineup
+### Requirement: A lineup is nine slots in a fixed order
 
-A roster SHALL be split positionally: its first nine records are the starting lineup and every
-record after the ninth is bench. Both groups SHALL preserve file order.
+A lineup SHALL be exactly nine slots, in this canonical order: QB, RB, WR, TE, FLEX, FLEX, K, D, D.
+Each slot SHALL hold exactly one record, and the starters SHALL be those nine records in slot order.
+There SHALL be no bench: every record in a roster file fills a slot.
 
-The split SHALL be positional only. A record's position is the player's listed position, not the
-lineup slot he fills, so the split SHALL NOT use it, SHALL NOT validate that the starters form a
-legal lineup, and SHALL NOT reorder records to produce one. Reordering two lines of the file
-therefore changes who starts, which is the intended behaviour of a hand-maintained lineup card.
+A slot SHALL accept a record by its position:
 
-#### Scenario: A roster longer than a lineup splits at nine
+- QB accepts `QB`; K accepts `K`.
+- RB accepts `RB` or `FB`; WR accepts `WR`; TE accepts `TE`.
+- FLEX accepts any position RB, WR, or TE accepts.
+- D accepts `DL DE DT NT LB OLB ILB DB CB S SS FS`.
 
-- **WHEN** a roster holds twelve records
-- **THEN** the first nine are starters and the last three are bench, each group in file order
+A record's position SHALL remain the player's listed position as written in the file. Filling a
+slot SHALL NOT rewrite it, so a fullback in the RB slot is still shown and written as `FB`.
 
-#### Scenario: A roster shorter than a lineup is all starters
+#### Scenario: A file already in slot order keeps its order
 
-- **WHEN** a roster holds five records
-- **THEN** all five are starters and the bench is empty
+- **WHEN** a roster file lists a QB, RB, WR, TE, WR, RB, K, LB, and CB in that order
+- **THEN** the starters are those nine records in file order
 
-#### Scenario: A roster of exactly nine has an empty bench
+#### Scenario: A fullback fills the RB slot
 
-- **WHEN** a roster holds exactly nine records
-- **THEN** all nine are starters and the bench is empty, rather than the bench being absent
+- **WHEN** a roster file holds a QB, an `FB`, two WRs, a TE, another WR, a K, and two defenders,
+  and no `RB`
+- **THEN** the `FB` record fills the RB slot and its position is still `FB`
 
-#### Scenario: Comments do not consume a starter slot
+### Requirement: Records fill the slots by position, not by file order
 
-- **WHEN** a roster file holds comment and blank lines interleaved among nine records
-- **THEN** all nine records are starters
+Reading a roster SHALL assign its records to slots deterministically, whatever order the file lists
+them in:
 
-#### Scenario: Reordering the file changes who starts
+1. QB takes the `QB` record; K takes the `K` record.
+2. RB, WR, and TE each take the first record in file order that it accepts.
+3. The two FLEX slots take the remaining RB, WR, and TE records, in file order.
+4. The two D slots take the defensive records, in file order.
 
-- **WHEN** the tenth record of a roster file is moved above the ninth
-- **THEN** it becomes a starter and the record it displaced becomes bench
+Reordering lines of a roster file SHALL change a slot's occupant only where that order breaks a
+tie: which of several same-position records fills the RB, WR, or TE slot and which a FLEX, the
+order of the two FLEX slots, and the order of the two D slots.
 
-#### Scenario: Position does not decide who starts
+#### Scenario: A file in another order is read into slot order
 
-- **WHEN** a roster's first nine records are all quarterbacks and its tenth is a kicker
-- **THEN** the nine quarterbacks are starters and the kicker is bench
+- **WHEN** a roster file lists a K, LB, WR, WR, TE, RB, RB, QB, and DE in that order
+- **THEN** the starters are the QB, the first RB, the first WR, the TE, the second WR, the second
+  RB, the K, the LB, and the DE
+
+#### Scenario: Extra players at one position fill the FLEX slots in file order
+
+- **WHEN** a roster file lists three RBs before its only WR and its only TE
+- **THEN** the first RB fills the RB slot, and the second and third fill the two FLEX slots in
+  file order
+
+#### Scenario: A FLEX may hold a tight end
+
+- **WHEN** a roster file holds one RB, one WR, and three TEs
+- **THEN** the first TE fills the TE slot and the second and third fill the FLEX slots
+
+#### Scenario: Defenders keep file order
+
+- **WHEN** a roster file lists a CB above a DE
+- **THEN** the CB fills the first D slot and the DE the second
+
+#### Scenario: Swapping two RB lines swaps the RB and the FLEX
+
+- **WHEN** a roster file's two RBs, filling the RB slot and a FLEX slot, swap lines
+- **THEN** each now fills the slot the other filled, and no other slot changes
+
+### Requirement: A roster that cannot fill the slots is refused
+
+Reading SHALL fail with an error naming the file when the roster does not hold exactly nine
+records, or when its records cannot fill every slot by the rules in *Records fill the slots by
+position, not by file order*. A roster is never partly slotted, and no record is dropped or moved
+into a slot that does not accept it.
+
+When the count is wrong the error SHALL state the count. When nine records cannot fill the slots
+the error SHALL name a slot left empty.
+
+#### Scenario: A tenth player row is refused
+
+- **WHEN** a roster file holds ten records
+- **THEN** reading fails with an error naming the file and stating ten records
+
+#### Scenario: Eight player rows are refused
+
+- **WHEN** a roster file holds eight records
+- **THEN** reading fails with an error naming the file and stating eight records
+
+#### Scenario: Comments do not count as players
+
+- **WHEN** a roster file holds nine records and comment and blank lines between them
+- **THEN** reading succeeds
+
+#### Scenario: A roster with no tight end is refused
+
+- **WHEN** a roster file holds nine records: a QB, two RBs, three WRs, a K, and two defenders
+- **THEN** reading fails with an error naming the TE slot
+
+#### Scenario: A second quarterback is refused
+
+- **WHEN** a roster file holds two QBs and otherwise one each of RB, WR, TE, a fourth skill player,
+  K, and two defenders
+- **THEN** reading fails, because the second QB fits no slot and a FLEX slot is left empty
+
+#### Scenario: A third defender is refused
+
+- **WHEN** a roster file holds three defenders, one QB, one K, and four RB, WR, and TE records
+- **THEN** reading fails with an error naming a slot left empty
+
+### Requirement: A lineup renders back to roster records in slot order
+
+A lineup SHALL render to the text of a roster file: the header `id,name,position,team`, then one
+record per slot, in canonical slot order, each carrying its id, name, position, and team as read.
+The rendering SHALL NOT include a short name, comments, or blank lines.
+
+Reading the rendered text SHALL yield a lineup equal to the one rendered.
+
+#### Scenario: A lineup read from any order renders in slot order
+
+- **WHEN** a roster file listing its K first and its QB last is read and rendered
+- **THEN** the rendered text is the header followed by the QB, RB, WR, TE, FLEX, FLEX, K, D, D
+  records, in that order
+
+#### Scenario: Rendering keeps a fullback's position
+
+- **WHEN** a lineup whose RB slot holds an `FB` is rendered
+- **THEN** that record's line carries the position `FB`
+
+#### Scenario: A rendered lineup reads back unchanged
+
+- **WHEN** a lineup is rendered and the text is read as a roster file
+- **THEN** the starters, in slot order, have the same ids, names, positions, and teams
 
 ### Requirement: Every record read from a roster carries a short name
 
-Every record in a lineup read from a roster SHALL carry a short name, starters and bench alike. The
+Every record in a lineup read from a roster SHALL carry a short name. The
 short name SHALL be derived from the record's name when the roster is read. It SHALL NOT be read
 from the file, and the roster file SHALL NOT carry a column for it. The short name SHALL be
 non-empty whenever the name is non-empty.
@@ -699,16 +793,16 @@ name, and SHALL NOT fail a read for any name the roster accepts.
 - **WHEN** a record's name is `Mahomes`
 - **THEN** its short name is `Mahomes`
 
-#### Scenario: Bench records carry a short name
+#### Scenario: A record in a late slot carries a short name
 
-- **WHEN** a roster holds ten records and the tenth is named `Dak Prescott`
-- **THEN** the bench record's short name is `D Prescott`
+- **WHEN** a roster's second defender, filling the last D slot, is named `Fred Warner`
+- **THEN** that record's short name is `F Warner`
 
 ### Requirement: A short name depends only on its own record's name
 
 A record's short name SHALL be derived from that record's name alone, by the rules in *Every record
 read from a roster carries a short name*. It SHALL NOT depend on any other record in the roster or in
-any other roster, and it SHALL NOT depend on whether the record is a starter or on the bench.
+any other roster, and it SHALL NOT depend on which slot the record fills.
 
 Two or more records MAY carry the same short name. That SHALL NOT be an error, and neither record
 SHALL fall back to its full name or to any longer form.
@@ -723,12 +817,11 @@ SHALL fall back to its full name or to any longer form.
 - **WHEN** two starters carry different ids and the same name `Josh Allen`
 - **THEN** reading succeeds and both records carry `J Allen` as their short name
 
-#### Scenario: Moving a record across the starter split does not change another's short name
+#### Scenario: Moving a record between slots does not change another's short name
 
-- **WHEN** a roster's second record is `Josh Allen`, and `Jaylen Allen` is moved from the tenth
-  record to the ninth
-- **THEN** both records carry `J Allen` as their short name before and after the move
-
+- **WHEN** a roster holds wide receivers `Josh Allen` and `Jaylen Allen`, and their two lines are
+  swapped so each fills the other's slot
+- **THEN** both records carry `J Allen` as their short name before and after the swap
 
 ### Requirement: A week's existence can be asked without resolving it
 
