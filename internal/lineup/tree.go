@@ -57,12 +57,12 @@ func (t *Tree) Read(season int, week int, team string) (Lineup, error) {
 	}
 	defer f.Close()
 
-	records, err := parse(f)
+	players, err := parse(f)
 	if err != nil {
 		return Lineup{}, fmt.Errorf("%s: %w", path, err)
 	}
 
-	lineup, err := newLineup(records)
+	lineup, err := newLineup(players)
 	if err != nil {
 		return Lineup{}, fmt.Errorf("%s: %w", path, err)
 	}

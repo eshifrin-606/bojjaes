@@ -253,9 +253,9 @@ package and nowhere else.
 which is the lineup a team is assumed to start until it files another. It is computed from the
 tree rather than kept as a copy, so it cannot go stale.
 
-The package is two files along that seam: `record.go` (the CSV format, `Record`, `Lineup`) and
-`tree.go` (`Tree` and everything that locates files). The tree reaches the format through one call,
-in `Read`.
+The package is split by concept: `player.go` (the CSV format and `Player`), `slot.go` (`Slot` and
+what each accepts), `lineup.go` (`Lineup`), and `tree.go` (`Tree` and everything that locates
+files). The tree reaches the format through one call, in `Read`.
 
 ### `internal/volume`
 
@@ -304,7 +304,7 @@ none has to import another. It resolves a week to two teams through `lineup.Tree
 lineups, fetches the week's stats **once**, and scores both columns from that one snapshot — the
 two columns must not come from different readings of the week. Then it fetches the week's games,
 after the stats so a stats failure costs no games fetch, and finds each starter's game by the
-lineup record's `Team`. A games failure is logged and the page is served with no game state.
+lineup player's `Team`. A games failure is logged and the page is served with no game state.
 
 The page's script rewrites the served Central-time instants into the reader's timezone: a kickoff
 (`Sun 12p`, served with no zone label) stays unlabelled, and the as-of line takes the reader's
@@ -323,7 +323,7 @@ before it could fail.
 ## What the shape tells you
 
 - **`score`, `games`, and `lineup` still do not know about each other.** A lineup is a list of
-  player IDs; scoring takes player IDs. A record's `Team` is the key to its game, but as a string,
+  player IDs; scoring takes player IDs. A player's `Team` is the key to its game, but as a string,
   so `lineup` needs no `games` type. None needs another's types. They meet in callers —
   `cmd/server` and `internal/web`.
 - **The next edge was a third thing, as expected.** The served page arrived as `internal/web`,

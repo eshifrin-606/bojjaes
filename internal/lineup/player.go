@@ -10,7 +10,7 @@ import (
 	"unicode/utf8"
 )
 
-type Record struct {
+type Player struct {
 	ID string
 	// Name is display text only. Nothing outside the lineup looks a player up
 	// by name, so a wrong name pairs silently with the right stats.
@@ -63,8 +63,8 @@ func parseHeader(fields []string) (map[string]int, error) {
 	return columns, nil
 }
 
-func parse(r io.Reader) ([]Record, error) {
-	var records []Record
+func parse(r io.Reader) ([]Player, error) {
+	var players []Player
 
 	scanner := bufio.NewScanner(r)
 	var columns map[string]int
@@ -107,7 +107,7 @@ func parse(r io.Reader) ([]Record, error) {
 		if !slices.Contains(teams, team) {
 			return nil, fmt.Errorf("line %d: unknown team %q", lineNum, team)
 		}
-		records = append(records, Record{
+		players = append(players, Player{
 			ID:       id,
 			Name:     field("name"),
 			Position: position,
@@ -118,107 +118,22 @@ func parse(r io.Reader) ([]Record, error) {
 		return nil, err
 	}
 
-	if len(records) == 0 {
-		return nil, fmt.Errorf("no records")
+	if len(players) == 0 {
+		return nil, fmt.Errorf("no players")
 	}
 
-	seen := make(map[string]bool, len(records))
-	for _, rec := range records {
-		if seen[rec.ID] {
-			// Two records for one id would double-print and double-count that
+	seen := make(map[string]bool, len(players))
+	for _, p := range players {
+		if seen[p.ID] {
+			// Two rows for one id would double-print and double-count that
 			// player's points in the starters' total, with nothing in the
 			// report disclosing it.
-			return nil, fmt.Errorf("duplicate id %s", rec.ID)
+			return nil, fmt.Errorf("duplicate id %s", p.ID)
 		}
-		seen[rec.ID] = true
+		seen[p.ID] = true
 	}
 
-	return records, nil
-}
-
-// StarterCount is the league's starting lineup size.
-const StarterCount = len(slotOrder)
-
-type Slot string
-
-const (
-	QB   Slot = "QB"
-	RB   Slot = "RB"
-	WR   Slot = "WR"
-	TE   Slot = "TE"
-	FLEX Slot = "FLEX"
-	K    Slot = "K"
-	D    Slot = "D"
-)
-
-var slotOrder = [9]Slot{QB, RB, WR, TE, FLEX, FLEX, K, D, D}
-
-var slotAccepts = map[Slot][]string{
-	QB:   {"QB"},
-	RB:   {"RB", "FB"},
-	WR:   {"WR"},
-	TE:   {"TE"},
-	FLEX: {"RB", "FB", "WR", "TE"},
-	K:    {"K"},
-	D:    {"DL", "DE", "DT", "NT", "LB", "OLB", "ILB", "DB", "CB", "S", "SS", "FS"},
-}
-
-// Lineup is a roster's records, one per slot, in slot order.
-type Lineup struct {
-	starters [StarterCount]Record
-}
-
-func newLineup(records []Record) (Lineup, error) {
-	if len(records) != StarterCount {
-		return Lineup{}, fmt.Errorf("%d records, want %d", len(records), StarterCount)
-	}
-	var l Lineup
-	var filled [StarterCount]bool
-	claimed := make([]bool, len(records))
-	fill := func(slot int) {
-		for i, rec := range records {
-			if !claimed[i] && slices.Contains(slotAccepts[slotOrder[slot]], rec.Position) {
-				rec.ShortName = shortName(rec.Name)
-				l.starters[slot], filled[slot], claimed[i] = rec, true, true
-				return
-			}
-		}
-	}
-	// The dedicated slots claim first, so a FLEX gets only the skill players
-	// they leave over. Within each pass, file order breaks ties.
-	for slot, s := range slotOrder {
-		if s != FLEX && s != D {
-			fill(slot)
-		}
-	}
-	for slot, s := range slotOrder {
-		if s == FLEX || s == D {
-			fill(slot)
-		}
-	}
-	// With exactly nine records, any record no slot accepted leaves a slot
-	// empty, so naming the empty slot also accounts for the misfit.
-	if empty := slices.Index(filled[:], false); empty >= 0 {
-		return Lineup{}, fmt.Errorf("no record fills slot %s", slotOrder[empty])
-	}
-	return l, nil
-}
-
-// WriteCSV renders the lineup as a roster file in slot order. ShortName is
-// derived on read, so it is not written.
-func (l Lineup) WriteCSV(w io.Writer) error {
-	var b strings.Builder
-	b.WriteString("id,name,position,team\n")
-	for _, rec := range l.starters {
-		fmt.Fprintf(&b, "%s,%s,%s,%s\n", rec.ID, rec.Name, rec.Position, rec.Team)
-	}
-	_, err := io.WriteString(w, b.String())
-	return err
-}
-
-// Starters returns the lineup's records in slot order.
-func (l Lineup) Starters() []Record {
-	return l.starters[:]
+	return players, nil
 }
 
 var generationalSuffixes = []string{"Jr.", "Jr", "Sr.", "Sr", "II", "III", "IV", "V"}
