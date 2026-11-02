@@ -1,5 +1,6 @@
-// Package volume seeds the lineup store on a mounted volume from the copy
-// embedded in the binary. It is the only package that writes lineup files.
+// Package volume decides which lineup tree the server reads, and seeds the
+// store on a mounted volume from the copy embedded in the binary. It is the
+// only package that writes lineup files.
 package volume
 
 import (
@@ -50,7 +51,7 @@ func Seed(src fs.FS, mount string, logf func(string, ...any)) error {
 // seeded, such as a phone edit, so the lineup can be recovered from the log
 // once the week is replaced.
 func logOverwrite(mount string, d weekDir, seeded, incoming string, logf func(string, ...any)) error {
-	store := os.DirFS(filepath.Join(mount, "lineups"))
+	store := os.DirFS(filepath.Join(mount, lineupsDir))
 	dir := path.Join(d.season, d.week)
 	if _, err := fs.Stat(store, dir); errors.Is(err, fs.ErrNotExist) {
 		return nil
@@ -125,7 +126,7 @@ func copyWeek(src fs.FS, mount string, d weekDir) error {
 	}
 	// Removing first drops files git no longer has, such as last week's
 	// opponent, so the store week matches git's exactly.
-	to := filepath.Join(mount, "lineups", d.season, d.week)
+	to := filepath.Join(mount, lineupsDir, d.season, d.week)
 	if err := os.RemoveAll(to); err != nil {
 		return err
 	}

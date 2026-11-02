@@ -71,7 +71,7 @@ serialization decision. Read the direction of the arrows, not the length of the 
 
 | Package | Role | Imports (first-party) | Imports (stdlib) | Imported by |
 | --- | --- | --- | --- | --- |
-| `cmd/server` | Process entrypoint and composition root. Constructs the play store and the provider, wraps its stats and its games each in a cache, constructs the lineup tree, builds the mux, and owns the process lifecycle: listen address, connection timeouts, and the drain on `SIGTERM`. | `internal/data`, `internal/lineup`, `internal/sleeper`, `internal/sleeper/plays`, `internal/volume`, `internal/web`, `internal/weekcache` | `context`, `errors`, `fmt`, `io/fs`, `log`, `net`, `net/http`, `os`, `os/signal`, `path/filepath`, `syscall`, `time` | — |
+| `cmd/server` | Process entrypoint and composition root. Reads its configuration from the environment, claims the volume and drops root, constructs the play store and the provider, wraps its stats and its games each in a cache, constructs the lineup tree, builds the mux, and owns the process lifecycle: listen address, connection timeouts, and the drain on `SIGTERM`. | `internal/data`, `internal/lineup`, `internal/sleeper`, `internal/sleeper/plays`, `internal/volume`, `internal/web`, `internal/weekcache` | `context`, `errors`, `fmt`, `log`, `net`, `net/http`, `os`, `os/signal`, `syscall`, `time` | — |
 | `internal/score` | The scoring domain: `StatLine`, `Points`, `WeekStats`, and the season/week bounds. | none | `fmt` | `internal/sleeper`, `internal/web` |
 | `internal/games` | A week's NFL games, provider-neutral: `Game`, its `State`, and `Week` with `ForTeam`. | none | `time` | `internal/sleeper`, `internal/web` |
 | `internal/sleeper` | The Sleeper adapter: `Client`, the base URL, the stat-key transform, and the scores endpoint read into `games.Week`. | `internal/games`, `internal/score`, `internal/sleeper/internal/httpjson`, `internal/sleeper/plays` | `context`, `fmt`, `time` | `cmd/server` |
@@ -80,21 +80,24 @@ serialization decision. Read the direction of the arrows, not the length of the 
 | `internal/weekcache` | A caching decorator over any weekly fetch, generic over its value: TTL expiry, single-flight, the `TTL` constant. | none | `context`, `log`, `sync`, `time` | `cmd/server` |
 | `internal/web` | The HTML transport: `GET /{season}/{week}`, its view model, its template. | `internal/games`, `internal/lineup`, `internal/score` | `bytes`, `context`, `embed`, `encoding/json`, `errors`, `html/template`, `log`, `net/http`, `strconv`, `strings`, `time`, `time/tzdata` | `cmd/server` |
 | `internal/lineup` | Lineup knowledge: file format, tree layout, matchup resolution, starters/bench split. It reads any `fs.FS` and embeds none. | none | `bufio`, `errors`, `fmt`, `io`, `io/fs`, `path`, `path/filepath`, `slices`, `strconv`, `strings`, `unicode`, `unicode/utf8` | `cmd/server`, `internal/web`, `internal/data` (tests only), `internal/volume` (tests only) |
-| `internal/volume` | Seeds the lineup store on the Fly volume from the embedded tree, per week, against a hash manifest. The only package that writes lineup files. | none | `crypto/sha256`, `encoding/hex`, `encoding/json`, `errors`, `io/fs`, `os`, `path`, `path/filepath`, `strconv` | `cmd/server` |
-| `internal/data` | The league files carried in the binary: the lineup tree and the per-team rosters, each an `fs.FS` rooted below its directory. | none | `embed`, `io/fs` | `cmd/server` |
+| `internal/volume` | Chooses the lineup tree to serve (embedded, or the store on the Fly volume), and seeds that store from the embedded tree, per week, against a hash manifest. The only package that writes lineup files. | none | `crypto/sha256`, `encoding/hex`, `encoding/json`, `errors`, `io/fs`, `os`, `path`, `path/filepath`, `strconv` | `cmd/server` |
+| `internal/data` | The league files carried in the binary: the lineup tree and the per-team rosters, each an `fs.FS` rooted below its directory. | none | `embed`, `io/fs` | `cmd/server`, `internal/volume` (tests only) |
 
 ### `cmd/server`
 
 Thin by design, and the only place the provider and the transport meet: it constructs a
-`plays.Store`, a `sleeper.Client` holding it in `Plays`, and a `lineup.Tree` and hands them to `web.Handler`, which knows only the
-one-method `AsOf` interfaces it declares for itself, `StatsSource` and `GamesSource`, satisfied by
-the two wrapped caches. If
+`plays.Store`, a `sleeper.Client` holding it in `Plays`, and a `lineup.Tree` and hands them to the
+`web` handlers, which know only the interfaces `web` declares for itself: `StatsSource` and
+`GamesSource` (`AsOf`) and `VersionSource` (`FetchedAt`), satisfied by the two wrapped caches.
+`mux.go` joins `StatsSource` and `VersionSource` into one `weekStats` parameter, so the page and
+its version endpoint cannot be wired to different caches. If
 logic starts appearing here, it belongs in a package instead — `main()` should stay readable as a
 table of contents for the service.
 
-The tree served is named here and only here: `main` hands `lineup.New` the embedded
-`data.Lineups`, so no path relative to the working directory survives. Serving a
-different tree — a live one off disk, say — is a different `fs.FS` at this one call site.
+The tree served is chosen at one call site: `main` hands `volume.Lineups` the embedded
+`data.Lineups` and the `LINEUP_VOLUME` mount, and passes whatever `fs.FS` comes back to
+`lineup.New`. With no mount that is the embedded tree; with one it is the seeded store on the
+volume. Either way no path relative to the working directory survives.
 
 Because the wiring is here, the TTL cache landed as pure addition: `weekcache.New` wraps the
 `sleeper.Client`'s `WeekStats` method value in this file and the wrapped value goes to both handlers, with no consumer edited
@@ -110,15 +113,23 @@ The package is no longer one file, and the split is what made it testable at all
 untested few lines that name the real environment, the real signal disposition, and the real
 address; everything it calls takes those as arguments and lives beside it:
 
-- **`addr.go`** — `resolveAddr(getenv)`. `PORT` if set and non-empty, `8080` otherwise. The lookup
-  is a parameter so a test passes a map instead of mutating the process environment.
+- **`config.go`** — `loadConfig(getenv)`, every environment read in one struct: `PORT` (default
+  `8080`), `PLAYS_COLD_WAIT` (a Go duration, default 30s, rejected if malformed or negative), and
+  `LINEUP_VOLUME` (empty means no volume). The lookup is a parameter so a test passes a map instead
+  of mutating the process environment.
+- **`privileges.go`**, **`privileges_linux.go`**, **`privileges_other.go`** —
+  `claimVolumeAndDropRoot(volume)`. Run as root, it chowns the volume mount to the distroless
+  `nonroot` user and then drops to it, before any disk or network work. Not as root, it does nothing; as root off Linux, it refuses to start.
+  The syscalls are fields of a `privileges` struct so a test can record their order.
 - **`mux.go`** — `newMux(stats, games, tree)` returns an owned `*http.ServeMux`. Registering on
   `DefaultServeMux` made the routing table process-wide state that could not be built twice in one
   test binary without a duplicate-pattern panic; as a value it can be built and driven with
   `httptest`.
 - **`server.go`** — `newServer(addr, h)`, the one place the four connection timeouts are set:
   read-header 5s, read 10s, write 30s, idle 60s. `http.ListenAndServe` leaves all four at zero,
-  which on a 256mb machine means a handful of silent connections is the whole budget.
+  which on a 256mb machine means a handful of silent connections is the whole budget. The write
+  timeout does not cover a matchup page's worst case, two back-to-back cache misses of up to 30s
+  each, and doesn't need to: the cache's fetches outlive the request, so the next load is a hit.
 - **`run.go`** — `run(srv, listen, stop, grace)`. Serves in a goroutine and selects on the serve
   error and the stop channel; on stop it drains through `srv.Shutdown` under a 15s bound. Both
   `listen` and `stop` are parameters for the same reason `getenv` is: a test binds port `0` or
@@ -233,7 +244,9 @@ in `Read`.
 ### `internal/volume`
 
 The one package that writes lineup files, split out of `lineup` so that package stays a pure
-reader. `Seed` copies each numbered week of the embedded tree onto the mount, replacing a week only
+reader. `Lineups(embedded, mount, logf)` is the tree to serve: `embedded` when there is no mount,
+otherwise the mount's `lineups` subdirectory after seeding it. The mount is not the tree itself, so
+nothing else on it (the manifest, `lost+found`) reads as a season. `Seed` copies each numbered week of the embedded tree onto the mount, replacing a week only
 when git's copy changed since it was last seeded, per `seed-manifest.json`; the rules are in
 [architecture](architecture.md). It uses nothing of `lineup`'s: it copies files by directory shape
 and never parses one. `os` and `crypto/sha256` are the imports that mark it.
@@ -310,8 +323,8 @@ before it could fail.
   edges are deliberate and test-only: the substitutability and the freshness attribution are the
   whole point of the decorator, so they are better checked in the packages' own tests than
   discovered in `main`. They are also where the "read the arrows" advice needs the second `go list`.
-  `internal/volume`'s tests import `internal/lineup` once, to check that a seeded store reads back
-  as a matchup.
+  `internal/volume`'s tests import `internal/lineup`, to check that a seeded store reads back
+  as a matchup, and `internal/data`, to seed from the real embedded tree.
   Both `lineup`'s matchup tests and `web`'s page tests build their fixtures with `fstest.MapFS`,
   so nothing writes to disk and almost nothing reads the real tree. The exception is deliberate:
   `internal/data`'s tests (as the external `data_test` package) import `lineup` and walk every week of `data.Lineups`, asserting each is a matchup and that both

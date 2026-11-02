@@ -8,12 +8,13 @@ import (
 // A slowloris bound: headers arrive in one packet or the client is not serious.
 const readHeaderTimeout = 5 * time.Second
 
-// Bodies here are a small JSON array of player IDs.
+// Every route is a GET, so there is no body worth waiting for.
 const readTimeout = 10 * time.Second
 
-// Must cover a matchup page whose stat fetch is a cache miss: an upstream
-// Sleeper call plus render. The cache's own fetch timeout is the real bound;
-// this sits above it.
+// Covers a typical cache miss, but not the worst case: a matchup page fetches
+// stats then games, each bounded only by the cache's 30s fetch timeout. A
+// response cut off here is not wasted, since the cache's fetches outlive the
+// request and the page's next load is served from cache.
 const writeTimeout = 30 * time.Second
 
 // Keep-alive reuse for the page's self-refresh, without holding connections
