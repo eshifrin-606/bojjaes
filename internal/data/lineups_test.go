@@ -1,4 +1,4 @@
-package lineup
+package data_test
 
 import (
 	"fmt"
@@ -7,12 +7,13 @@ import (
 	"testing"
 
 	"github.com/eshifrin/bojjaes/internal/data"
+	"github.com/eshifrin/bojjaes/internal/lineup"
 )
 
 // The embedded tree is the one the server serves, so it has to satisfy the
 // reader whole: a week resolves to its two teams and both lineups parse.
 func TestEmbeddedTreeResolvesAWeek(t *testing.T) {
-	tree := New(data.Lineups)
+	tree := lineup.New(data.Lineups)
 
 	ours, theirs, err := tree.Matchup(2025, 15)
 	if err != nil {
@@ -23,12 +24,12 @@ func TestEmbeddedTreeResolvesAWeek(t *testing.T) {
 	}
 
 	for _, team := range []string{ours, theirs} {
-		lineup, err := tree.Read(2025, 15, team)
+		got, err := tree.Read(2025, 15, team)
 		if err != nil {
 			t.Fatalf("Read(%q): %v", team, err)
 		}
-		if len(lineup.Starters()) != starterCount {
-			t.Errorf("%s starters = %d, want %d", team, len(lineup.Starters()), starterCount)
+		if len(got.Starters()) != lineup.StarterCount {
+			t.Errorf("%s starters = %d, want %d", team, len(got.Starters()), lineup.StarterCount)
 		}
 	}
 }
@@ -37,7 +38,7 @@ func TestEmbeddedTreeResolvesAWeek(t *testing.T) {
 // files: a malformed CSV or a week with three lineups in it would build clean
 // and fail at request time. This walk is a test of the data, not the reader.
 func TestEveryEmbeddedWeekIsAReadableMatchup(t *testing.T) {
-	tree := New(data.Lineups)
+	tree := lineup.New(data.Lineups)
 
 	seasons, err := fs.ReadDir(data.Lineups, ".")
 	if err != nil {

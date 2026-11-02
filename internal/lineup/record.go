@@ -137,9 +137,9 @@ func parse(r io.Reader) ([]Record, error) {
 	return records, nil
 }
 
-// starterCount is the league's starting lineup size: the first starterCount
+// StarterCount is the league's starting lineup size: the first StarterCount
 // records in a lineup are starters, and everything after is bench.
-const starterCount = 9
+const StarterCount = 9
 
 // Lineup is a parsed, ordered set of records with the starters/bench split
 // layered on top as a view — it never re-parses or reorders the records.
@@ -160,7 +160,7 @@ func newLineup(records []Record) Lineup {
 }
 
 func benchStart(records []Record) int {
-	return min(len(records), starterCount)
+	return min(len(records), StarterCount)
 }
 
 // Starters returns the lineup's starters, in file order.
