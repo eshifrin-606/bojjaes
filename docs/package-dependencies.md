@@ -140,9 +140,8 @@ The domain. Four files, and `fmt` is the whole of its stdlib surface:
   makes the boundary structural rather than decorative. It is complete when returned and never
   written afterwards, so concurrent handlers can share one.
 - **`bounds.go` — what may be asked about.** `ValidateSeasonWeek`. The bounds live in the domain
-  because every way into the scoring path has to refuse the same nonsense: `api` validates a
-  request body against them and `web` validates two URL segments. Two copies would eventually
-  disagree.
+  because they are a league fact, not a URL rule: `web` validates its URL segments against them,
+  and any other way into the scoring path would have to refuse the same nonsense.
 
 ### `internal/games`
 
@@ -157,9 +156,12 @@ status text ride along as sent, and the wording is `web`'s choice. `time` is its
 
 With its two subpackages, the only code that talks to the network, and the only package in which a
 Sleeper stat key appears — a fact worth re-checking by grep rather than trusting. Sleeper shapes
-appear only under `internal/sleeper/`. `FetchWeekStats` fetches once and transforms
-**every** entry in the payload, so the decoded `map[string]map[string]float64` never outlives the
-call. `Client` is the same thing with the base URL held in a field, so `main` wires a value.
+appear only under `internal/sleeper/`. `Client` is its one entry point, holding the base URL in a
+field so `main` wires a value. `Client.WeekStats` fetches once and transforms **every** entry in the
+payload, so the decoded `map[string]map[string]float64` never outlives the call. Files are named for
+their role: `client.go` holds `Client`, and `stats_endpoint.go` and `scores_endpoint.go` each hold
+one Sleeper endpoint's wire shape and translation. The second is not the `games` package; it fills
+one.
 
 `Client.WeekGames` reads the scores endpoint (`/scores/nfl/regular/<season>/<week>`), which unlike
 the schedule endpoint carries kickoff and quarter, and translates Sleeper's fields only. An unplayed

@@ -8,6 +8,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/eshifrin/bojjaes/internal/games"
 	"github.com/eshifrin/bojjaes/internal/score"
 	"github.com/eshifrin/bojjaes/internal/sleeper/plays"
 )
@@ -15,8 +16,8 @@ import (
 // BaseURL is the live REST host; tests pass an httptest.Server URL.
 const BaseURL = "https://api.sleeper.com"
 
-// Client is a handle on one Sleeper host. Its WeekStats method satisfies the
-// stats-source interfaces the serving packages declare for themselves.
+// Client is a handle on one Sleeper host. Its WeekStats and WeekGames methods
+// satisfy the source interfaces the serving packages declare for themselves.
 //
 // It lives here rather than in main because it is provider state — a base URL —
 // and holding it here means each composition root wires a value instead of
@@ -30,13 +31,23 @@ type Client struct {
 
 func (c Client) WeekStats(ctx context.Context, season, week int) (score.WeekStats, error) {
 	start := time.Now()
-	players, ids, err := fetchPlayers(ctx, c.BaseURL, season, week)
+	players, ids, err := fetchPlayerStats(ctx, c.BaseURL, season, week)
 	if err != nil {
 		return score.WeekStats{}, err
 	}
 	c.logf("sleeper stats %d w%d: %d rows in %s", season, week, len(ids), time.Since(start))
 	c.addForcedFumbles(ctx, season, week, ids, players)
 	return score.NewWeekStats(season, week, players), nil
+}
+
+func (c Client) WeekGames(ctx context.Context, season, week int) (games.Week, error) {
+	start := time.Now()
+	gs, err := fetchWeekGames(ctx, c.BaseURL, season, week)
+	if err != nil {
+		return games.Week{}, err
+	}
+	c.logf("sleeper games %d w%d: %d games in %s", season, week, len(gs), time.Since(start))
+	return games.NewWeek(season, week, gs), nil
 }
 
 func (c Client) addForcedFumbles(ctx context.Context, season, week int, ids plays.Identities, players map[string]score.StatLine) {
