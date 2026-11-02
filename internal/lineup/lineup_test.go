@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"testing/fstest"
 )
 
 // rosterCSV builds a lineup file from alternating id and position arguments,
@@ -279,5 +280,89 @@ func TestLineupWriteCSVReadsBackUnchanged(t *testing.T) {
 
 	if got := readLineup(t, b.String()); !slices.Equal(got.Starters(), l.Starters()) {
 		t.Errorf("read back = %+v, want %+v", got.Starters(), l.Starters())
+	}
+}
+
+// slotPlayers is nine eligible players in slot order, an RB in RB and a
+// second RB in the first FLEX. Callers swap in the player a test is about.
+func slotPlayers() [StarterCount]Player {
+	var players [StarterCount]Player
+	for i, position := range []string{"QB", "RB", "WR", "TE", "RB", "WR", "K", "LB", "CB"} {
+		id := string(rune('a' + i))
+		players[i] = Player{ID: id, Name: "Player " + id, Position: position, Team: "BUF"}
+	}
+	return players
+}
+
+func TestFromSlotsKeepsTheGivenSlots(t *testing.T) {
+	players := slotPlayers()
+
+	l, err := FromSlots(players)
+	if err != nil {
+		t.Fatalf("FromSlots: %v", err)
+	}
+
+	want := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"}
+	if got := starterIDs(l); !slices.Equal(got, want) {
+		t.Errorf("starters = %q, want %q", got, want)
+	}
+}
+
+func TestFromSlotsRefusesAPlayerTheSlotDoesNotAccept(t *testing.T) {
+	players := slotPlayers()
+	players[0].Position = "WR"
+
+	_, err := FromSlots(players)
+
+	if err == nil || !strings.Contains(err.Error(), "QB") {
+		t.Errorf("FromSlots error = %v, want one naming QB", err)
+	}
+}
+
+func TestFromSlotsRefusesOnePlayerInTwoSlots(t *testing.T) {
+	players := slotPlayers()
+	players[4].ID = players[1].ID
+
+	_, err := FromSlots(players)
+
+	if err == nil {
+		t.Errorf("FromSlots error = nil, want a duplicate")
+	}
+}
+
+func TestFromSlotsRefusesAPlayerWithNoID(t *testing.T) {
+	players := slotPlayers()
+	players[6].ID = ""
+
+	_, err := FromSlots(players)
+
+	if err == nil || !strings.Contains(err.Error(), "K") {
+		t.Errorf("FromSlots error = %v, want one naming K", err)
+	}
+}
+
+// ShortName is derived on read, so it is the one field a round trip adds.
+func TestFromSlotsReadsBackFromTheTreeInTheSameSlots(t *testing.T) {
+	built, err := FromSlots(slotPlayers())
+	if err != nil {
+		t.Fatalf("FromSlots: %v", err)
+	}
+	var b strings.Builder
+	if err := built.WriteCSV(&b); err != nil {
+		t.Fatalf("WriteCSV: %v", err)
+	}
+	tree := New(fstest.MapFS{"2026/9/wood.csv": &fstest.MapFile{Data: []byte(b.String())}})
+
+	read, err := tree.Read(2026, 9, "wood")
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+
+	got := read.Starters()
+	for i := range got {
+		got[i].ShortName = ""
+	}
+	if want := built.Starters(); !slices.Equal(got, want) {
+		t.Errorf("read back %v, want %v", got, want)
 	}
 }

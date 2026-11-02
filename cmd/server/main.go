@@ -41,22 +41,24 @@ func main() {
 	// that reads a week reads through the same one.
 	playStore := plays.NewStore(sleeper.BaseURL, cfg.playsColdWait, log.Printf)
 	client := sleeper.Client{
-		BaseURL: sleeper.BaseURL,
-		Plays:   playStore,
-		Logf:    log.Printf,
+		BaseURL:   sleeper.BaseURL,
+		V1BaseURL: sleeper.V1BaseURL,
+		Plays:     playStore,
+		Logf:      log.Printf,
 	}
 	stats := weekcache.New("statscache", client.WeekStats, weekcache.TTL)
 	// A whole-week fetch that outlasts the cold wait lands after its week was
 	// cached from the poll alone; dropping the entry lets the next read see it.
 	playStore.OnWholeWeekChanged(stats.Invalidate)
 	games := weekcache.New("gamescache", client.WeekGames, weekcache.TTL)
+	current := weekcache.NewSingle("nflstate", client.CurrentWeek, weekcache.CurrentWeekTTL)
 
 	lineups, err := volume.Lineups(data.Lineups, cfg.lineupVolume, log.Printf)
 	if err != nil {
 		log.Fatalf("lineups: %v", err)
 	}
 
-	srv := newServer(cfg.addr, newMux(stats, games, lineup.New(lineups)))
+	srv := newServer(cfg.addr, newMux(stats, games, current, lineup.New(lineups), lineup.NewRosters(data.Rosters)))
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)

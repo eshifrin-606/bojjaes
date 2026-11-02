@@ -69,9 +69,12 @@ func (t *Tree) Read(season int, week int, team string) (Lineup, error) {
 	return lineup, nil
 }
 
-// ourTeam is the Bojjaes' lineup file name, without the extension. This repo
+// OurTeam is the Bojjaes' lineup file name, without the extension. This repo
 // is a tool for one team, so the name lives here rather than in every caller.
-const ourTeam = "bojjaes"
+const OurTeam = "bojjaes"
+
+// LastWeek is the league's final week; NFL week 18 is not played in it.
+const LastWeek = 17
 
 // The four ways a week directory can fail to be a matchup. They are separate
 // values because they are four different mistakes with four different fixes,
@@ -164,7 +167,7 @@ func (t *Tree) Matchup(season, week int) (ours, theirs string, err error) {
 	// two other teams cannot. The opponent is then found by elimination — it
 	// is the lineup that is not ours, never inferred from its name, size, or
 	// position in the listing.
-	switch ourTeam {
+	switch OurTeam {
 	case teams[0]:
 		return teams[0], teams[1], nil
 	case teams[1]:
@@ -173,17 +176,26 @@ func (t *Tree) Matchup(season, week int) (ours, theirs string, err error) {
 	return "", "", fmt.Errorf("%s: %w: found %s", dir, ErrNotOurMatchup, found(names))
 }
 
-// ErrNoLineup means no week in the tree holds a lineup for the team.
+// ErrNoLineup means no week in the tree, at or before the bound asked about,
+// holds a lineup for the team.
 var ErrNoLineup = errors.New("no lineup")
 
-// LatestLineup finds the newest season and week that hold a lineup for the
-// team: the lineup a team is assumed to start until it files another.
-func (t *Tree) LatestLineup(team string) (season, week int, err error) {
+// LatestLineup finds the newest season and week, at or before the bound, that
+// hold a lineup for the team: the lineup a team is assumed to start until it
+// files another. The bound matters because the tree may already hold a week
+// that has not been reached.
+func (t *Tree) LatestLineup(team string, boundSeason, boundWeek int) (season, week int, err error) {
 	if err := checkTeam(team); err != nil {
 		return 0, 0, err
 	}
 	for _, s := range t.numberedDirsNewestFirst(".") {
+		if s > boundSeason {
+			continue
+		}
 		for _, w := range t.numberedDirsNewestFirst(strconv.Itoa(s)) {
+			if s == boundSeason && w > boundWeek {
+				continue
+			}
 			p, _ := t.file(s, w, team) // team was checked above
 			if _, err := fs.Stat(t.fsys, p); err == nil {
 				return s, w, nil

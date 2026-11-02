@@ -7,11 +7,13 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/eshifrin/bojjaes/internal/data"
 	"github.com/eshifrin/bojjaes/internal/games"
 	"github.com/eshifrin/bojjaes/internal/lineup"
+	"github.com/eshifrin/bojjaes/internal/nflweek"
 	"github.com/eshifrin/bojjaes/internal/score"
 )
 
@@ -31,8 +33,16 @@ func (s stubGames) AsOf(_ context.Context, season, week int) (games.Week, time.T
 	return games.NewWeek(season, week, s.games), time.Now(), nil
 }
 
+type stubCurrent struct{ current nflweek.Current }
+
+func (s stubCurrent) AsOf(context.Context) (nflweek.Current, time.Time, error) {
+	return s.current, time.Now(), nil
+}
+
+var midSeason = stubCurrent{nflweek.New(2026, 9, nflweek.Regular)}
+
 func testMux() *http.ServeMux {
-	return newMux(stubStats{}, stubGames{}, lineup.New(data.Lineups))
+	return newMux(stubStats{}, stubGames{}, midSeason, lineup.New(data.Lineups), lineup.NewRosters(data.Rosters))
 }
 
 func TestMuxServesTheMatchupPage(t *testing.T) {
@@ -49,7 +59,7 @@ func TestMuxRendersTheGamesSourcesGameState(t *testing.T) {
 	detroit := stubGames{games: []games.Game{{Home: "DET", Away: "LAR", State: games.Complete}}}
 	rec := httptest.NewRecorder()
 
-	newMux(stubStats{}, detroit, lineup.New(data.Lineups)).
+	newMux(stubStats{}, detroit, midSeason, lineup.New(data.Lineups), lineup.NewRosters(data.Rosters)).
 		ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/2025/15", nil))
 
 	if body := rec.Body.String(); !strings.Contains(body, `<span class="game">Final</span>`) {
@@ -162,11 +172,70 @@ func (r recordingStats) FetchedAt(season, week int) (time.Time, bool) {
 // The season form would ask for the embedded tree's latest week, not week 5.
 func TestMuxStillRoutesANumberedWeeksVersionToTheWeekForm(t *testing.T) {
 	var asked [][2]int
-	mux := newMux(recordingStats{asked: &asked}, stubGames{}, lineup.New(data.Lineups))
+	mux := newMux(recordingStats{asked: &asked}, stubGames{}, midSeason, lineup.New(data.Lineups), lineup.NewRosters(data.Rosters))
 
 	mux.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/2025/5/version", nil))
 
 	if want := [][2]int{{2025, 5}}; !slices.Equal(asked, want) {
 		t.Errorf("GET /2025/5/version asked for %v, want %v", asked, want)
+	}
+}
+
+// GET /{season} would take "lineup" as a season and refuse it with 400.
+func TestMuxServesTheLineupForm(t *testing.T) {
+	rec := httptest.NewRecorder()
+
+	testMux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/lineup", nil))
+
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `name="qb"`) {
+		t.Errorf("GET /lineup = %d, want the lineup form's 200 with a qb select", rec.Code)
+	}
+}
+
+// One player per starter slot, so a lineup query naming each is complete.
+const woodRoster = "id,name,position,team\n" +
+	"101,Josh Allen,QB,BUF\n" +
+	"102,Bijan Robinson,RB,ATL\n" +
+	"103,Derrick Henry,RB,BAL\n" +
+	"104,Kyle Juszczyk,FB,SF\n" +
+	"105,Amon-Ra St. Brown,WR,DET\n" +
+	"107,Trey McBride,TE,ARI\n" +
+	"108,Brandon Aubrey,K,DAL\n" +
+	"109,Myles Garrett,DE,CLE\n" +
+	"110,Sauce Gardner,CB,NYJ\n"
+
+func TestMuxServesTheLineupFile(t *testing.T) {
+	rosters := lineup.NewRosters(fstest.MapFS{"wood.csv": {Data: []byte(woodRoster)}})
+	mux := newMux(stubStats{}, stubGames{}, midSeason, lineup.New(fstest.MapFS{}), rosters)
+	rec := httptest.NewRecorder()
+
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet,
+		"/lineup.csv?team=wood&qb=101&rb=102&wr=105&te=107&flex=103&flex=104&k=108&d=109&d=110", nil))
+
+	if got := rec.Header().Get("Content-Type"); got != "text/csv; charset=utf-8" {
+		t.Errorf("GET /lineup.csv = %d %q, want the lineup file's CSV", rec.Code, got)
+	}
+}
+
+// The form only proposes a lineup; nothing on these routes writes one.
+func TestMuxRejectsAPostToTheLineupForm(t *testing.T) {
+	rec := httptest.NewRecorder()
+
+	testMux().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/lineup", nil))
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("POST /lineup = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+	}
+}
+
+// The lineup form also answers 200 HTML, so only the matchup markup tells the
+// season page apart from it.
+func TestMuxStillRoutesASeasonToTheSeasonPageBesideTheLineupRoutes(t *testing.T) {
+	rec := httptest.NewRecorder()
+
+	testMux().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/2025", nil))
+
+	if body := rec.Body.String(); rec.Code != http.StatusOK || !strings.Contains(body, `<main class="matchup">`) {
+		t.Errorf("GET /2025 = %d, want the season page's matchup", rec.Code)
 	}
 }

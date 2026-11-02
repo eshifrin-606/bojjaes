@@ -553,7 +553,7 @@ func TestMatchupRefusesThirdLineupAmongJunk(t *testing.T) {
 	}
 }
 
-// The comparison against ourTeam is an exact, lowercase one, so a mixed-case
+// The comparison against OurTeam is an exact, lowercase one, so a mixed-case
 // file fails the same way on a case-insensitive filesystem as on a sensitive
 // one rather than resolving on one machine and not the other.
 func TestMatchupRefusesMixedCaseBojjaes(t *testing.T) {
@@ -734,14 +734,20 @@ func treeOf(weeks ...fstest.MapFS) *Tree {
 	return New(fsys)
 }
 
+// assertLatest bounds the search beyond every week a test writes.
 func assertLatest(t *testing.T, tree *Tree, team string, wantSeason, wantWeek int) {
 	t.Helper()
-	season, week, err := tree.LatestLineup(team)
+	assertLatestBy(t, tree, team, 9999, 18, wantSeason, wantWeek)
+}
+
+func assertLatestBy(t *testing.T, tree *Tree, team string, boundSeason, boundWeek, wantSeason, wantWeek int) {
+	t.Helper()
+	season, week, err := tree.LatestLineup(team, boundSeason, boundWeek)
 	if err != nil {
-		t.Fatalf("LatestLineup(%q): %v", team, err)
+		t.Fatalf("LatestLineup(%q, %d, %d): %v", team, boundSeason, boundWeek, err)
 	}
 	if season != wantSeason || week != wantWeek {
-		t.Errorf("LatestLineup(%q) = %d/%d, want %d/%d", team, season, week, wantSeason, wantWeek)
+		t.Errorf("LatestLineup(%q, %d, %d) = %d/%d, want %d/%d", team, boundSeason, boundWeek, season, week, wantSeason, wantWeek)
 	}
 }
 
@@ -783,7 +789,7 @@ func TestLatestLineupLooksBackIntoEarlierSeasons(t *testing.T) {
 func TestLatestLineupReportsATeamWithNoLineup(t *testing.T) {
 	tree := treeOf(weekFS(2026, 3, "bojjaes.csv", "gonads.csv"))
 
-	_, _, err := tree.LatestLineup("wood")
+	_, _, err := tree.LatestLineup("wood", 9999, 18)
 
 	if !errors.Is(err, ErrNoLineup) {
 		t.Errorf("LatestLineup(%q) error = %v, want %v", "wood", err, ErrNoLineup)
@@ -795,7 +801,7 @@ func TestLatestLineupReportsATeamWithNoLineup(t *testing.T) {
 func TestLatestLineupRejectsAPathAsATeam(t *testing.T) {
 	tree := treeOf(weekFS(2026, 3, "bojjaes.csv", "gonads.csv"))
 
-	_, _, err := tree.LatestLineup("../gonads")
+	_, _, err := tree.LatestLineup("../gonads", 9999, 18)
 
 	if err == nil || errors.Is(err, ErrNoLineup) {
 		t.Errorf("LatestLineup(%q) error = %v, want an invalid team name", "../gonads", err)
@@ -813,6 +819,46 @@ func TestLatestLineupSkipsEntriesThatAreNotNumbered(t *testing.T) {
 	)
 
 	assertLatest(t, tree, "gonads", 2026, 3)
+}
+
+func TestLatestLineupSkipsAWeekAfterTheBound(t *testing.T) {
+	tree := treeOf(
+		weekFS(2026, 7, "bojjaes.csv", "wood.csv"),
+		weekFS(2026, 10, "bojjaes.csv", "wood.csv"),
+	)
+
+	assertLatestBy(t, tree, "wood", 2026, 9, 2026, 7)
+}
+
+func TestLatestLineupCountsTheBoundWeekItself(t *testing.T) {
+	tree := treeOf(
+		weekFS(2026, 8, "bojjaes.csv", "wood.csv"),
+		weekFS(2026, 9, "bojjaes.csv", "wood.csv"),
+	)
+
+	assertLatestBy(t, tree, "wood", 2026, 9, 2026, 9)
+}
+
+// The bound's week limits only its own season: a later season is wholly
+// after it, and an earlier one wholly before.
+func TestLatestLineupLooksBackPastTheBoundIntoAnEarlierSeason(t *testing.T) {
+	tree := treeOf(
+		weekFS(2025, 16, "bojjaes.csv", "wood.csv"),
+		weekFS(2026, 3, "bojjaes.csv", "wood.csv"),
+		weekFS(2027, 1, "bojjaes.csv", "wood.csv"),
+	)
+
+	assertLatestBy(t, tree, "wood", 2026, 2, 2025, 16)
+}
+
+func TestLatestLineupReportsNoLineupWhenEveryWeekIsAfterTheBound(t *testing.T) {
+	tree := treeOf(weekFS(2026, 10, "bojjaes.csv", "wood.csv"))
+
+	_, _, err := tree.LatestLineup("wood", 2026, 9)
+
+	if !errors.Is(err, ErrNoLineup) {
+		t.Errorf("LatestLineup(%q, 2026, 9) error = %v, want %v", "wood", err, ErrNoLineup)
+	}
 }
 
 func TestTreeReadRefusesWrongPlayerCount(t *testing.T) {
