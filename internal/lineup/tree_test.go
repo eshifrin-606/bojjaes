@@ -85,7 +85,7 @@ func seedLineup(t *testing.T, fsys fstest.MapFS, season, week int, team, fixture
 	return name
 }
 
-func TestTreeReadReturnsParsedRecords(t *testing.T) {
+func TestTreeReadReturnsParsedPlayers(t *testing.T) {
 	fsys := fstest.MapFS{}
 	seedLineup(t, fsys, 2025, 14, "wood", "wood.csv")
 
@@ -95,7 +95,7 @@ func TestTreeReadReturnsParsedRecords(t *testing.T) {
 		t.Fatalf("Read: %v", err)
 	}
 
-	want := []Record{
+	want := []Player{
 		{ID: "101", Name: "Alpha One", ShortName: "A One", Position: "QB", Team: "BUF"},
 		{ID: "102", Name: "Bravo Two", ShortName: "B Two", Position: "RB", Team: "KC"},
 		{ID: "103", Name: "Charlie Three", ShortName: "C Three", Position: "WR", Team: "SF"},
@@ -153,7 +153,7 @@ func TestTreeReadReadsThroughTheSuppliedFilesystem(t *testing.T) {
 		t.Fatalf("Read: %v", err)
 	}
 
-	want := []Record{
+	want := []Player{
 		{ID: "101", Name: "Alpha One", ShortName: "A One", Position: "QB", Team: "BUF"},
 		{ID: "102", Name: "Bravo Two", ShortName: "B Two", Position: "RB", Team: "KC"},
 	}
@@ -230,14 +230,14 @@ func TestTreeReadKeepsShortNameForRepeatedFullName(t *testing.T) {
 	}
 
 	for _, i := range []int{0, 2} {
-		if rec := got.Starters()[i]; rec.ShortName != "J Allen" {
-			t.Errorf("Starters()[%d] = %+v, want ShortName %q", i, rec, "J Allen")
+		if p := got.Starters()[i]; p.ShortName != "J Allen" {
+			t.Errorf("Starters()[%d] = %+v, want ShortName %q", i, p, "J Allen")
 		}
 	}
 }
 
-// Moving a colliding player to another line does not change another record's
-// short name: each record's short name depends only on its own name.
+// Moving a colliding player to another line does not change another player's
+// short name: each player's short name depends only on its own name.
 func TestTreeReadShortNameCollisionDoesNotDependOnLine(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -257,11 +257,11 @@ func TestTreeReadShortNameCollisionDoesNotDependOnLine(t *testing.T) {
 				t.Fatalf("Read: %v", err)
 			}
 
-			if rec := got.Starters()[0]; rec.ShortName != "J Allen" {
-				t.Errorf("Josh Allen = %+v, want ShortName %q", rec, "J Allen")
+			if p := got.Starters()[0]; p.ShortName != "J Allen" {
+				t.Errorf("Josh Allen = %+v, want ShortName %q", p, "J Allen")
 			}
-			if rec := got.Starters()[tt.jaylenSlot]; rec.ShortName != "J Allen" {
-				t.Errorf("Jaylen Allen = %+v, want ShortName %q", rec, "J Allen")
+			if p := got.Starters()[tt.jaylenSlot]; p.ShortName != "J Allen" {
+				t.Errorf("Jaylen Allen = %+v, want ShortName %q", p, "J Allen")
 			}
 		})
 	}
@@ -277,19 +277,19 @@ func TestTreeReadLeavesEmptyNamesWithEmptyShortNames(t *testing.T) {
 		t.Fatalf("Read: %v", err)
 	}
 
-	want := []Record{{ID: "4984", Position: "QB", Team: "BUF"}, {ID: "4985", Position: "RB", Team: "KC"}}
+	want := []Player{{ID: "4984", Position: "QB", Team: "BUF"}, {ID: "4985", Position: "RB", Team: "KC"}}
 	if got := got.Starters()[:2]; !slices.Equal(got, want) {
 		t.Errorf("Read() starters = %+v, want %+v first", got, want)
 	}
 }
 
-func TestTreeReadRefusesHeaderWithNoRecordsNamingFile(t *testing.T) {
+func TestTreeReadRefusesHeaderWithNoPlayersNamingFile(t *testing.T) {
 	path := "2025/14/wood.csv"
 	tree := New(fstest.MapFS{path: &fstest.MapFile{Data: []byte("# lineup\n" + header + "# bench\n  # nothing here\n")}})
 
 	_, err := tree.Read(2025, 14, "wood")
 	if err == nil {
-		t.Fatal("Read() = nil error, want an error for a header with no records")
+		t.Fatal("Read() = nil error, want an error for a header with no players")
 	}
 	if !strings.Contains(err.Error(), path) {
 		t.Errorf("Read() error = %q, want it to name file %q", err, path)
@@ -815,7 +815,7 @@ func TestLatestLineupSkipsEntriesThatAreNotNumbered(t *testing.T) {
 	assertLatest(t, tree, "gonads", 2026, 3)
 }
 
-func TestTreeReadRefusesWrongRecordCount(t *testing.T) {
+func TestTreeReadRefusesWrongPlayerCount(t *testing.T) {
 	nine := []string{"1", "QB", "2", "RB", "3", "WR", "4", "TE", "5", "WR", "6", "RB", "7", "K", "8", "LB", "9", "CB"}
 	tests := []struct {
 		name   string
@@ -832,10 +832,10 @@ func TestTreeReadRefusesWrongRecordCount(t *testing.T) {
 
 			_, err := tree.Read(2025, 14, "wood")
 			if err == nil {
-				t.Fatalf("Read() = nil error, want an error for %s records", tt.name)
+				t.Fatalf("Read() = nil error, want an error for %s players", tt.name)
 			}
-			if !strings.Contains(err.Error(), path) || !strings.Contains(err.Error(), tt.count+" records") {
-				t.Errorf("Read() error = %q, want it to name file %q and state %s records", err, path, tt.count)
+			if !strings.Contains(err.Error(), path) || !strings.Contains(err.Error(), tt.count+" players") {
+				t.Errorf("Read() error = %q, want it to name file %q and state %s players", err, path, tt.count)
 			}
 		})
 	}
