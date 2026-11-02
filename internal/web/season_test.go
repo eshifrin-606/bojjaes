@@ -133,8 +133,8 @@ func TestSeasonFetchesOnlyItsLatestWeek(t *testing.T) {
 // still reach the existing handler unchanged.
 func TestSeasonWeekPathStillReachesTheExistingHandler(t *testing.T) {
 	weekTree := weekFS(2026, 2, map[string]string{
-		"bojjaes": lineupHeader + "1,Puka Nacua,WR,LAR\n",
-		"wood":    lineupHeader + "2,Josh Allen,QB,BUF\n",
+		"bojjaes": lineupCSV(ourLine),
+		"wood":    lineupCSV(theirLine),
 	})
 	tree := lineup.New(weekTree)
 

@@ -79,7 +79,7 @@ serialization decision. Read the direction of the arrows, not the length of the 
 | `internal/sleeper/internal/httpjson` | `Get`: one GET decoded from JSON, over the one timed `http.Client`. | none | `context`, `encoding/json`, `fmt`, `net/http`, `time` | `internal/sleeper`, `internal/sleeper/plays` |
 | `internal/weekcache` | A caching decorator over any weekly fetch, generic over its value: TTL expiry, single-flight, the `TTL` constant. | none | `context`, `log`, `sync`, `time` | `cmd/server` |
 | `internal/web` | The HTML transport: `GET /{season}/{week}`, its view model, its template. | `internal/games`, `internal/lineup`, `internal/score` | `bytes`, `context`, `embed`, `encoding/json`, `errors`, `html/template`, `log`, `net/http`, `strconv`, `strings`, `time`, `time/tzdata` | `cmd/server` |
-| `internal/lineup` | Lineup knowledge: file format, tree layout, matchup resolution, starters/bench split. It reads any `fs.FS` and embeds none. | none | `bufio`, `errors`, `fmt`, `io`, `io/fs`, `path`, `path/filepath`, `slices`, `strconv`, `strings`, `unicode`, `unicode/utf8` | `cmd/server`, `internal/web`, `internal/data` (tests only), `internal/volume` (tests only) |
+| `internal/lineup` | Lineup knowledge: file format, tree layout, matchup resolution, slot assignment. It reads any `fs.FS` and embeds none. | none | `bufio`, `errors`, `fmt`, `io`, `io/fs`, `path`, `path/filepath`, `slices`, `strconv`, `strings`, `unicode`, `unicode/utf8` | `cmd/server`, `internal/web`, `internal/data` (tests only), `internal/volume` (tests only) |
 | `internal/volume` | Chooses the lineup tree to serve (embedded, or the store on the Fly volume), and seeds that store from the embedded tree, per week, against a hash manifest. The only package that writes lineup files. | none | `crypto/sha256`, `encoding/hex`, `encoding/json`, `errors`, `io/fs`, `os`, `path`, `path/filepath`, `strconv` | `cmd/server` |
 | `internal/data` | The league files carried in the binary: the lineup tree and the per-team rosters, each an `fs.FS` rooted below its directory. | none | `embed`, `io/fs` | `cmd/server`, `internal/volume` (tests only) |
 
@@ -216,9 +216,9 @@ is a new directory rather than an edit to a directive.
 
 ### `internal/lineup`
 
-Pure domain plus a file reader; no network, no HTTP. It owns the `id,name` record format, the
-`<season>/<week>/<team>.csv` layout, and the positional rule that the first nine records are
-starters.
+Pure domain plus a file reader; no network, no HTTP. It owns the `id,name,position,team` record format, the
+`<season>/<week>/<team>.csv` layout, and the slot rule: a file holds exactly nine records,
+assigned to `QB RB WR TE FLEX FLEX K D D` by position, with file order breaking ties.
 
 It does not hold the tree; `internal/data` does. `Tree` reads through whatever `fs.FS` it is handed and never defaults to the
 embedded one — naming the tree is `main`'s job ([ADR 0004](adr/0004-web-frontend-stack.md) #3).

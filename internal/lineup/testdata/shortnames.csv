@@ -1,15 +1,11 @@
 # starters
 id,name,position,team
-201,Jameson Williams,WR,DET
 202,Josh Allen,QB,BUF
 203,Javonte Williams,RB,DAL
-204,Caleb Williams,QB,CHI
-205,Will McDonald IV,DE,NYJ
+201,Jameson Williams,WR,DET
+210,Jaylen Allen,TE,FA
 206,A.J. Brown,WR,PHI
 207,KC Concepcion,WR,CLE
-208,Puka Nacua,WR,LAR
-209,Bijan Robinson,RB,ATL
-# bench
-210,Jaylen Allen,WR,FA
-211,Jordan Allen,RB,FA
-212,Dak Prescott,QB,DAL
+211,Jordan Allen,K,FA
+205,Will McDonald IV,DE,NYJ
+204,Caleb Williams,CB,CHI
