@@ -1,4 +1,4 @@
-package main
+package volume
 
 import (
 	"io/fs"
@@ -11,30 +11,6 @@ import (
 	"github.com/eshifrin/bojjaes/internal/data"
 	"github.com/eshifrin/bojjaes/internal/lineup"
 )
-
-func TestResolveLineupVolumeUsesLineupVolume(t *testing.T) {
-	got := resolveLineupVolume(fakeEnv(map[string]string{"LINEUP_VOLUME": "/data"}))
-
-	if got != "/data" {
-		t.Errorf("resolveLineupVolume = %q, want %q", got, "/data")
-	}
-}
-
-func TestResolveLineupVolumeIsEmptyWhenUnset(t *testing.T) {
-	got := resolveLineupVolume(fakeEnv(nil))
-
-	if got != "" {
-		t.Errorf("resolveLineupVolume = %q, want empty", got)
-	}
-}
-
-func TestResolveLineupVolumeIsEmptyWhenEmpty(t *testing.T) {
-	got := resolveLineupVolume(fakeEnv(map[string]string{"LINEUP_VOLUME": ""}))
-
-	if got != "" {
-		t.Errorf("resolveLineupVolume = %q, want empty", got)
-	}
-}
 
 func embeddedSeasons(t *testing.T) []int {
 	t.Helper()
@@ -54,19 +30,19 @@ func embeddedSeasons(t *testing.T) []int {
 	return seasons
 }
 
-func mustLineupTree(t *testing.T, volume string) fs.FS {
+func mustLineups(t *testing.T, volume string) fs.FS {
 	t.Helper()
-	tree, err := lineupTree(volume, t.Logf)
+	tree, err := Lineups(data.Lineups, volume, t.Logf)
 	if err != nil {
-		t.Fatalf("lineupTree(%q): %v", volume, err)
+		t.Fatalf("Lineups(%q): %v", volume, err)
 	}
 	return tree
 }
 
-func TestLineupTreeOverAnEmptyVolumeIsSeededFromEmbedded(t *testing.T) {
+func TestLineupsOverAnEmptyVolumeIsSeededFromEmbedded(t *testing.T) {
 	volume := t.TempDir()
 
-	tree := lineup.New(mustLineupTree(t, volume))
+	tree := lineup.New(mustLineups(t, volume))
 
 	embedded := lineup.New(data.Lineups)
 	for _, season := range embeddedSeasons(t) {
@@ -92,9 +68,9 @@ func embeddedLatest(t *testing.T) (season, week int) {
 	return season, week
 }
 
-func TestLineupTreeServesAStoreEditMadeAfterSeeding(t *testing.T) {
+func TestLineupsServesAStoreEditMadeAfterSeeding(t *testing.T) {
 	volume := t.TempDir()
-	mustLineupTree(t, volume)
+	mustLineups(t, volume)
 	season, week := embeddedLatest(t)
 	_, opponent, err := lineup.New(data.Lineups).Matchup(season, week)
 	if err != nil {
@@ -112,31 +88,31 @@ func TestLineupTreeServesAStoreEditMadeAfterSeeding(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, got, err := lineup.New(mustLineupTree(t, volume)).Matchup(season, week)
+	_, got, err := lineup.New(mustLineups(t, volume)).Matchup(season, week)
 
 	if err != nil || got != "phoneedit" {
 		t.Errorf("Matchup(%d, %d) opponent = %q, %v; want %q", season, week, got, err, "phoneedit")
 	}
 }
 
-func TestLineupTreeWithoutVolumeIsEmbeddedAndWritesNothing(t *testing.T) {
+func TestLineupsWithoutVolumeIsEmbeddedAndWritesNothing(t *testing.T) {
 	cwd := t.TempDir()
 	t.Chdir(cwd)
 
-	tree, err := lineupTree("", t.Logf)
+	tree, err := Lineups(data.Lineups, "", t.Logf)
 
 	if err != nil {
-		t.Fatalf("lineupTree(\"\"): %v", err)
+		t.Fatalf("Lineups(\"\"): %v", err)
 	}
 	if tree != data.Lineups {
-		t.Errorf("lineupTree(\"\") = %v, want data.Lineups", tree)
+		t.Errorf("Lineups(\"\") = %v, want data.Lineups", tree)
 	}
 	if entries, err := os.ReadDir(cwd); err != nil || len(entries) != 0 {
 		t.Errorf("working directory holds %v (%v), want nothing", entries, err)
 	}
 }
 
-func TestLineupTreeFailsOnAnUnwritableVolume(t *testing.T) {
+func TestLineupsFailsOnAnUnwritableVolume(t *testing.T) {
 	if os.Geteuid() == 0 {
 		t.Skip("root writes through directory permissions")
 	}
@@ -146,7 +122,7 @@ func TestLineupTreeFailsOnAnUnwritableVolume(t *testing.T) {
 	}
 	t.Cleanup(func() { os.Chmod(volume, 0o755) })
 
-	if _, err := lineupTree(volume, t.Logf); err == nil {
-		t.Error("lineupTree over a read-only volume returned nil error")
+	if _, err := Lineups(data.Lineups, volume, t.Logf); err == nil {
+		t.Error("Lineups over a read-only volume returned nil error")
 	}
 }
