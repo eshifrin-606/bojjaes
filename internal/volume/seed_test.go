@@ -1,4 +1,4 @@
-package lineup
+package volume
 
 import (
 	"encoding/json"
@@ -12,6 +12,8 @@ import (
 	"testing"
 	"testing/fstest"
 	"time"
+
+	"github.com/eshifrin/bojjaes/internal/lineup"
 )
 
 // addSourceWeek puts a week of valid rosters into fsys: bojjaes plus the named
@@ -316,7 +318,7 @@ func TestSeedReplacesAWeekWhole(t *testing.T) {
 	if got, want := readMountWeek(t, mount, "2026", "2"), sourceWeekFiles(src, "2026", "2"); !maps.Equal(got, want) {
 		t.Errorf("store week 2026/2 = %v, want exactly %v", got, want)
 	}
-	ours, theirs, err := New(os.DirFS(filepath.Join(mount, "lineups"))).Matchup(2026, 2)
+	ours, theirs, err := lineup.New(os.DirFS(filepath.Join(mount, "lineups"))).Matchup(2026, 2)
 	if err != nil || ours != "bojjaes" || theirs != "aroma" {
 		t.Errorf("Matchup(2026, 2) = %q, %q, %v; want bojjaes, aroma", ours, theirs, err)
 	}

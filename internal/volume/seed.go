@@ -1,4 +1,6 @@
-package lineup
+// Package volume seeds the lineup store on a mounted volume from the copy
+// embedded in the binary. It is the only package that writes lineup files.
+package volume
 
 import (
 	"crypto/sha256"

@@ -5,10 +5,321 @@ import (
 	"fmt"
 	"io/fs"
 	"maps"
+	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"testing/fstest"
 )
+
+func TestFileResolvesWithinTheTree(t *testing.T) {
+	tree := New(fstest.MapFS{})
+
+	got, err := tree.file(2025, 14, "wood")
+	if err != nil {
+		t.Fatalf("file: %v", err)
+	}
+
+	want := "2025/14/wood.csv"
+	if got != want {
+		t.Errorf("file() = %q, want %q", got, want)
+	}
+}
+
+// A team name is a URL segment once the page exists, so a name holding a
+// separator must be refused rather than resolved into (or out of) the tree.
+func TestFileRejectsTeamWithSeparator(t *testing.T) {
+	tree := New(fstest.MapFS{})
+
+	got, err := tree.file(2025, 14, "wood/../../etc")
+	if err == nil {
+		t.Fatalf("file() = %q, err = nil, want an error", got)
+	}
+	if got != "" {
+		t.Errorf("file() = %q on error, want empty path so nothing is opened", got)
+	}
+}
+
+func TestFileRejectsParentReference(t *testing.T) {
+	tests := []string{"..", "wood..bad"}
+
+	for _, team := range tests {
+		tree := New(fstest.MapFS{})
+
+		got, err := tree.file(2025, 14, team)
+		if err == nil {
+			t.Errorf("team %q: file() = %q, err = nil, want an error", team, got)
+		}
+		if got != "" {
+			t.Errorf("team %q: file() = %q on error, want empty path", team, got)
+		}
+	}
+}
+
+func TestFileFromSuppliedFilesystemIsRelativeToIt(t *testing.T) {
+	tree := New(fstest.MapFS{})
+
+	got, err := tree.file(2025, 14, "wood")
+	if err != nil {
+		t.Fatalf("file: %v", err)
+	}
+
+	want := "2025/14/wood.csv"
+	if got != want {
+		t.Errorf("file() = %q, want %q", got, want)
+	}
+}
+
+// seedLineup places a testdata fixture in a tree at the name file would
+// resolve for the given season/week/team, and returns that name.
+func seedLineup(t *testing.T, fsys fstest.MapFS, season, week int, team, fixture string) string {
+	t.Helper()
+	content, err := os.ReadFile(filepath.Join("testdata", fixture))
+	if err != nil {
+		t.Fatalf("reading fixture %s: %v", fixture, err)
+	}
+
+	name := fmt.Sprintf("%d/%d/%s.csv", season, week, team)
+	fsys[name] = &fstest.MapFile{Data: content}
+	return name
+}
+
+func TestTreeReadReturnsParsedRecords(t *testing.T) {
+	fsys := fstest.MapFS{}
+	seedLineup(t, fsys, 2025, 14, "wood", "wood.csv")
+
+	tree := New(fsys)
+	got, err := tree.Read(2025, 14, "wood")
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+
+	want := []Record{
+		{ID: "101", Name: "Alpha One", ShortName: "A One", Position: "QB", Team: "BUF"},
+		{ID: "102", Name: "Bravo Two", ShortName: "B Two", Position: "RB", Team: "KC"},
+		{ID: "103", Name: "Charlie Three", ShortName: "C Three", Position: "WR", Team: "SF"},
+	}
+	if len(got.records) != len(want) {
+		t.Fatalf("Read() records = %v, want %v", got.records, want)
+	}
+	for i := range want {
+		if got.records[i] != want[i] {
+			t.Errorf("record %d = %v, want %v", i, got.records[i], want[i])
+		}
+	}
+}
+
+func TestTreeReadMissingFileNamesPath(t *testing.T) {
+	tree := New(fstest.MapFS{})
+
+	_, err := tree.Read(2025, 14, "wood")
+	if err == nil {
+		t.Fatal("Read() = nil error, want an error naming the missing path")
+	}
+
+	wantPath := "2025/14/wood.csv"
+	if !strings.Contains(err.Error(), wantPath) {
+		t.Errorf("Read() error = %q, want it to name path %q", err, wantPath)
+	}
+}
+
+func TestTreeReadParseErrorNamesFile(t *testing.T) {
+	fsys := fstest.MapFS{}
+	path := seedLineup(t, fsys, 2025, 14, "wood", "badline.csv")
+
+	tree := New(fsys)
+	_, err := tree.Read(2025, 14, "wood")
+	if err == nil {
+		t.Fatal("Read() = nil error, want a parse error")
+	}
+
+	if !strings.Contains(err.Error(), path) {
+		t.Errorf("Read() error = %q, want it to name file %q", err, path)
+	}
+	if !strings.Contains(err.Error(), "4") {
+		t.Errorf("Read() error = %q, want it to name line 4", err)
+	}
+}
+
+func TestTreeReadReadsThroughTheSuppliedFilesystem(t *testing.T) {
+	tree := New(fstest.MapFS{
+		"2025/14/wood.csv": &fstest.MapFile{Data: []byte(header + "101,Alpha One,QB,BUF\n102,Bravo Two,RB,KC\n")},
+	})
+
+	got, err := tree.Read(2025, 14, "wood")
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+
+	want := []Record{
+		{ID: "101", Name: "Alpha One", ShortName: "A One", Position: "QB", Team: "BUF"},
+		{ID: "102", Name: "Bravo Two", ShortName: "B Two", Position: "RB", Team: "KC"},
+	}
+	if len(got.records) != len(want) {
+		t.Fatalf("Read() records = %v, want %v", got.records, want)
+	}
+	for i := range want {
+		if got.records[i] != want[i] {
+			t.Errorf("record %d = %v, want %v", i, got.records[i], want[i])
+		}
+	}
+}
+
+// Two trees, the same season, week, and team: each read yields its own tree's
+// lineup. The guard is against any read reaching past the supplied filesystem
+// — to the working directory, or to a root remembered from somewhere else.
+func TestTreeReadIsConfinedToItsOwnFilesystem(t *testing.T) {
+	trees := map[string]*Tree{
+		"Alpha One": New(fstest.MapFS{"2025/14/wood.csv": &fstest.MapFile{Data: []byte(header + "101,Alpha One,QB,BUF\n")}}),
+		"Bravo Two": New(fstest.MapFS{"2025/14/wood.csv": &fstest.MapFile{Data: []byte(header + "102,Bravo Two,RB,KC\n")}}),
+	}
+
+	for want, tree := range trees {
+		got, err := tree.Read(2025, 14, "wood")
+		if err != nil {
+			t.Fatalf("Read: %v", err)
+		}
+		if len(got.records) != 1 || got.records[0].Name != want {
+			t.Errorf("Read() records = %v, want the single record %q", got.records, want)
+		}
+	}
+}
+
+// Colliding short names, whether within starters, within bench, or between
+// them, all keep their derived short form.
+func TestTreeReadKeepsCollidingShortNames(t *testing.T) {
+	fsys := fstest.MapFS{}
+	seedLineup(t, fsys, 2025, 14, "wood", "shortnames.csv")
+
+	got, err := New(fsys).Read(2025, 14, "wood")
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+
+	wantBench := []string{"J Allen", "J Allen", "D Prescott"}
+	if len(got.Starters()) != starterCount || len(got.Bench()) != len(wantBench) {
+		t.Fatalf("Read() split = %d starters, %d bench, want %d starters, %d bench",
+			len(got.Starters()), len(got.Bench()), starterCount, len(wantBench))
+	}
+
+	wantStarters := map[int]string{
+		0: "J Williams",
+		1: "J Allen",
+		2: "J Williams",
+		3: "C Williams",
+		4: "W McDonald",
+		5: "A.J. Brown",
+		6: "KC Concepcion",
+	}
+	for i, want := range wantStarters {
+		if short := got.Starters()[i].ShortName; short != want {
+			t.Errorf("Starters()[%d].ShortName = %q, want %q", i, short, want)
+		}
+	}
+	if name := got.Starters()[4].Name; name != "Will McDonald IV" {
+		t.Errorf("Starters()[4].Name = %q, want %q", name, "Will McDonald IV")
+	}
+
+	for i, want := range wantBench {
+		if short := got.Bench()[i].ShortName; short != want {
+			t.Errorf("Bench()[%d].ShortName = %q, want %q", i, short, want)
+		}
+	}
+}
+
+// A regression pin: two starters with different ids and the same name both
+// keep the short form, rather than falling back to the full name.
+func TestTreeReadKeepsShortNameForRepeatedFullName(t *testing.T) {
+	tree := New(fstest.MapFS{
+		"2025/14/wood.csv": &fstest.MapFile{Data: []byte(header +
+			"401,Josh Allen,QB,BUF\n402,Josh Allen,WR,KC\n")},
+	})
+
+	got, err := tree.Read(2025, 14, "wood")
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+
+	for i, rec := range got.records {
+		if rec.ShortName != "J Allen" {
+			t.Errorf("Starters()[%d].ShortName = %q, want %q", i, rec.ShortName, "J Allen")
+		}
+	}
+}
+
+// Moving a colliding player across the ninth line does not change another
+// record's short name: each record's short name depends only on its own name.
+func TestTreeReadShortNameCollisionFollowsTheStarterSplit(t *testing.T) {
+	tests := []struct {
+		name       string
+		jaylenLine int
+		wantJosh   string
+		wantJaylen string
+	}{
+		{name: "Jaylen Allen on the bench", jaylenLine: 10, wantJosh: "J Allen", wantJaylen: "J Allen"},
+		{name: "Jaylen Allen starting", jaylenLine: 9, wantJosh: "J Allen", wantJaylen: "J Allen"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			names := []string{"Puka Nacua", "Josh Allen", "Bijan Robinson", "Dak Prescott",
+				"A.J. Brown", "KC Concepcion", "Caleb Williams", "Will McDonald IV", "Jameson Williams"}
+			names = slices.Insert(names, tt.jaylenLine-1, "Jaylen Allen")
+			var csv strings.Builder
+			csv.WriteString(header)
+			for i, name := range names {
+				fmt.Fprintf(&csv, "%d,%s,WR,BUF\n", 300+i, name)
+			}
+			tree := New(fstest.MapFS{"2025/14/wood.csv": &fstest.MapFile{Data: []byte(csv.String())}})
+
+			got, err := tree.Read(2025, 14, "wood")
+			if err != nil {
+				t.Fatalf("Read: %v", err)
+			}
+
+			if short := got.records[1].ShortName; short != tt.wantJosh {
+				t.Errorf("Josh Allen ShortName = %q, want %q", short, tt.wantJosh)
+			}
+			if short := got.records[tt.jaylenLine-1].ShortName; short != tt.wantJaylen {
+				t.Errorf("Jaylen Allen ShortName = %q, want %q", short, tt.wantJaylen)
+			}
+		})
+	}
+}
+
+func TestTreeReadLeavesEmptyNamesWithEmptyShortNames(t *testing.T) {
+	tree := New(fstest.MapFS{
+		"2025/14/wood.csv": &fstest.MapFile{Data: []byte(header + "4984,,QB,BUF\n4985,,RB,KC\n")},
+	})
+
+	got, err := tree.Read(2025, 14, "wood")
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+
+	want := []Record{{ID: "4984", Position: "QB", Team: "BUF"}, {ID: "4985", Position: "RB", Team: "KC"}}
+	if len(got.records) != len(want) {
+		t.Fatalf("Read() records = %v, want %v", got.records, want)
+	}
+	for i := range want {
+		if got.records[i] != want[i] {
+			t.Errorf("record %d = %+v, want %+v", i, got.records[i], want[i])
+		}
+	}
+}
+
+func TestTreeReadRefusesHeaderWithNoRecordsNamingFile(t *testing.T) {
+	path := "2025/14/wood.csv"
+	tree := New(fstest.MapFS{path: &fstest.MapFile{Data: []byte("# lineup\n" + header + "# bench\n  # nothing here\n")}})
+
+	_, err := tree.Read(2025, 14, "wood")
+	if err == nil {
+		t.Fatal("Read() = nil error, want an error for a header with no records")
+	}
+	if !strings.Contains(err.Error(), path) {
+		t.Errorf("Read() error = %q, want it to name file %q", err, path)
+	}
+}
 
 func TestWeekDirIsRelativeToTheTree(t *testing.T) {
 	tree := New(fstest.MapFS{})
@@ -437,4 +748,94 @@ func TestHasWeekIsTrueForAWeekThatIsNotAMatchup(t *testing.T) {
 			}
 		})
 	}
+}
+
+// treeOf merges single-week trees into one.
+func treeOf(weeks ...fstest.MapFS) *Tree {
+	fsys := fstest.MapFS{}
+	for _, w := range weeks {
+		maps.Copy(fsys, w)
+	}
+	return New(fsys)
+}
+
+func assertLatest(t *testing.T, tree *Tree, team string, wantSeason, wantWeek int) {
+	t.Helper()
+	season, week, err := tree.LatestLineup(team)
+	if err != nil {
+		t.Fatalf("LatestLineup(%q): %v", team, err)
+	}
+	if season != wantSeason || week != wantWeek {
+		t.Errorf("LatestLineup(%q) = %d/%d, want %d/%d", team, season, week, wantSeason, wantWeek)
+	}
+}
+
+func TestLatestLineupFindsTheTeamsOnlyWeek(t *testing.T) {
+	tree := treeOf(weekFS(2026, 3, "bojjaes.csv", "gonads.csv"))
+
+	assertLatest(t, tree, "gonads", 2026, 3)
+}
+
+func TestLatestLineupPrefersTheNewerWeek(t *testing.T) {
+	tree := treeOf(
+		weekFS(2026, 2, "bojjaes.csv", "renegades.csv"),
+		weekFS(2026, 3, "bojjaes.csv", "vampyres.csv"),
+	)
+
+	assertLatest(t, tree, "bojjaes", 2026, 3)
+}
+
+// A listing sorts "10" before "9", so only a numeric order puts week 10 last.
+func TestLatestLineupOrdersWeeksByNumber(t *testing.T) {
+	tree := treeOf(
+		weekFS(2026, 9, "bojjaes.csv", "jabs.csv"),
+		weekFS(2026, 10, "bojjaes.csv", "saban.csv"),
+	)
+
+	assertLatest(t, tree, "bojjaes", 2026, 10)
+}
+
+func TestLatestLineupLooksBackIntoEarlierSeasons(t *testing.T) {
+	tree := treeOf(
+		weekFS(2025, 16, "bojjaes.csv", "gonads.csv"),
+		weekFS(2026, 1, "bojjaes.csv", "fuego.csv"),
+	)
+
+	assertLatest(t, tree, "gonads", 2025, 16)
+	assertLatest(t, tree, "bojjaes", 2026, 1)
+}
+
+func TestLatestLineupReportsATeamWithNoLineup(t *testing.T) {
+	tree := treeOf(weekFS(2026, 3, "bojjaes.csv", "gonads.csv"))
+
+	_, _, err := tree.LatestLineup("wood")
+
+	if !errors.Is(err, ErrNoLineup) {
+		t.Errorf("LatestLineup(%q) error = %v, want %v", "wood", err, ErrNoLineup)
+	}
+}
+
+// A name that is not a plain file name is the caller's mistake, not a team
+// that never filed a lineup.
+func TestLatestLineupRejectsAPathAsATeam(t *testing.T) {
+	tree := treeOf(weekFS(2026, 3, "bojjaes.csv", "gonads.csv"))
+
+	_, _, err := tree.LatestLineup("../gonads")
+
+	if err == nil || errors.Is(err, ErrNoLineup) {
+		t.Errorf("LatestLineup(%q) error = %v, want an invalid team name", "../gonads", err)
+	}
+}
+
+func TestLatestLineupSkipsEntriesThatAreNotNumbered(t *testing.T) {
+	tree := treeOf(
+		weekFS(2026, 3, "bojjaes.csv", "gonads.csv"),
+		fstest.MapFS{
+			"notes/1/gonads.csv":  &fstest.MapFile{},
+			"2026/old/gonads.csv": &fstest.MapFile{},
+			"2026/4":              &fstest.MapFile{},
+		},
+	)
+
+	assertLatest(t, tree, "gonads", 2026, 3)
 }

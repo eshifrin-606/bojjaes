@@ -252,7 +252,7 @@ git, or a deploy.
 | Part | State |
 |---|---|
 | Volume-only read: `os.DirFS(<mount>/lineups)` as the sole lineup tree | **built** |
-| Boot seeding from the embedded tree, per week, against `seed-manifest.json` (`internal/lineup/seed.go`) | **built** |
+| Boot seeding from the embedded tree, per week, against `seed-manifest.json` (`internal/volume/seed.go`) | **built** |
 | Phone form, passphrase, atomic write | planned |
 | Export of unarchived weeks | planned |
 | Fly volume mount, `LINEUP_VOLUME` set, one machine with `min_machines_running = 0` | planned — `fly.toml` has no mount and sets no `LINEUP_VOLUME`, so production reads the embedded tree |
