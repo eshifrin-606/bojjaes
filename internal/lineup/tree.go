@@ -1,3 +1,5 @@
+// Package lineup reads weekly lineup files: the CSV format of one lineup, and
+// the <season>/<week>/<team>.csv tree that locates them.
 package lineup
 
 import (
@@ -5,9 +7,63 @@ import (
 	"fmt"
 	"io/fs"
 	"path"
+	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 )
+
+// Tree locates lineup files within a filesystem already rooted at the lineup
+// tree. The layout is <season>/<week>/<team>.csv, stated here and nowhere else,
+// so callers never construct the name themselves.
+type Tree struct {
+	fsys fs.FS
+}
+
+// New returns a Tree over a filesystem already rooted at the lineup tree.
+func New(fsys fs.FS) *Tree {
+	return &Tree{fsys: fsys}
+}
+
+// file resolves the lineup file for a season, week, and team.
+func (t *Tree) file(season, week int, team string) (string, error) {
+	if err := checkTeam(team); err != nil {
+		return "", err
+	}
+
+	return path.Join(t.weekDir(season, week), team+".csv"), nil
+}
+
+// A team name arrives as a URL segment once the page exists; refusing
+// anything but a single, plain segment keeps it from reaching outside the
+// lineup tree.
+func checkTeam(team string) error {
+	if team != filepath.Base(team) || strings.Contains(team, "..") {
+		return fmt.Errorf("lineup: invalid team name %q", team)
+	}
+	return nil
+}
+
+// Read locates and parses the lineup for a season, week, and team.
+func (t *Tree) Read(season int, week int, team string) (Lineup, error) {
+	path, err := t.file(season, week, team)
+	if err != nil {
+		return Lineup{}, err
+	}
+
+	f, err := t.fsys.Open(path)
+	if err != nil {
+		return Lineup{}, err
+	}
+	defer f.Close()
+
+	records, err := parse(f)
+	if err != nil {
+		return Lineup{}, fmt.Errorf("%s: %w", path, err)
+	}
+
+	return newLineup(records), nil
+}
 
 // ourTeam is the Bojjaes' lineup file name, without the extension. This repo
 // is a tool for one team, so the name lives here rather than in every caller.
@@ -30,7 +86,7 @@ func found(names []string) string {
 	return strings.Join(names, ", ")
 }
 
-// weekDir is where Path gets the directory it puts a lineup file in, so the
+// weekDir is where file gets the directory it puts a lineup file in, so the
 // week and the files inside it cannot disagree about where the tree is.
 func (t *Tree) weekDir(season, week int) string {
 	return path.Join(fmt.Sprint(season), fmt.Sprint(week))
@@ -111,4 +167,37 @@ func (t *Tree) Matchup(season, week int) (ours, theirs string, err error) {
 		return teams[1], teams[0], nil
 	}
 	return "", "", fmt.Errorf("%s: %w: found %s", dir, ErrNotOurMatchup, found(names))
+}
+
+// ErrNoLineup means no week in the tree holds a lineup for the team.
+var ErrNoLineup = errors.New("no lineup")
+
+// LatestLineup finds the newest season and week that hold a lineup for the
+// team: the lineup a team is assumed to start until it files another.
+func (t *Tree) LatestLineup(team string) (season, week int, err error) {
+	if err := checkTeam(team); err != nil {
+		return 0, 0, err
+	}
+	for _, s := range t.numberedDirsNewestFirst(".") {
+		for _, w := range t.numberedDirsNewestFirst(strconv.Itoa(s)) {
+			p, _ := t.file(s, w, team) // team was checked above
+			if _, err := fs.Stat(t.fsys, p); err == nil {
+				return s, w, nil
+			}
+		}
+	}
+	return 0, 0, fmt.Errorf("%s: %w", team, ErrNoLineup)
+}
+
+func (t *Tree) numberedDirsNewestFirst(dir string) []int {
+	entries, _ := fs.ReadDir(t.fsys, dir)
+	var nums []int
+	for _, e := range entries {
+		if n, err := strconv.Atoi(e.Name()); err == nil && e.IsDir() {
+			nums = append(nums, n)
+		}
+	}
+	slices.Sort(nums)
+	slices.Reverse(nums)
+	return nums
 }

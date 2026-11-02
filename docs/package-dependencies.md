@@ -27,6 +27,7 @@ graph TD
         plays["internal/sleeper/plays"]
         httpjson["internal/sleeper/internal/httpjson"]
         weekcache["internal/weekcache"]
+        volume["internal/volume"]
         web["internal/web"]
     end
     subgraph ext["outside the binary"]
@@ -39,6 +40,7 @@ graph TD
     main --> plays
     main --> lineup
     main --> data
+    main --> volume
     web --> score
     web --> games
     web --> lineup
@@ -69,15 +71,16 @@ serialization decision. Read the direction of the arrows, not the length of the 
 
 | Package | Role | Imports (first-party) | Imports (stdlib) | Imported by |
 | --- | --- | --- | --- | --- |
-| `cmd/server` | Process entrypoint and composition root. Constructs the play store and the provider, wraps its stats and its games each in a cache, constructs the lineup tree, builds the mux, and owns the process lifecycle: listen address, connection timeouts, and the drain on `SIGTERM`. | `internal/data`, `internal/lineup`, `internal/sleeper`, `internal/sleeper/plays`, `internal/web`, `internal/weekcache` | `context`, `errors`, `fmt`, `io/fs`, `log`, `net`, `net/http`, `os`, `os/signal`, `path/filepath`, `syscall`, `time` | — |
-| `internal/score` | The scoring domain: `StatLine`, `Points`, `WeekStats`, and the season/week bounds. |starters/bench split. It reads any `fs.FS` and embeds none. | none | `bufio`, | `fmt` | `internal/sleeper`, `internal/web` |
+| `cmd/server` | Process entrypoint and composition root. Constructs the play store and the provider, wraps its stats and its games each in a cache, constructs the lineup tree, builds the mux, and owns the process lifecycle: listen address, connection timeouts, and the drain on `SIGTERM`. | `internal/data`, `internal/lineup`, `internal/sleeper`, `internal/sleeper/plays`, `internal/volume`, `internal/web`, `internal/weekcache` | `context`, `errors`, `fmt`, `io/fs`, `log`, `net`, `net/http`, `os`, `os/signal`, `path/filepath`, `syscall`, `time` | — |
+| `internal/score` | The scoring domain: `StatLine`, `Points`, `WeekStats`, and the season/week bounds. | none | `fmt` | `internal/sleeper`, `internal/web` |
 | `internal/games` | A week's NFL games, provider-neutral: `Game`, its `State`, and `Week` with `ForTeam`. | none | `time` | `internal/sleeper`, `internal/web` |
 | `internal/sleeper` | The Sleeper adapter: `Client`, the base URL, the stat-key transform, and the scores endpoint read into `games.Week`. | `internal/games`, `internal/score`, `internal/sleeper/internal/httpjson`, `internal/sleeper/plays` | `context`, `fmt`, `time` | `cmd/server` |
 | `internal/sleeper/plays` | The play store: the plays endpoint, Sleeper's play JSON, and forced-fumble attribution from play descriptions. | `internal/sleeper/internal/httpjson` | `context`, `fmt`, `regexp`, `strconv`, `strings`, `sync`, `time` | `cmd/server`, `internal/sleeper` |
 | `internal/sleeper/internal/httpjson` | `Get`: one GET decoded from JSON, over the one timed `http.Client`. | none | `context`, `encoding/json`, `fmt`, `net/http`, `time` | `internal/sleeper`, `internal/sleeper/plays` |
 | `internal/weekcache` | A caching decorator over any weekly fetch, generic over its value: TTL expiry, single-flight, the `TTL` constant. | none | `context`, `log`, `sync`, `time` | `cmd/server` |
 | `internal/web` | The HTML transport: `GET /{season}/{week}`, its view model, its template. | `internal/games`, `internal/lineup`, `internal/score` | `bytes`, `context`, `embed`, `encoding/json`, `errors`, `html/template`, `log`, `net/http`, `strconv`, `strings`, `time`, `time/tzdata` | `cmd/server` |
-| `internal/lineup` | Lineup knowledge: file format, tree layout, matchup resolution, starters/bench split. It reads any `fs.FS` and embeds none. | none | `bufio`, `errors`, `fmt`, `io`, `io/fs`, `path`, `path/filepath`, `slices`, `strconv`, `strings`, `unicode`, `unicode/utf8` | `cmd/server`, `internal/web` |
+| `internal/lineup` | Lineup knowledge: file format, tree layout, matchup resolution, starters/bench split. It reads any `fs.FS` and embeds none. | none | `bufio`, `errors`, `fmt`, `io`, `io/fs`, `path`, `path/filepath`, `slices`, `strconv`, `strings`, `unicode`, `unicode/utf8` | `cmd/server`, `internal/web`, `internal/volume` (tests only) |
+| `internal/volume` | Seeds the lineup store on the Fly volume from the embedded tree, per week, against a hash manifest. The only package that writes lineup files. | none | `crypto/sha256`, `encoding/hex`, `encoding/json`, `errors`, `io/fs`, `os`, `path`, `path/filepath`, `strconv` | `cmd/server` |
 | `internal/data` | The league files carried in the binary: the lineup tree and the per-team rosters, each an `fs.FS` rooted below its directory. | none | `embed`, `io/fs` | `cmd/server`, `internal/lineup` (tests only) |
 
 ### `cmd/server`
@@ -217,6 +220,22 @@ package and nowhere else.
 
 `internal/web` is its one consumer, which is what it was built for.
 
+`Tree.LatestLineup` answers the other tree-wide question: the newest week holding a team's lineup,
+which is the lineup a team is assumed to start until it files another. It is computed from the
+tree rather than kept as a copy, so it cannot go stale.
+
+The package is two files along that seam: `record.go` (the CSV format, `Record`, `Lineup`) and
+`tree.go` (`Tree` and everything that locates files). The tree reaches the format through one call,
+in `Read`.
+
+### `internal/volume`
+
+The one package that writes lineup files, split out of `lineup` so that package stays a pure
+reader. `Seed` copies each numbered week of the embedded tree onto the mount, replacing a week only
+when git's copy changed since it was last seeded, per `seed-manifest.json`; the rules are in
+[architecture](architecture.md). It uses nothing of `lineup`'s: it copies files by directory shape
+and never parses one. `os` and `crypto/sha256` are the imports that mark it.
+
 ### `internal/weekcache`
 
 A decorator, not a layer. `Cache[V]` wraps a `Source[V]`, a plain function
@@ -289,6 +308,8 @@ before it could fail.
   edges are deliberate and test-only: the substitutability and the freshness attribution are the
   whole point of the decorator, so they are better checked in the packages' own tests than
   discovered in `main`. They are also where the "read the arrows" advice needs the second `go list`.
+  `internal/volume`'s tests import `internal/lineup` once, to check that a seeded store reads back
+  as a matchup.
   Both `lineup`'s matchup tests and `web`'s page tests build their fixtures with `fstest.MapFS`,
   so nothing writes to disk and almost nothing reads the real tree. The exception is deliberate: one
   test in `lineup` walks every week of `data.Lineups`, asserting each is a matchup and that both

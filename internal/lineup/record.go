@@ -6,6 +6,8 @@ import (
 	"io"
 	"slices"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 type Record struct {
@@ -133,4 +135,72 @@ func parse(r io.Reader) ([]Record, error) {
 	}
 
 	return records, nil
+}
+
+// starterCount is the league's starting lineup size: the first starterCount
+// records in a lineup are starters, and everything after is bench.
+const starterCount = 9
+
+// Lineup is a parsed, ordered set of records with the starters/bench split
+// layered on top as a view — it never re-parses or reorders the records.
+//
+// The split is purely positional: a record's position is a label, not a slot, so
+// moving a record above the ninth line promotes it and demotes whatever it
+// displaced. That is intended behaviour of a hand-maintained lineup card,
+// not an accident of the split.
+type Lineup struct {
+	records []Record
+}
+
+func newLineup(records []Record) Lineup {
+	for i := range records {
+		records[i].ShortName = shortName(records[i].Name)
+	}
+	return Lineup{records: records}
+}
+
+func benchStart(records []Record) int {
+	return min(len(records), starterCount)
+}
+
+// Starters returns the lineup's starters, in file order.
+func (l Lineup) Starters() []Record {
+	return l.records[:benchStart(l.records)]
+}
+
+// Bench returns the lineup's bench, in file order and non-nil even when
+// empty.
+func (l Lineup) Bench() []Record {
+	bench := l.records[benchStart(l.records):]
+	if bench == nil {
+		return []Record{}
+	}
+	return bench
+}
+
+var generationalSuffixes = []string{"Jr.", "Jr", "Sr.", "Sr", "II", "III", "IV", "V"}
+
+func shortName(name string) string {
+	words := strings.Fields(name)
+	if len(words) < 2 {
+		return name
+	}
+	if len(words) > 2 && slices.Contains(generationalSuffixes, words[len(words)-1]) {
+		words = words[:len(words)-1]
+	}
+	lead := string([]rune(words[0])[0])
+	if writtenAsInitials(words[0]) {
+		lead = words[0]
+	}
+	return lead + " " + strings.Join(words[1:], " ")
+}
+
+// Only two capitals count as initials without a period: a longer all-capitals
+// word ("JOE") is as likely to be a name typed in capitals.
+func writtenAsInitials(word string) bool {
+	if strings.Contains(word, ".") {
+		return true
+	}
+	return utf8.RuneCountInString(word) == 2 &&
+		!strings.ContainsFunc(word, func(r rune) bool { return !unicode.IsUpper(r) })
 }
