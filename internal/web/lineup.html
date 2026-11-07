@@ -3,8 +3,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{if .NoWeek}}Lineup{{else}}{{.Season}} week {{.Week}} lineup{{end}}</title>
 <style>
-  /* Body, card, and breakpoint copy matchup.html so the two pages read as one
-     site; see the lineup-form design.md, decision 6. */
+  /* Body, card, band, and breakpoint copy matchup.html so the two pages read
+     as one site; see the lineup-form design.md, decision 6. */
   body {
     font: 16px/1.5 system-ui, sans-serif;
     margin: 0 auto;
@@ -17,30 +17,89 @@
     margin: 0 0 1rem;
   }
 
-  form {
+  .card {
     border: 1px solid #ccc;
     border-radius: 6px;
-    margin-bottom: 1rem;
-    padding: 0.5rem 1rem 1rem;
+  }
+
+  .card header {
+    background: #f3f3f3;
+    border-bottom: 1px solid #ccc;
+    border-radius: 5px 5px 0 0;
+  }
+
+  .row,
+  .card header form {
+    align-items: center;
+    column-gap: 0.75rem;
+    display: grid;
+    grid-template-columns: 3.5rem minmax(0, 1fr);
+    padding: 0.375rem 1rem;
+  }
+
+  .row + .row {
+    border-top: 1px solid #eee;
   }
 
   label {
-    display: block;
     font-weight: 600;
-    margin-top: 0.5rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
-  /* Below 16px, iOS Safari zooms the page when a select takes focus. */
-  select,
-  button,
-  textarea {
-    box-sizing: border-box;
-    font-size: 16px;
+  /* Without appearance: none, iOS draws every select as a grey pill. The
+     chevron replaces the arrow that removes. Below 16px, iOS Safari zooms the
+     page when a select takes focus. */
+  select {
+    -webkit-appearance: none;
+    appearance: none;
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E") no-repeat right 0.625rem center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    color: inherit;
+    font: inherit;
+    min-width: 0;
+    padding: 0.375rem 1.75rem 0.375rem 0.5rem;
+    text-overflow: ellipsis;
     width: 100%;
   }
 
-  button {
-    margin-top: 0.75rem;
+  .row select {
+    border-color: transparent;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .actions {
+    border-top: 1px solid #ccc;
+    display: grid;
+    gap: 0.5rem;
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
+    padding: 0.5rem 1rem;
+  }
+
+  .actions button,
+  .actions a {
+    background: #f3f3f3;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    padding: 0.375rem;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .actions a[aria-disabled="true"] {
+    color: #999;
+    cursor: default;
+  }
+
+  .problems,
+  .note {
+    color: #c00;
   }
 
   @media (max-width: 33rem) {
@@ -48,26 +107,74 @@
       padding: 0.5rem;
     }
 
-    form {
-      padding: 0.25rem 0.5rem 0.5rem;
+    .row,
+    .card header form,
+    .actions {
+      padding-inline: 0.5rem;
     }
   }
 </style>
 {{if .NoWeek}}<h1>No week to set</h1>{{else}}<h1>{{.Season}} · Week {{.Week}}</h1>
-<form method="get" action="/lineup">
-  <label for="team">Team</label>
-  <select name="team" id="team" onchange="this.form.submit()">{{range .Teams}}<option value="{{.}}"{{if eq . $.Team}} selected{{end}}>{{.}}</option>{{end}}</select>
-  <button>Show</button>
-</form>
+<section class="card">
+  <header><form method="get" action="/lineup">
+    <label for="team">Team</label>
+    <select name="team" id="team" onchange="this.form.submit()">{{range .Teams}}<option value="{{.}}"{{if eq . $.Team}} selected{{end}}>{{.}}</option>{{end}}</select>
+  </form></header>
+  <form method="get" action="/lineup">
+    <input type="hidden" name="team" value="{{.Team}}">
+    {{range $i, $s := .Slots}}<div class="row"><label for="slot{{$i}}">{{$s.Label}}</label>
+    <select name="{{$s.Name}}" id="slot{{$i}}"><option value=""{{if $s.Empty}} selected{{end}}></option>{{range $s.Options}}<option value="{{.ID}}"{{if .Selected}} selected{{end}}>{{.Text}}</option>{{end}}</select></div>
+    {{end}}
+    <div class="actions"><button>Copy</button>{{if .CSVLink}}<a href="{{.CSVLink}}">Download</a>{{else}}<a aria-disabled="true">Download</a>{{end}}</div>
+  </form>
+</section>
 {{with .Problems}}<ul class="problems">{{range .}}<li>{{.}}</li>{{end}}</ul>{{end}}
-{{if .StartingUnreadable}}<p>The starting lineup could not be read, so every slot starts empty.</p>{{end}}
-<form method="get" action="/lineup">
-  <input type="hidden" name="team" value="{{.Team}}">
-  {{range $i, $s := .Slots}}<label for="slot{{$i}}">{{$s.Label}}</label>
-  <select name="{{$s.Name}}" id="slot{{$i}}"><option value=""{{if $s.Empty}} selected{{end}}></option>{{range $s.Options}}<option value="{{.ID}}"{{if .Selected}} selected{{end}}>{{.Text}}</option>{{end}}</select>
-  {{end}}
-  <button>Check</button>
-</form>
-{{if .Summary}}<textarea readonly rows="10">{{.Summary}}</textarea>
-<p><a href="{{.CSVLink}}">Download {{.Team}}.csv</a> and commit it as <code>{{.CommitPath}}</code>.</p>{{end}}
+{{if .StartingUnreadable}}<p class="note">The starting lineup could not be read, so every slot starts empty.</p>{{end}}
+<script>
+  // Copy both checks the lineup and copies its thread text. Without the
+  // clipboard API the button stays a plain submit, which is still the check.
+  (function () {
+    var form = document.querySelector("form:has(> .actions)");
+    var button = form.querySelector("button");
+    if (location.hash === "#copied") {
+      button.textContent = "Copied";
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+    // Copied and Download describe the last checked lineup, so an edit voids
+    // both until the next check.
+    var download = form.querySelector(".actions a");
+    form.addEventListener("change", function () {
+      button.textContent = "Copy";
+      download.removeAttribute("href");
+      download.setAttribute("aria-disabled", "true");
+    });
+    if (!navigator.clipboard) {
+      return;
+    }
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var query = new URLSearchParams(new FormData(form)).toString();
+      var text = fetch("/lineup.txt?" + query).then(function (response) {
+        if (!response.ok) {
+          throw new Error("not a valid lineup");
+        }
+        return response.text();
+      });
+      // Safari only lets a tap write the clipboard if the write starts during
+      // the tap, so the item is handed a promise of the text, not the text.
+      var copied = typeof ClipboardItem === "function"
+        ? navigator.clipboard.write([new ClipboardItem({
+            "text/plain": text.then(function (t) { return new Blob([t], { type: "text/plain" }); })
+          })])
+        : text.then(function (t) { return navigator.clipboard.writeText(t); });
+      // The reload is the check: an invalid lineup comes back with its
+      // problems listed, as a plain submit would.
+      copied.then(function () { return "#copied"; }, function () { return ""; }).then(function (hash) {
+        history.pushState(null, "", "/lineup?" + query + hash);
+        location.reload();
+      });
+    });
+  })();
+</script>
 {{end}}

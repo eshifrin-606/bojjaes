@@ -4,7 +4,7 @@
 
 Serve a read-only phone form for building a legal lineup for the current week: a team picker, one
 select per slot limited to the players that slot accepts, a proposal carried in the URL and checked
-on the page, and, for a valid lineup, a pasteable summary and a roster-file download. It writes
+on the page, and, for a valid lineup, its thread text copied to the clipboard and a roster-file download. It writes
 nothing; saving a lineup belongs to a later capability.
 
 ## Requirements
@@ -60,8 +60,8 @@ guessed week.
 
 The page SHALL offer a team picker listing every team with a roster file, in name order. The
 `team` query parameter SHALL select the team; when absent, the team SHALL be `bojjaes`. The picker
-SHALL be a GET form to `/lineup`, so changing the team reloads the page for that team with no
-proposed slots. A `team` naming no roster SHALL answer 400 before the current-week source or the
+SHALL be a GET form to `/lineup` that submits itself when the team changes, so changing the team
+reloads the page for that team with no proposed slots; it SHALL have no submit button. A `team` naming no roster SHALL answer 400 before the current-week source or the
 games source is called.
 
 #### Scenario: The default team
@@ -156,7 +156,7 @@ cannot be read SHALL leave every slot empty and SHALL say so on the page, not fa
 
 ### Requirement: A proposed lineup is encoded in the URL
 
-The slot selects and a "Check" button SHALL form a GET form to `/lineup` carrying `team` as a
+The slot selects and a "Copy" button SHALL form a GET form to `/lineup` carrying `team` as a
 hidden field, so the submitted URL is `/lineup?team=<team>&qb=<id>&rb=<id>&wr=<id>&te=<id>&flex=<id>&flex=<id>&k=<id>&d=<id>&d=<id>`.
 Repeated `flex` and `d` values SHALL fill those slots in URL order. When any slot parameter is
 present, the URL SHALL be a proposal: every select SHALL start on the proposed player, not the
@@ -174,7 +174,7 @@ starting lineup, and a slot with no value SHALL be empty.
 
 ### Requirement: A proposed lineup is checked on the page
 
-A proposal SHALL be checked and every problem listed on the page with a 200 answer, never a 5xx:
+A proposal SHALL be checked and every problem listed in red below the slots with a 200 answer, never a 5xx:
 
 - an ID that is neither on the roster nor in the starting lineup is unknown, and its slot is empty;
 - a player in a slot that does not accept his position is ineligible, and stays selected there;
@@ -207,33 +207,46 @@ A proposal SHALL be checked and every problem listed on the page with a 200 answ
 - **WHEN** a proposal has three `flex` values
 - **THEN** the page says there are too many FLEX players
 
-### Requirement: A valid lineup is shown as pasteable text
+### Requirement: Copy checks the lineup and copies its thread text
 
-When the selected slots form a valid lineup (a proposal with no problems, or a complete starting
-lineup), the page SHALL show it as plain text in slot order: a first line naming the team, season,
-and week, then one line per slot of slot, name, and NFL team. With any problem, or any empty slot,
-no summary SHALL be shown.
+The slots form's one button SHALL read `Copy`. Pressing it SHALL check the proposal by reloading the
+page for it, as submitting the form would, and, when the proposal is a valid lineup, SHALL first copy
+the lineup's thread text to the clipboard and show the button as `Copied` on the reloaded page.
+Changing any slot select SHALL set the button back to `Copy`.
+Without a clipboard (or without script) the button SHALL still submit the form.
 
-#### Scenario: Summary text
+`GET /lineup.txt` SHALL answer the thread text as `text/plain`: a first line naming the team,
+season, and week, then one line per slot of slot, name, and NFL team, in slot order. It SHALL apply
+the same checks and statuses as `GET /lineup.csv`.
 
-- **WHEN** wood's valid proposal for 2026 week 9 is checked
-- **THEN** the summary's first line is `wood · 2026 week 9` and its next nine lines start `QB `,
-  `RB `, `WR `, `TE `, `FLEX `, `FLEX `, `K `, `D `, `D `
+#### Scenario: Copying a valid lineup
 
-#### Scenario: Invalid proposal
+- **WHEN** Copy is pressed on wood's valid proposal for 2026 week 9
+- **THEN** the clipboard holds text whose first line is `wood · 2026 week 9` and whose next nine
+  lines start `QB `, `RB `, `WR `, `TE `, `FLEX `, `FLEX `, `K `, `D `, `D `, and the reloaded
+  page's button reads `Copied`
 
-- **WHEN** a proposal has a duplicate player
-- **THEN** no summary and no CSV link are shown
+#### Scenario: Copying an invalid lineup
+
+- **WHEN** Copy is pressed on a proposal with a duplicate player
+- **THEN** nothing is copied, and the reloaded page lists the problem
 
 ### Requirement: A valid lineup downloads as a roster file
 
-When the page shows a summary it SHALL also link to `GET /lineup.csv` with the same `team` and slot
-parameters, in slot order, and name the path the file is committed to,
-`internal/data/lineups/<season>/<week>/<team>.csv`. `GET /lineup.csv` SHALL answer the lineup as a
+When the selected slots form a valid lineup (a proposal with no problems, or a complete starting
+lineup), the page SHALL link to `GET /lineup.csv` with the same `team` and slot parameters, in slot
+order, with the link text `Download`; the form itself is the lineup's only rendering on the page.
+With any problem, or any empty slot, `Download` SHALL still be shown, greyed out and linking nowhere.
+Changing any slot select SHALL grey out `Download` the same way, until the page is checked again. `GET /lineup.csv` SHALL answer the lineup as a
 roster file in slot order (as the lineup renders itself), with content type `text/csv` and an
 attachment file name `<team>.csv`. It SHALL apply the page's team, current-week, and proposal
 checks, answering 400 for an unknown team or an invalid or incomplete proposal, 404 when there is no
 week to set, and 502 when the current week cannot be read.
+
+#### Scenario: Invalid proposal
+
+- **WHEN** a proposal has a duplicate player
+- **THEN** `Download` is greyed out and links to no CSV
 
 #### Scenario: Download
 

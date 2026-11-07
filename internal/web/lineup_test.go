@@ -230,6 +230,17 @@ func TestThePickerSelectsTheRequestedTeam(t *testing.T) {
 	}
 }
 
+// The picker submits itself on change, so a button would do nothing.
+func TestTheTeamPickerHasNoButton(t *testing.T) {
+	body := newLineupFixture().get("/lineup").Body.String()
+
+	for _, m := range getFormPattern.FindAllStringSubmatch(body, -1) {
+		if strings.Contains(m[1], `name="team" id="team"`) && strings.Contains(m[1], "<button") {
+			t.Errorf("the team picker has a button:\n%s", m[1])
+		}
+	}
+}
+
 func slotSelectNames(body string) []string {
 	var names []string
 	for _, m := range selectPattern.FindAllStringSubmatch(body, -1) {
@@ -454,6 +465,33 @@ func TestAMalformedStartingLineupLeavesTheSlotsEmptyAndSaysSo(t *testing.T) {
 	}
 }
 
+// The notes sit under the slots so that fixing a slot keeps it in place.
+func TestTheNotesFollowTheSlots(t *testing.T) {
+	malformed := newLineupFixture()
+	malformed.tree = lineup.New(weekFS(2026, 9, map[string]string{"wood": woodLine("101", "102")}))
+	tests := map[string]struct {
+		body string
+		note string
+	}{
+		"the problems": {
+			newLineupFixture().get(proposalURL("/lineup", woodWeek9With(4, "102")...)).Body.String(),
+			`<ul class="problems">`,
+		},
+		"an unreadable starting lineup": {
+			malformed.get("/lineup?team=wood").Body.String(),
+			"The starting lineup could not be read",
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			note, slots := strings.Index(tt.body, tt.note), strings.Index(tt.body, "</section>")
+			if note < 0 || slots < 0 || note < slots {
+				t.Errorf("%q is not after the slots:\n%s", tt.note, tt.body)
+			}
+		})
+	}
+}
+
 // proposalURL proposes the IDs in slot order; an empty ID leaves its slot's
 // parameter out.
 func proposalURL(path string, ids ...string) string {
@@ -576,8 +614,9 @@ func TestAProposedIDWithMarkupIsEscapedAndUnknown(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Errorf("status = %d, want 200", rec.Code)
 	}
-	if strings.Contains(body, "<script>") {
-		t.Errorf("body holds an unescaped <script>:\n%s", body)
+	clean := newLineupFixture().get(proposalURL("/lineup", woodWeek9...)).Body.String()
+	if strings.Count(body, "<script>") != strings.Count(clean, "<script>") {
+		t.Errorf("body holds an unescaped <script> beyond the page's own:\n%s", body)
 	}
 	if got, want := problems(body), []string{"QB: no player <script> on the roster or starting lineup"}; !slices.Equal(got, want) {
 		t.Errorf("problems = %q, want %q", got, want)
@@ -601,41 +640,23 @@ func TestTheSlotsAreAGETFormCarryingTheTeam(t *testing.T) {
 	if !strings.Contains(form, `<input type="hidden" name="team" value="wood">`) {
 		t.Errorf("the slots form does not carry team=wood:\n%s", form)
 	}
-	if !strings.Contains(form, `<button>Check</button>`) {
-		t.Errorf("the slots form has no Check button:\n%s", form)
+	if !strings.Contains(form, `<button>Copy</button>`) {
+		t.Errorf("the slots form has no Copy button:\n%s", form)
 	}
 }
 
-var textareaPattern = regexp.MustCompile(`(?s)<textarea[^>]*>(.*?)</textarea>`)
-
-// summary is the page's textarea text, unescaped, and whether there is one.
-func summary(body string) (string, bool) {
-	m := textareaPattern.FindStringSubmatch(body)
-	if m == nil {
-		return "", false
-	}
-	return html.UnescapeString(m[1]), true
-}
-
-func TestAValidProposalIsSummarisedAsPasteableText(t *testing.T) {
+// The form itself shows the lineup, so no separate summary repeats it.
+func TestAValidLineupIsNotRepeatedAsText(t *testing.T) {
 	body := newLineupFixture().get(proposalURL("/lineup", woodWeek9...)).Body.String()
 
-	want := "wood · 2026 week 9\n" +
-		"QB Josh Allen (BUF)\n" +
-		"RB Bijan Robinson (ATL)\n" +
-		"WR Amon-Ra St. Brown (DET)\n" +
-		"TE Trey McBride (ARI)\n" +
-		"FLEX Derrick Henry (BAL)\n" +
-		"FLEX Kyle Juszczyk (SF)\n" +
-		"K Brandon Aubrey (DAL)\n" +
-		"D Myles Garrett (CLE)\n" +
-		"D Sauce Gardner (NYJ)\n"
-	if got, ok := summary(body); got != want {
-		t.Errorf("summary (shown %v) = %q, want %q", ok, got, want)
+	if strings.Contains(body, "<textarea") {
+		t.Errorf("a valid lineup is repeated in a textarea:\n%s", body)
 	}
 }
 
-func TestAnIncompleteLineupHasNoSummaryOrDownload(t *testing.T) {
+// Greyed out rather than left out, so the actions row keeps its shape while
+// the slots are being fixed.
+func TestAnIncompleteLineupGreysOutItsDownload(t *testing.T) {
 	tests := map[string]string{
 		"a duplicate proposal":         proposalURL("/lineup", woodWeek9With(4, "102")...),
 		"a starting lineup with holes": "/lineup?team=wood",
@@ -644,11 +665,11 @@ func TestAnIncompleteLineupHasNoSummaryOrDownload(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			body := newLineupFixture().get(u).Body.String()
 
-			if _, ok := summary(body); ok {
-				t.Errorf("a summary is shown:\n%s", body)
-			}
 			if strings.Contains(body, "/lineup.csv") {
 				t.Errorf("a download is linked:\n%s", body)
+			}
+			if !strings.Contains(body, `<a aria-disabled="true">Download</a>`) {
+				t.Errorf("no disabled Download is shown:\n%s", body)
 			}
 		})
 	}
@@ -656,7 +677,7 @@ func TestAnIncompleteLineupHasNoSummaryOrDownload(t *testing.T) {
 
 var csvLinkPattern = regexp.MustCompile(`href="(/lineup\.csv[^"]*)"`)
 
-func TestAValidLineupLinksItsDownloadAndNamesWhereItIsCommitted(t *testing.T) {
+func TestAValidLineupLinksItsDownload(t *testing.T) {
 	body := newLineupFixture().get(proposalURL("/lineup", woodWeek9...)).Body.String()
 
 	m := csvLinkPattern.FindStringSubmatch(body)
@@ -664,8 +685,8 @@ func TestAValidLineupLinksItsDownloadAndNamesWhereItIsCommitted(t *testing.T) {
 	if m == nil || html.UnescapeString(m[1]) != want {
 		t.Errorf("download link = %v, want %q", m, want)
 	}
-	if !strings.Contains(body, "internal/data/lineups/2026/9/wood.csv") {
-		t.Errorf("body does not name the committed path:\n%s", body)
+	if !regexp.MustCompile(`href="/lineup\.csv[^"]*">Download</a>`).MatchString(body) {
+		t.Errorf("the download link does not read just Download:\n%s", body)
 	}
 }
 
@@ -714,7 +735,7 @@ func TestAValidProposalDownloadsAsALineupFile(t *testing.T) {
 	}
 }
 
-func TestADownloadThatCannotBeALineupFileIsRefused(t *testing.T) {
+func TestADownloadOrTextThatCannotBeALineupIsRefused(t *testing.T) {
 	tests := []struct {
 		name  string
 		url   string
@@ -739,9 +760,37 @@ func TestADownloadThatCannotBeALineupFileIsRefused(t *testing.T) {
 			}
 
 			if rec := f.getCSV(tt.url); rec.Code != tt.want {
-				t.Errorf("status = %d, want %d", rec.Code, tt.want)
+				t.Errorf("download status = %d, want %d", rec.Code, tt.want)
+			}
+			textURL := strings.Replace(tt.url, "/lineup.csv", "/lineup.txt", 1)
+			if rec := f.getText(textURL); rec.Code != tt.want {
+				t.Errorf("text status = %d, want %d", rec.Code, tt.want)
 			}
 		})
+	}
+}
+
+func (f *lineupFixture) getText(url string) *httptest.ResponseRecorder {
+	rec := httptest.NewRecorder()
+	LineupTextHandler(f.rosters, f.tree, f.current).ServeHTTP(rec, httptest.NewRequest("GET", url, nil))
+	return rec
+}
+
+func TestAValidProposalIsAnsweredAsPasteableText(t *testing.T) {
+	rec := newLineupFixture().getText(proposalURL("/lineup.txt", woodWeek9...))
+
+	want := "wood · 2026 week 9\n" +
+		"QB Josh Allen (BUF)\n" +
+		"RB Bijan Robinson (ATL)\n" +
+		"WR Amon-Ra St. Brown (DET)\n" +
+		"TE Trey McBride (ARI)\n" +
+		"FLEX Derrick Henry (BAL)\n" +
+		"FLEX Kyle Juszczyk (SF)\n" +
+		"K Brandon Aubrey (DAL)\n" +
+		"D Myles Garrett (CLE)\n" +
+		"D Sauce Gardner (NYJ)\n"
+	if rec.Code != http.StatusOK || rec.Body.String() != want {
+		t.Errorf("got %d %q, want 200 %q", rec.Code, rec.Body.String(), want)
 	}
 }
 
@@ -756,7 +805,7 @@ func TestARosterNameWithMarkupIsEscaped(t *testing.T) {
 	if strings.Contains(body, "<b>") {
 		t.Errorf("body holds a <b> element:\n%s", body)
 	}
-	if got := strings.Count(body, "&lt;b&gt;X&lt;/b&gt;"); got != 2 {
-		t.Errorf("escaped name appears %d times, want 2 (QB option and summary):\n%s", got, body)
+	if got := strings.Count(body, "&lt;b&gt;X&lt;/b&gt;"); got != 1 {
+		t.Errorf("escaped name appears %d times, want 1 (the QB option):\n%s", got, body)
 	}
 }

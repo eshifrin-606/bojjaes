@@ -25,5 +25,6 @@ func newMux(stats weekStats, games web.GamesSource, current web.CurrentWeekSourc
 	mux.Handle("GET /{season}", web.SeasonHandler(tree, stats, games))
 	mux.Handle("GET /lineup", web.LineupHandler(rosters, tree, current, games))
 	mux.Handle("GET /lineup.csv", web.LineupCSVHandler(rosters, tree, current))
+	mux.Handle("GET /lineup.txt", web.LineupTextHandler(rosters, tree, current))
 	return mux
 }
