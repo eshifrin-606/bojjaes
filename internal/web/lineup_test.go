@@ -360,6 +360,75 @@ func TestAnOptionWithNoGameEndsAtWhatIsKnown(t *testing.T) {
 	}
 }
 
+var (
+	cardNamePattern = regexp.MustCompile(`(?s)<span class="chosen"[^>]*><span class="name">([^<]*)</span>`)
+	cardMetaPattern = regexp.MustCompile(`(?s)<span class="chosen"[^>]*>.*?<span class="meta">(.*?)<select`)
+)
+
+// cardNames is each slot card's name, in page order.
+func cardNames(body string) []string {
+	var names []string
+	for _, m := range cardNamePattern.FindAllStringSubmatch(body, -1) {
+		names = append(names, html.UnescapeString(m[1]))
+	}
+	return names
+}
+
+// cardMetas is each slot card's meta line as text, in page order.
+func cardMetas(body string) []string {
+	var metas []string
+	for _, m := range cardMetaPattern.FindAllStringSubmatch(body, -1) {
+		metas = append(metas, strings.TrimSpace(html.UnescapeString(tagPattern.ReplaceAllString(m[1], ""))))
+	}
+	return metas
+}
+
+func TestEachSlotsCardNamesItsChosenPlayer(t *testing.T) {
+	f := newLineupFixture()
+	f.tree = lineup.New(weekFS(2026, 9, map[string]string{"wood": woodLine(woodWeek9...)}))
+
+	body := f.get("/lineup?team=wood").Body.String()
+
+	want := []string{"Josh Allen", "Bijan Robinson", "Amon-Ra St. Brown", "Trey McBride", "Derrick Henry", "Kyle Juszczyk", "Brandon Aubrey", "Myles Garrett", "Sauce Gardner"}
+	if got := cardNames(body); !slices.Equal(got, want) {
+		t.Errorf("card names = %q, want %q", got, want)
+	}
+}
+
+func TestACardsMetaLineStatesPositionTeamAndGame(t *testing.T) {
+	f := newLineupFixture()
+	f.tree = lineup.New(weekFS(2026, 9, map[string]string{"wood": woodLine(woodWeek9...)}))
+	f.games.week = upcomingDET()
+
+	body := f.get("/lineup?team=wood").Body.String()
+
+	metas := cardMetas(body)
+	if len(metas) != lineup.StarterCount {
+		t.Fatalf("found %d card meta lines, want %d:\n%s", len(metas), lineup.StarterCount, body)
+	}
+	if got, want := metas[2], "WR · DET · Sun 12p"; got != want {
+		t.Errorf("WR card meta = %q, want %q", got, want)
+	}
+	if got, want := metas[0], "QB · BUF · Bye"; got != want {
+		t.Errorf("QB card meta = %q, want %q", got, want)
+	}
+}
+
+func TestAnEmptySlotsCardIsEmpty(t *testing.T) {
+	f := newLineupFixture()
+	f.games.week = upcomingDET()
+
+	body := f.get("/lineup?team=wood").Body.String()
+
+	empty := make([]string, lineup.StarterCount)
+	if got := cardNames(body); !slices.Equal(got, empty) {
+		t.Errorf("card names = %q, want all empty", got)
+	}
+	if got := cardMetas(body); !slices.Equal(got, empty) {
+		t.Errorf("card metas = %q, want all empty", got)
+	}
+}
+
 // woodLine writes a lineup file of wood's roster players, in the order given.
 func woodLine(ids ...string) string {
 	records := map[string]string{}
@@ -805,7 +874,7 @@ func TestARosterNameWithMarkupIsEscaped(t *testing.T) {
 	if strings.Contains(body, "<b>") {
 		t.Errorf("body holds a <b> element:\n%s", body)
 	}
-	if got := strings.Count(body, "&lt;b&gt;X&lt;/b&gt;"); got != 1 {
-		t.Errorf("escaped name appears %d times, want 1 (the QB option):\n%s", got, body)
+	if got := strings.Count(body, "&lt;b&gt;X&lt;/b&gt;"); got != 2 {
+		t.Errorf("escaped name appears %d times, want 2 (the QB option and card):\n%s", got, body)
 	}
 }

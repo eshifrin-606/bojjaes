@@ -126,6 +126,29 @@ NOT fail the page.
 - **WHEN** the games source fails
 - **THEN** the page answers 200 and each option ends at the NFL team
 
+### Requirement: Each slot shows its chosen player as a card
+
+Each slot SHALL show its selected player as the matchup page shows a starter: the name on one line,
+then a meta line of position, NFL team, and game, the game stated as the option states it. The
+slot's select SHALL lie over the card, unseen, so a tap opens the browser's own picker. A slot on
+the empty option SHALL show an empty card. Changing a slot's select SHALL redraw its card from the
+newly selected option without a reload.
+
+#### Scenario: A chosen player
+
+- **WHEN** the WR slot holds Amon-Ra St. Brown (WR, DET), kicking off Sunday 12:00 Central
+- **THEN** the card's name reads `Amon-Ra St. Brown` and its meta line `WR · DET · Sun 12p`
+
+#### Scenario: An empty slot
+
+- **WHEN** a slot is on the empty option
+- **THEN** its card shows no name and no meta line
+
+#### Scenario: A changed slot
+
+- **WHEN** the reader picks Derrick Henry in an RB slot that held Bijan Robinson
+- **THEN** that slot's card names Derrick Henry, with no reload
+
 ### Requirement: Slots start from the team's lineup
 
 With no proposed slots in the URL, each select SHALL start on the player in that slot of the team's
