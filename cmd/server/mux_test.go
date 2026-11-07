@@ -217,6 +217,19 @@ func TestMuxServesTheLineupFile(t *testing.T) {
 	}
 }
 
+func TestMuxServesTheLineupText(t *testing.T) {
+	rosters := lineup.NewRosters(fstest.MapFS{"wood.csv": {Data: []byte(woodRoster)}})
+	mux := newMux(stubStats{}, stubGames{}, midSeason, lineup.New(fstest.MapFS{}), rosters)
+	rec := httptest.NewRecorder()
+
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet,
+		"/lineup.txt?team=wood&qb=101&rb=102&wr=105&te=107&flex=103&flex=104&k=108&d=109&d=110", nil))
+
+	if got := rec.Header().Get("Content-Type"); rec.Code != http.StatusOK || got != "text/plain; charset=utf-8" {
+		t.Errorf("GET /lineup.txt = %d %q, want the lineup as text", rec.Code, got)
+	}
+}
+
 // The form only proposes a lineup; nothing on these routes writes one.
 func TestMuxRejectsAPostToTheLineupForm(t *testing.T) {
 	rec := httptest.NewRecorder()

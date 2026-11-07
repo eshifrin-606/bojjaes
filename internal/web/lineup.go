@@ -304,19 +304,46 @@ func LineupHandler(rosters *lineup.Rosters, tree *lineup.Tree, current CurrentWe
 	})
 }
 
-// LineupCSVHandler answers a proposed lineup as a lineup file.
-func LineupCSVHandler(rosters *lineup.Rosters, tree *lineup.Tree, current CurrentWeekSource) http.Handler {
+// resolveProposedLineup is resolveLineupForm for the routes that answer the
+// lineup itself, which need a complete, valid proposal for a week to set.
+func resolveProposedLineup(w http.ResponseWriter, r *http.Request, rosters *lineup.Rosters, tree *lineup.Tree, current CurrentWeekSource) (lineupForm, bool) {
+	form, ok := resolveLineupForm(w, r, rosters, tree, current)
+	if !ok {
+		return form, false
+	}
+	if form.noWeek {
+		http.Error(w, "no week to set", http.StatusNotFound)
+		return form, false
+	}
+	if !form.proposed || !form.complete {
+		http.Error(w, "not a complete, valid lineup: "+strings.Join(form.problems, "; "), http.StatusBadRequest)
+		return form, false
+	}
+	return form, true
+}
+
+// LineupTextHandler answers a proposed lineup as text to paste into the
+// league's thread.
+func LineupTextHandler(rosters *lineup.Rosters, tree *lineup.Tree, current CurrentWeekSource) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		form, ok := resolveLineupForm(w, r, rosters, tree, current)
+		form, ok := resolveProposedLineup(w, r, rosters, tree, current)
 		if !ok {
 			return
 		}
-		if form.noWeek {
-			http.Error(w, "no week to set", http.StatusNotFound)
-			return
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		fmt.Fprintf(w, "%s · %d week %d\n", form.team, form.season, form.week)
+		slots := lineup.Slots()
+		for i, p := range form.lineup.Starters() {
+			fmt.Fprintf(w, "%s %s (%s)\n", slots[i], p.Name, p.Team)
 		}
-		if !form.proposed || !form.complete {
-			http.Error(w, "not a complete, valid lineup: "+strings.Join(form.problems, "; "), http.StatusBadRequest)
+	})
+}
+
+// LineupCSVHandler answers a proposed lineup as a lineup file.
+func LineupCSVHandler(rosters *lineup.Rosters, tree *lineup.Tree, current CurrentWeekSource) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		form, ok := resolveProposedLineup(w, r, rosters, tree, current)
+		if !ok {
 			return
 		}
 		var buf bytes.Buffer
