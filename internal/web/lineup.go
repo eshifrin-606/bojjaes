@@ -48,6 +48,13 @@ type slotSelect struct {
 	Label, Name string
 	Options     []playerOption
 	Empty       bool
+	Card        playerCard
+}
+
+// playerCard is the chosen player as the matchup page shows a starter. It is
+// zero for a slot on the empty option.
+type playerCard struct {
+	Name, Position, Team, Game string
 }
 
 type playerOption struct {
@@ -63,7 +70,12 @@ func slotSelects(pool []lineup.Player, chosen [lineup.StarterCount]lineup.Player
 	for i, slot := range lineup.Slots() {
 		s := slotSelect{Label: string(slot), Name: strings.ToLower(string(slot))}
 		offer := func(p lineup.Player) {
-			s.Options = append(s.Options, playerOption{ID: p.ID, Text: playerOptionText(p, weekGames, gamesAvailable), Selected: p.ID == chosen[i].ID})
+			card := playerCard{Name: p.Name, Position: p.Position, Team: p.Team, Game: playerGameText(p, weekGames, gamesAvailable)}
+			selected := p.ID == chosen[i].ID
+			s.Options = append(s.Options, playerOption{ID: p.ID, Text: card.optionText(), Selected: selected})
+			if selected {
+				s.Card = card
+			}
 		}
 		for _, p := range pool {
 			if slot.Accepts(p.Position) {
@@ -79,17 +91,21 @@ func slotSelects(pool []lineup.Player, chosen [lineup.StarterCount]lineup.Player
 	return selects
 }
 
-// playerOptionText states a player's game as scoreColumn's meta line does,
-// but as plain text: an <option> cannot hold the <time> the matchup page
-// localises.
-func playerOptionText(p lineup.Player, weekGames games.Week, gamesAvailable bool) string {
-	text := p.Name + " · " + p.Position + " · " + p.Team
+// playerGameText states a player's game as scoreColumn's meta line does, but
+// as plain text: an <option> cannot hold the <time> the matchup page
+// localises, and the card shows what the option says.
+func playerGameText(p lineup.Player, weekGames games.Week, gamesAvailable bool) string {
 	game, kickoff := gameState(p.Team, weekGames, gamesAvailable)
 	if !kickoff.IsZero() {
 		game = kickoffText(kickoff.In(chicagoLoc))
 	}
-	if game != "" {
-		text += " · " + game
+	return game
+}
+
+func (c playerCard) optionText() string {
+	text := c.Name + " · " + c.Position + " · " + c.Team
+	if c.Game != "" {
+		text += " · " + c.Game
 	}
 	return text
 }

@@ -64,10 +64,64 @@
     width: 100%;
   }
 
+  /* The card is what the reader sees; the select lies over it, unseen, so a
+     tap anywhere on the card opens the browser's own picker. Hidden from
+     screen readers because the select already announces the same text. */
+  .pick {
+    min-width: 0;
+    position: relative;
+  }
+
+  .chosen {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E") no-repeat right 0.625rem center;
+    display: block;
+    padding: 0.25rem 1.75rem 0.25rem 0.5rem;
+  }
+
+  /* Each line keeps its height when empty, so an empty slot's row is as tall
+     as a filled one. */
+  .chosen .name,
+  .chosen .meta {
+    display: block;
+    min-height: 1lh;
+    overflow-wrap: break-word;
+  }
+
   .row select {
-    border-color: transparent;
-    outline: none;
+    height: 100%;
+    inset: 0;
+    opacity: 0;
+    position: absolute;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* The meta line and its aligned slots copy matchup.html's. */
+  .meta {
+    color: #666;
+    font-size: 0.8125rem;
+  }
+
+  .meta .pos,
+  .meta .team {
+    display: inline-block;
+    text-align: center;
+  }
+
+  .meta .pos::before,
+  .meta .team::before {
+    display: block;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    white-space: pre;
+  }
+
+  .meta .pos::before {
+    content: "WR\A QB\A CB\A DB";
+  }
+
+  .meta .team::before {
+    content: "HOU\A WAS\A MIA\A NYG\A NYJ";
   }
 
   .actions {
@@ -123,7 +177,7 @@
   <form method="get" action="/lineup">
     <input type="hidden" name="team" value="{{.Team}}">
     {{range $i, $s := .Slots}}<div class="row"><label for="slot{{$i}}">{{$s.Label}}</label>
-    <select name="{{$s.Name}}" id="slot{{$i}}"><option value=""{{if $s.Empty}} selected{{end}}></option>{{range $s.Options}}<option value="{{.ID}}"{{if .Selected}} selected{{end}}>{{.Text}}</option>{{end}}</select></div>
+    <div class="pick"><span class="chosen" aria-hidden="true"><span class="name">{{$s.Card.Name}}</span><span class="meta">{{with $s.Card}}{{if .Name}}<span class="pos">{{.Position}}</span> · <span class="team">{{.Team}}</span>{{if .Game}} · <span class="game">{{.Game}}</span>{{end}}{{end}}{{end}}</span></span><select name="{{$s.Name}}" id="slot{{$i}}"><option value=""{{if $s.Empty}} selected{{end}}></option>{{range $s.Options}}<option value="{{.ID}}"{{if .Selected}} selected{{end}}>{{.Text}}</option>{{end}}</select></div></div>
     {{end}}
     <div class="actions"><button>Copy</button>{{if .CSVLink}}<a href="{{.CSVLink}}">Download</a>{{else}}<a aria-disabled="true">Download</a>{{end}}</div>
   </form>
@@ -131,6 +185,30 @@
 {{with .Problems}}<ul class="problems">{{range .}}<li>{{.}}</li>{{end}}</ul>{{end}}
 {{if .StartingUnreadable}}<p class="note">The starting lineup could not be read, so every slot starts empty.</p>{{end}}
 <script>
+  // A card shows what its select's option says. The option's text is the
+  // card's fields joined by " · ", as playerCard.optionText writes them.
+  Array.prototype.forEach.call(document.querySelectorAll(".pick"), function (pick) {
+    var select = pick.querySelector("select");
+    select.addEventListener("change", function () {
+      var parts = select.options[select.selectedIndex].text.split(" · ");
+      pick.querySelector(".name").textContent = parts[0];
+      var meta = pick.querySelector(".meta");
+      meta.textContent = "";
+      ["pos", "team", "game"].forEach(function (field, i) {
+        if (!parts[i + 1]) {
+          return;
+        }
+        if (i > 0) {
+          meta.append(" · ");
+        }
+        var span = document.createElement("span");
+        span.className = field;
+        span.textContent = parts[i + 1];
+        meta.append(span);
+      });
+    });
+  });
+
   // Copy both checks the lineup and copies its thread text. Without the
   // clipboard API the button stays a plain submit, which is still the check.
   (function () {
