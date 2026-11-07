@@ -230,6 +230,17 @@ func TestThePickerSelectsTheRequestedTeam(t *testing.T) {
 	}
 }
 
+// The picker submits itself on change, so a button would do nothing.
+func TestTheTeamPickerHasNoButton(t *testing.T) {
+	body := newLineupFixture().get("/lineup").Body.String()
+
+	for _, m := range getFormPattern.FindAllStringSubmatch(body, -1) {
+		if strings.Contains(m[1], `name="team" id="team"`) && strings.Contains(m[1], "<button") {
+			t.Errorf("the team picker has a button:\n%s", m[1])
+		}
+	}
+}
+
 func slotSelectNames(body string) []string {
 	var names []string
 	for _, m := range selectPattern.FindAllStringSubmatch(body, -1) {
@@ -606,36 +617,16 @@ func TestTheSlotsAreAGETFormCarryingTheTeam(t *testing.T) {
 	}
 }
 
-var textareaPattern = regexp.MustCompile(`(?s)<textarea[^>]*>(.*?)</textarea>`)
-
-// summary is the page's textarea text, unescaped, and whether there is one.
-func summary(body string) (string, bool) {
-	m := textareaPattern.FindStringSubmatch(body)
-	if m == nil {
-		return "", false
-	}
-	return html.UnescapeString(m[1]), true
-}
-
-func TestAValidProposalIsSummarisedAsPasteableText(t *testing.T) {
+// The form itself shows the lineup, so no separate summary repeats it.
+func TestAValidLineupIsNotRepeatedAsText(t *testing.T) {
 	body := newLineupFixture().get(proposalURL("/lineup", woodWeek9...)).Body.String()
 
-	want := "wood · 2026 week 9\n" +
-		"QB Josh Allen (BUF)\n" +
-		"RB Bijan Robinson (ATL)\n" +
-		"WR Amon-Ra St. Brown (DET)\n" +
-		"TE Trey McBride (ARI)\n" +
-		"FLEX Derrick Henry (BAL)\n" +
-		"FLEX Kyle Juszczyk (SF)\n" +
-		"K Brandon Aubrey (DAL)\n" +
-		"D Myles Garrett (CLE)\n" +
-		"D Sauce Gardner (NYJ)\n"
-	if got, ok := summary(body); got != want {
-		t.Errorf("summary (shown %v) = %q, want %q", ok, got, want)
+	if strings.Contains(body, "<textarea") {
+		t.Errorf("a valid lineup is repeated in a textarea:\n%s", body)
 	}
 }
 
-func TestAnIncompleteLineupHasNoSummaryOrDownload(t *testing.T) {
+func TestAnIncompleteLineupHasNoDownload(t *testing.T) {
 	tests := map[string]string{
 		"a duplicate proposal":         proposalURL("/lineup", woodWeek9With(4, "102")...),
 		"a starting lineup with holes": "/lineup?team=wood",
@@ -644,9 +635,6 @@ func TestAnIncompleteLineupHasNoSummaryOrDownload(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			body := newLineupFixture().get(u).Body.String()
 
-			if _, ok := summary(body); ok {
-				t.Errorf("a summary is shown:\n%s", body)
-			}
 			if strings.Contains(body, "/lineup.csv") {
 				t.Errorf("a download is linked:\n%s", body)
 			}
@@ -656,7 +644,7 @@ func TestAnIncompleteLineupHasNoSummaryOrDownload(t *testing.T) {
 
 var csvLinkPattern = regexp.MustCompile(`href="(/lineup\.csv[^"]*)"`)
 
-func TestAValidLineupLinksItsDownloadAndNamesWhereItIsCommitted(t *testing.T) {
+func TestAValidLineupLinksItsDownload(t *testing.T) {
 	body := newLineupFixture().get(proposalURL("/lineup", woodWeek9...)).Body.String()
 
 	m := csvLinkPattern.FindStringSubmatch(body)
@@ -664,8 +652,8 @@ func TestAValidLineupLinksItsDownloadAndNamesWhereItIsCommitted(t *testing.T) {
 	if m == nil || html.UnescapeString(m[1]) != want {
 		t.Errorf("download link = %v, want %q", m, want)
 	}
-	if !strings.Contains(body, "internal/data/lineups/2026/9/wood.csv") {
-		t.Errorf("body does not name the committed path:\n%s", body)
+	if !regexp.MustCompile(`href="/lineup\.csv[^"]*">Download</a>`).MatchString(body) {
+		t.Errorf("the download link does not read just Download:\n%s", body)
 	}
 }
 
@@ -756,7 +744,7 @@ func TestARosterNameWithMarkupIsEscaped(t *testing.T) {
 	if strings.Contains(body, "<b>") {
 		t.Errorf("body holds a <b> element:\n%s", body)
 	}
-	if got := strings.Count(body, "&lt;b&gt;X&lt;/b&gt;"); got != 2 {
-		t.Errorf("escaped name appears %d times, want 2 (QB option and summary):\n%s", got, body)
+	if got := strings.Count(body, "&lt;b&gt;X&lt;/b&gt;"); got != 1 {
+		t.Errorf("escaped name appears %d times, want 1 (the QB option):\n%s", got, body)
 	}
 }

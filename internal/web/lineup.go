@@ -39,9 +39,7 @@ type lineupView struct {
 
 	StartingUnreadable bool
 	Problems           []string
-	Summary            string
 	CSVLink            string
-	CommitPath         string
 }
 
 // slotSelect is one slot's select. Its name is the slot's query parameter, so
@@ -174,16 +172,6 @@ func checkProposal(ids [lineup.StarterCount]string, pool []lineup.Player) (playe
 	return players, problems
 }
 
-// summaryText is the lineup as text to paste into the league's thread.
-func summaryText(team string, season, week int, l lineup.Lineup) string {
-	text := fmt.Sprintf("%s · %d week %d\n", team, season, week)
-	slots := lineup.Slots()
-	for i, p := range l.Starters() {
-		text += fmt.Sprintf("%s %s (%s)\n", slots[i], p.Name, p.Team)
-	}
-	return text
-}
-
 // csvLink is the download's URL. Its query is built in slot order, not by
 // url.Values.Encode, which sorts keys, so it reads like the form's own URL.
 func csvLink(team string, l lineup.Lineup) string {
@@ -302,9 +290,7 @@ func LineupHandler(rosters *lineup.Rosters, tree *lineup.Tree, current CurrentWe
 			view.Slots = slotSelects(form.pool, form.chosen, weekGames, gamesAvailable)
 		}
 		if form.complete {
-			view.Summary = summaryText(form.team, form.season, form.week, form.lineup)
 			view.CSVLink = csvLink(form.team, form.lineup)
-			view.CommitPath = fmt.Sprintf("internal/data/lineups/%d/%d/%s.csv", form.season, form.week, form.team)
 		}
 
 		var buf bytes.Buffer
