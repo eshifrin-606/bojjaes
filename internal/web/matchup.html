@@ -221,8 +221,8 @@
   {{range .Columns}}
   <section class="column">
     <header>
-      <h2>{{.Team}}</h2>
-      <p class="total">{{.Total}}</p>
+      {{if .TBD}}<h2>TBD</h2>{{else}}<h2>{{.Team}}</h2>
+      <p class="total">{{.Total}}</p>{{end}}
     </header>
     <ol>
       {{range .Starters}}<li><span class="player"><span class="long">{{.Name}}</span><span class="short">{{.ShortName}}</span></span><span class="points">{{.Points}}</span><span class="meta"><span class="pos">{{.Position}}</span> · <span class="team">{{.Team}}</span>{{if .Game}} · <span class="game">{{.Game}}</span>{{else if .KickoffRFC3339}} · <span class="game"><time datetime="{{.KickoffRFC3339}}">{{.KickoffText}}</time></span>{{end}}</span></li>{{end}}

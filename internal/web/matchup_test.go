@@ -499,12 +499,6 @@ func TestWeekRefusals(t *testing.T) {
 			want: http.StatusInternalServerError,
 		},
 		{
-			name:    "one lineup",
-			lineups: map[string]string{"bojjaes": lineupHeader + "9493,Puka Nacua,WR,LAR\n"},
-			week:    15,
-			want:    http.StatusInternalServerError,
-		},
-		{
 			name: "a matchup we are not in",
 			lineups: map[string]string{
 				"wood":  lineupHeader + "8138,Bijan Robinson,RB,ATL\n",
@@ -545,6 +539,72 @@ func TestWeekRefusals(t *testing.T) {
 				t.Errorf("the response body names a lineup file:\n%s", body)
 			}
 		})
+	}
+}
+
+// renderedColumns is each column section's markup, left then right.
+func renderedColumns(t *testing.T, body string) [2]string {
+	t.Helper()
+	sections := sectionPattern.FindAllStringSubmatch(body, -1)
+	if len(sections) != 2 {
+		t.Fatalf("found %d column sections, want 2:\n%s", len(sections), body)
+	}
+	return [2]string{sections[0][1], sections[1][1]}
+}
+
+func TestALoneBojjaesLineupHasItsOpponentTBD(t *testing.T) {
+	weekTree := weekFS(2025, 15, map[string]string{"bojjaes": lineupCSV(ourLine)})
+
+	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body)
+	}
+
+	cols := renderedColumns(t, rec.Body.String())
+	if !strings.Contains(cols[0], "<h2>bojjaes</h2>") {
+		t.Errorf("left column is not the Bojjaes:\n%s", cols[0])
+	}
+	if got := renderedStarters(cols[0]); len(got) != len(ourLine) {
+		t.Errorf("left column starters = %q, want the Bojjaes' %d", got, len(ourLine))
+	}
+	if !strings.Contains(cols[1], "<h2>TBD</h2>") {
+		t.Errorf("right column heading is not TBD:\n%s", cols[1])
+	}
+}
+
+func TestALoneOpponentLineupHasTheBojjaesTBD(t *testing.T) {
+	weekTree := weekFS(2025, 15, map[string]string{"wood": lineupCSV(theirLine)})
+
+	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body)
+	}
+
+	cols := renderedColumns(t, rec.Body.String())
+	if !strings.Contains(cols[0], "<h2>TBD</h2>") {
+		t.Errorf("left column heading is not TBD:\n%s", cols[0])
+	}
+	if !strings.Contains(cols[1], "<h2>wood</h2>") {
+		t.Errorf("right column is not wood:\n%s", cols[1])
+	}
+	if got := renderedTotals(cols[1]); !slices.Equal(got, []string{"42"}) {
+		t.Errorf("right column totals = %q, want wood's %q", got, "42")
+	}
+}
+
+// A total of zero would read as a side that scored nothing, rather than one
+// that has not been set.
+func TestATBDColumnHasNoTotalAndNoStarters(t *testing.T) {
+	weekTree := weekFS(2025, 15, map[string]string{"bojjaes": lineupCSV(ourLine)})
+
+	rec := serve(Handler(lineup.New(weekTree), &fakeSource{weekStats: fixtureStats()}, noGames{}), http.MethodGet, "/2025/15")
+
+	tbd := renderedColumns(t, rec.Body.String())[1]
+	if strings.Contains(tbd, `class="total"`) {
+		t.Errorf("TBD column carries a total:\n%s", tbd)
+	}
+	if strings.Contains(tbd, "<li>") {
+		t.Errorf("TBD column carries starter rows:\n%s", tbd)
 	}
 }
 
@@ -657,6 +717,18 @@ func TestOneFetchServesBothColumns(t *testing.T) {
 
 	if source.calls != 1 {
 		t.Errorf("provider called %d times, want 1: the two columns must come from one snapshot", source.calls)
+	}
+}
+
+// The side present is still scored, so the week is still fetched — once.
+func TestAOneLineupWeekIsFetchedOnce(t *testing.T) {
+	source := &fakeSource{weekStats: fixtureStats()}
+	weekTree := weekFS(2025, 15, map[string]string{"bojjaes": lineupCSV(ourLine)})
+
+	serve(Handler(lineup.New(weekTree), source, noGames{}), http.MethodGet, "/2025/15")
+
+	if source.calls != 1 {
+		t.Errorf("provider called %d times, want 1", source.calls)
 	}
 }
 

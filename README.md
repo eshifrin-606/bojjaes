@@ -28,6 +28,20 @@ It logs `listening on :8080` and stays in the foreground (Ctrl-C to stop).
 
 Smoke test: with the server running, open http://localhost:8080/2025/14.
 
+### Run with a local volume
+
+`.env.local` sets `LINEUP_VOLUME=.volume`, so `go run ./cmd/server` from the
+repo root serves lineups from `.volume/lineups` instead of the embedded tree,
+and `/lineup` gets a Save button. Boot seeds `.volume/lineups` from git
+(`internal/data/lineups`), and saves land there. `rm -rf .volume` resets the
+store; the next boot re-seeds it.
+
+Without direnv, set it for one run:
+
+```bash
+LINEUP_VOLUME=.volume go run ./cmd/server
+```
+
 ### The matchup page
 
 `GET /{season}/{week}` serves that week's matchup as an HTML page: the two teams
@@ -39,14 +53,16 @@ open http://localhost:8080/2025/15
 ```
 
 No team appears in the URL — the week directory in the lineup tree names both.
-A week that is not exactly one Bojjaes matchup is refused rather than guessed
-at: a week we never played is a `404`, a malformed week directory is a
+A week holding only one side's lineup shows the other as `TBD`. Any other week
+that is not one Bojjaes matchup is refused rather than guessed at: a week we
+never played is a `404`, a malformed week directory is a
 `500`, and a failed upstream fetch is a `502` rather than a page of zeros.
 
 Lineups are hand-edited at `internal/data/lineups/<season>/<week>/<team>.csv`.
-The tree is compiled into the binary with `//go:embed`, so the server reads no
-file off the working directory — and an edited lineup reaches the page only
-after a rebuild.
+The tree is compiled into the binary with `//go:embed`. Without a volume the
+server reads no file off the working directory, so an edited lineup reaches the
+page only after a rebuild. With `LINEUP_VOLUME` set, boot seeds the volume from
+that tree and lineups saved from the form are served from it (see above).
 
 The page shows both totals and nowhere shows their difference. A starter whose
 game has not kicked off is indistinguishable from one who was inactive, so it

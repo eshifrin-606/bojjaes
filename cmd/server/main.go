@@ -17,6 +17,7 @@ import (
 	"github.com/eshifrin/bojjaes/internal/sleeper"
 	"github.com/eshifrin/bojjaes/internal/sleeper/plays"
 	"github.com/eshifrin/bojjaes/internal/volume"
+	"github.com/eshifrin/bojjaes/internal/web"
 	"github.com/eshifrin/bojjaes/internal/weekcache"
 )
 
@@ -58,7 +59,14 @@ func main() {
 		log.Fatalf("lineups: %v", err)
 	}
 
-	srv := newServer(cfg.addr, newMux(stats, games, current, lineup.New(lineups), lineup.NewRosters(data.Rosters)))
+	// Declared as the interface so that with no volume it is a true nil, not
+	// a nil *Store that newMux would take for a store.
+	var saver web.LineupSaver
+	if cfg.lineupVolume != "" {
+		saver = volume.NewStore(cfg.lineupVolume)
+	}
+
+	srv := newServer(cfg.addr, newMux(stats, games, current, lineup.New(lineups), lineup.NewRosters(data.Rosters), saver))
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)

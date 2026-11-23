@@ -36,17 +36,22 @@ order. Not sized, not prioritized. Each row is its own `/opsx:propose` when pick
   and kickoff. "Check" is a GET, so the URL is a shareable proposed lineup (for texting a
   teammate); also shows a plain-text summary and a CSV download to commit to git. No write path.
 - [ ] Home page — `GET /` links to the scoreboard by season and to the lineup form.
-- [ ] Persist a submitted lineup — validated (ADR 0004 §9 invariants), atomic temp-then-rename,
-  no UI. Writable weeks: the store's latest week or the week after it (2025/16 → 2026/1 explicit
-  in the path); editing a week git already has is allowed. Rejects any other week, a third file
-  in a week directory, or an orphaned opponent.
+- [x] Persist a submitted lineup — OpenSpec change `save-lineup-from-form`. `volume.Store.Save`
+  writes `<path>/lineups/<season>/<week>/<team>.csv` atomically (dot-prefixed temp file, then
+  rename), serialized in process. Writable week: the form's current week only (Sleeper, ≤ 17);
+  a posted week that no longer matches is refused. `bojjaes` saves to `bojjaes.csv`; any other
+  team is the opponent — created, overwritten if the same team, refused if the week holds a
+  different one. Never deletes, never a third file. A one-lineup week shows the missing side as
+  TBD. ADR 0005 decisions 3 and 8.
 - [ ] Gate writes behind a shared passphrase; reads stay public. Could fold into the persist step,
   kept separate to keep its tests about access rather than correctness.
 - [ ] Export unarchived weeks (ui-only or diverged, ADR 0005 decision 4) so they can be committed
   to git — `fly ssh sftp get` documented, or a download link. Without it the archive step has
   nothing to commit.
-- [ ] Save from the lineup form — a `POST` button beside "Check" that submits to the persist
-  handler. The "from my phone" experience over the proven write handler.
+- [x] Save from the lineup form — same change. A Save button beside Copy posts to `POST /lineup`,
+  which runs the form's checks, saves, and redirects back (303); a refusal re-renders the form
+  with the reason. The form says whether the week is saved or which week it starts from. With
+  no volume there is no button and no route. Open — no passphrase yet (ADR 0005 decision 7).
 
 ## Open threads
 
@@ -57,7 +62,7 @@ order. Not sized, not prioritized. Each row is its own `/opsx:propose` when pick
   ordinary commit-and-deploy. Out of scope for the initial rollout.
 - [ ] Season-long stats — if it lands and Sleeper load justifies it, a *separate* stats cache
   (possibly SQLite) alongside file-based lineups, not a migration of lineups into a DB.
-- [ ] Writable weeks vs. current week — ADR 0005 decision 3 allows the store's latest week or the
-  next; the form targets Sleeper's current week. Reconcile when the persist step is picked up.
+- [x] Writable weeks vs. current week — closed by `save-lineup-from-form`: the writable week is
+  the form's current week (ADR 0005 decision 3).
 - [ ] Roster transactions (adds/drops) — rosters stay git-edited and the form ignores drift.
   Not planned.

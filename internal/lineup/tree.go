@@ -81,7 +81,7 @@ const LastWeek = 17
 // and a caller that renders one needs to tell them apart.
 var (
 	ErrNoWeek         = errors.New("no week directory")
-	ErrTooFewLineups  = errors.New("fewer than two lineups")
+	ErrTooFewLineups  = errors.New("no lineups")
 	ErrTooManyLineups = errors.New("more than two lineups")
 	ErrNotOurMatchup  = errors.New("no bojjaes lineup")
 )
@@ -130,9 +130,9 @@ func (t *Tree) LatestWeek(season int) (week int, ok bool) {
 	return week, ok
 }
 
-// Matchup resolves a season and week to that week's two team names, ours
-// first. It never opens either lineup: whether a lineup is usable is a fact
-// about the file, reported by Read.
+// Matchup resolves a season and week to that week's team names, ours first;
+// a side with no lineup yet comes back empty. It never opens either lineup:
+// whether a lineup is usable is a fact about the file, reported by Read.
 func (t *Tree) Matchup(season, week int) (ours, theirs string, err error) {
 	dir := t.weekDir(season, week)
 
@@ -159,8 +159,16 @@ func (t *Tree) Matchup(season, week int) (ours, theirs string, err error) {
 		return "", "", fmt.Errorf("%s: %w: found %s", dir, ErrTooManyLineups, found(names))
 	}
 
-	if len(teams) < 2 {
+	if len(teams) == 0 {
 		return "", "", fmt.Errorf("%s: %w: found %s", dir, ErrTooFewLineups, found(names))
+	}
+
+	// One lineup is a matchup whose other side is still to be decided.
+	if len(teams) == 1 {
+		if teams[0] == OurTeam {
+			return OurTeam, "", nil
+		}
+		return "", teams[0], nil
 	}
 
 	// This resolver answers who the Bojjaes are playing, which a directory of

@@ -11,18 +11,26 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/eshifrin/bojjaes/internal/games"
 	"github.com/eshifrin/bojjaes/internal/lineup"
 	"github.com/eshifrin/bojjaes/internal/nflweek"
+	"github.com/eshifrin/bojjaes/internal/volume"
 )
 
 // CurrentWeekSource supplies the provider's current NFL week. Declared here,
 // by the consumer, for the reason StatsSource is.
 type CurrentWeekSource interface {
 	AsOf(context.Context) (nflweek.Current, time.Time, error)
+}
+
+// LineupSaver files a team's lineup for a week. Declared here, by the
+// consumer, so handler tests can use a fake.
+type LineupSaver interface {
+	Save(season, week int, team string, l lineup.Lineup) error
 }
 
 //go:embed lineup.html
@@ -40,6 +48,9 @@ type lineupView struct {
 	StartingUnreadable bool
 	Problems           []string
 	CSVLink            string
+	CanSave            bool
+	Saved              bool
+	StartingWeek       int
 }
 
 // slotSelect is one slot's select. Its name is the slot's query parameter, so
@@ -111,20 +122,20 @@ func (c playerCard) optionText() string {
 }
 
 // startingLineup is the team's lineup at or before the week, in slot order,
-// or nil when it has none.
-func startingLineup(tree *lineup.Tree, team string, season, week int) ([]lineup.Player, error) {
+// and the season and week it was filed for, or nil when it has none.
+func startingLineup(tree *lineup.Tree, team string, season, week int) (starters []lineup.Player, fromSeason, fromWeek int, err error) {
 	s, w, err := tree.LatestLineup(team, season, week)
 	if errors.Is(err, lineup.ErrNoLineup) {
-		return nil, nil
+		return nil, 0, 0, nil
 	}
 	if err != nil {
-		return nil, err
+		return nil, 0, 0, err
 	}
 	l, err := tree.Read(s, w, team)
 	if err != nil {
-		return nil, err
+		return nil, 0, 0, err
 	}
-	return l.Starters(), nil
+	return l.Starters(), s, w, nil
 }
 
 // optionPool is the roster, then any starter not on it: a starter the roster
@@ -210,15 +221,18 @@ type lineupForm struct {
 	proposed           bool
 	problems           []string
 	startingUnreadable bool
+	saved              bool
+	startingWeek       int
 	lineup             lineup.Lineup
 	complete           bool
 }
 
 // resolveLineupForm runs the team, current-week, pool, and proposal steps
-// both routes share. When ok is false it has already answered the request.
-func resolveLineupForm(w http.ResponseWriter, r *http.Request, rosters *lineup.Rosters, tree *lineup.Tree, current CurrentWeekSource) (form lineupForm, ok bool) {
+// the lineup routes share, reading the form's fields from q. When ok is false
+// it has already answered the request.
+func resolveLineupForm(w http.ResponseWriter, r *http.Request, q url.Values, rosters *lineup.Rosters, tree *lineup.Tree, current CurrentWeekSource) (form lineupForm, ok bool) {
 	// Refused before any fetch: a typo or a guess must not reach Sleeper.
-	form.team = r.URL.Query().Get("team")
+	form.team = q.Get("team")
 	if form.team == "" {
 		form.team = lineup.OurTeam
 	}
@@ -251,17 +265,19 @@ func resolveLineupForm(w http.ResponseWriter, r *http.Request, rosters *lineup.R
 		return form, false
 	}
 
-	starters, err := startingLineup(tree, form.team, form.season, form.week)
+	starters, fromSeason, fromWeek, err := startingLineup(tree, form.team, form.season, form.week)
 	if err != nil {
 		// The slots can still be set by hand, so a bad file is a notice, not
 		// a failed page.
 		log.Printf("reading %s starting lineup for %d week %d: %v", form.team, form.season, form.week, err)
 		form.startingUnreadable = true
 	}
+	form.saved = fromSeason == form.season && fromWeek == form.week
+	form.startingWeek = fromWeek
 	copy(form.chosen[:], starters)
 	form.pool = optionPool(roster, starters)
 
-	proposed, overfull, isProposal := proposedIDs(r.URL.Query())
+	proposed, overfull, isProposal := proposedIDs(q)
 	form.proposed = isProposal
 	if isProposal {
 		form.chosen, form.problems = checkProposal(proposed, form.pool)
@@ -279,51 +295,61 @@ func resolveLineupForm(w http.ResponseWriter, r *http.Request, rosters *lineup.R
 	return form, true
 }
 
-// LineupHandler renders the lineup form for the current week.
-func LineupHandler(rosters *lineup.Rosters, tree *lineup.Tree, current CurrentWeekSource, gameSource GamesSource) http.Handler {
+// LineupHandler renders the lineup form for the current week. With a nil
+// saver the form offers no Save.
+func LineupHandler(rosters *lineup.Rosters, tree *lineup.Tree, current CurrentWeekSource, gameSource GamesSource, saver LineupSaver) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		form, ok := resolveLineupForm(w, r, rosters, tree, current)
+		form, ok := resolveLineupForm(w, r, r.URL.Query(), rosters, tree, current)
 		if !ok {
 			return
 		}
-		view := lineupView{
-			Season:             form.season,
-			Week:               form.week,
-			NoWeek:             form.noWeek,
-			Team:               form.team,
-			Teams:              rosters.Teams(),
-			StartingUnreadable: form.startingUnreadable,
-			Problems:           form.problems,
-		}
-		if !form.noWeek {
-			// Read last, and a failure only drops the game text: the form
-			// sets a lineup whether or not Sleeper says when anyone plays.
-			weekGames, _, err := gameSource.AsOf(r.Context(), form.season, form.week)
-			gamesAvailable := err == nil
-			if err != nil {
-				log.Printf("fetching games for %d week %d: %v", form.season, form.week, err)
-			}
-			view.Slots = slotSelects(form.pool, form.chosen, weekGames, gamesAvailable)
-		}
-		if form.complete {
-			view.CSVLink = csvLink(form.team, form.lineup)
-		}
-
-		var buf bytes.Buffer
-		if err := lineupPage.Execute(&buf, view); err != nil {
-			log.Printf("rendering lineup form: %v", err)
-			http.Error(w, "the page could not be rendered", http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write(buf.Bytes())
+		renderLineupForm(w, r, form, rosters, gameSource, saver != nil, http.StatusOK)
 	})
+}
+
+// renderLineupForm answers the form page for a resolved form with status.
+func renderLineupForm(w http.ResponseWriter, r *http.Request, form lineupForm, rosters *lineup.Rosters, gameSource GamesSource, canSave bool, status int) {
+	view := lineupView{
+		Season:             form.season,
+		Week:               form.week,
+		NoWeek:             form.noWeek,
+		Team:               form.team,
+		Teams:              rosters.Teams(),
+		StartingUnreadable: form.startingUnreadable,
+		Problems:           form.problems,
+		CanSave:            canSave,
+		Saved:              form.saved,
+		StartingWeek:       form.startingWeek,
+	}
+	if !form.noWeek {
+		// Read last, and a failure only drops the game text: the form
+		// sets a lineup whether or not Sleeper says when anyone plays.
+		weekGames, _, err := gameSource.AsOf(r.Context(), form.season, form.week)
+		gamesAvailable := err == nil
+		if err != nil {
+			log.Printf("fetching games for %d week %d: %v", form.season, form.week, err)
+		}
+		view.Slots = slotSelects(form.pool, form.chosen, weekGames, gamesAvailable)
+	}
+	if form.complete {
+		view.CSVLink = csvLink(form.team, form.lineup)
+	}
+
+	var buf bytes.Buffer
+	if err := lineupPage.Execute(&buf, view); err != nil {
+		log.Printf("rendering lineup form: %v", err)
+		http.Error(w, "the page could not be rendered", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	w.Write(buf.Bytes())
 }
 
 // resolveProposedLineup is resolveLineupForm for the routes that answer the
 // lineup itself, which need a complete, valid proposal for a week to set.
 func resolveProposedLineup(w http.ResponseWriter, r *http.Request, rosters *lineup.Rosters, tree *lineup.Tree, current CurrentWeekSource) (lineupForm, bool) {
-	form, ok := resolveLineupForm(w, r, rosters, tree, current)
+	form, ok := resolveLineupForm(w, r, r.URL.Query(), rosters, tree, current)
 	if !ok {
 		return form, false
 	}
@@ -371,5 +397,47 @@ func LineupCSVHandler(rosters *lineup.Rosters, tree *lineup.Tree, current Curren
 		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.csv"`, form.team))
 		w.Write(buf.Bytes())
+	})
+}
+
+// LineupSaveHandler saves a posted lineup for the current week.
+func LineupSaveHandler(rosters *lineup.Rosters, tree *lineup.Tree, current CurrentWeekSource, gameSource GamesSource, saver LineupSaver) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "the form could not be read", http.StatusBadRequest)
+			return
+		}
+		form, ok := resolveLineupForm(w, r, r.PostForm, rosters, tree, current)
+		if !ok {
+			return
+		}
+		if form.noWeek {
+			http.Error(w, "no week to set", http.StatusNotFound)
+			return
+		}
+		// The posted week only guards against turnover; the current week is
+		// always the one written, so an open tab can't file under the next.
+		if r.PostForm.Get("season") != strconv.Itoa(form.season) || r.PostForm.Get("week") != strconv.Itoa(form.week) {
+			form.problems = append(form.problems, fmt.Sprintf("the week changed to %d week %d; reload the form before saving", form.season, form.week))
+			renderLineupForm(w, r, form, rosters, gameSource, true, http.StatusConflict)
+			return
+		}
+		if !form.proposed || !form.complete {
+			renderLineupForm(w, r, form, rosters, gameSource, true, http.StatusBadRequest)
+			return
+		}
+		err := saver.Save(form.season, form.week, form.team, form.lineup)
+		var opponentSet *volume.OpponentSetError
+		if errors.As(err, &opponentSet) {
+			form.problems = append(form.problems, opponentSet.Error())
+			renderLineupForm(w, r, form, rosters, gameSource, true, http.StatusConflict)
+			return
+		}
+		if err != nil {
+			log.Printf("saving %s lineup for %d week %d: %v", form.team, form.season, form.week, err)
+			http.Error(w, "the lineup could not be saved", http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "/lineup?team="+url.QueryEscape(form.team), http.StatusSeeOther)
 	})
 }

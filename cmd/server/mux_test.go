@@ -42,7 +42,7 @@ func (s stubCurrent) AsOf(context.Context) (nflweek.Current, time.Time, error) {
 var midSeason = stubCurrent{nflweek.New(2026, 9, nflweek.Regular)}
 
 func testMux() *http.ServeMux {
-	return newMux(stubStats{}, stubGames{}, midSeason, lineup.New(data.Lineups), lineup.NewRosters(data.Rosters))
+	return newMux(stubStats{}, stubGames{}, midSeason, lineup.New(data.Lineups), lineup.NewRosters(data.Rosters), nil)
 }
 
 func TestMuxServesTheMatchupPage(t *testing.T) {
@@ -59,7 +59,7 @@ func TestMuxRendersTheGamesSourcesGameState(t *testing.T) {
 	detroit := stubGames{games: []games.Game{{Home: "DET", Away: "LAR", State: games.Complete}}}
 	rec := httptest.NewRecorder()
 
-	newMux(stubStats{}, detroit, midSeason, lineup.New(data.Lineups), lineup.NewRosters(data.Rosters)).
+	newMux(stubStats{}, detroit, midSeason, lineup.New(data.Lineups), lineup.NewRosters(data.Rosters), nil).
 		ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/2025/15", nil))
 
 	if body := rec.Body.String(); !strings.Contains(body, `<span class="game">Final</span>`) {
@@ -172,7 +172,7 @@ func (r recordingStats) FetchedAt(season, week int) (time.Time, bool) {
 // The season form would ask for the embedded tree's latest week, not week 5.
 func TestMuxStillRoutesANumberedWeeksVersionToTheWeekForm(t *testing.T) {
 	var asked [][2]int
-	mux := newMux(recordingStats{asked: &asked}, stubGames{}, midSeason, lineup.New(data.Lineups), lineup.NewRosters(data.Rosters))
+	mux := newMux(recordingStats{asked: &asked}, stubGames{}, midSeason, lineup.New(data.Lineups), lineup.NewRosters(data.Rosters), nil)
 
 	mux.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/2025/5/version", nil))
 
@@ -206,7 +206,7 @@ const woodRoster = "id,name,position,team\n" +
 
 func TestMuxServesTheLineupFile(t *testing.T) {
 	rosters := lineup.NewRosters(fstest.MapFS{"wood.csv": {Data: []byte(woodRoster)}})
-	mux := newMux(stubStats{}, stubGames{}, midSeason, lineup.New(fstest.MapFS{}), rosters)
+	mux := newMux(stubStats{}, stubGames{}, midSeason, lineup.New(fstest.MapFS{}), rosters, nil)
 	rec := httptest.NewRecorder()
 
 	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet,
@@ -219,7 +219,7 @@ func TestMuxServesTheLineupFile(t *testing.T) {
 
 func TestMuxServesTheLineupText(t *testing.T) {
 	rosters := lineup.NewRosters(fstest.MapFS{"wood.csv": {Data: []byte(woodRoster)}})
-	mux := newMux(stubStats{}, stubGames{}, midSeason, lineup.New(fstest.MapFS{}), rosters)
+	mux := newMux(stubStats{}, stubGames{}, midSeason, lineup.New(fstest.MapFS{}), rosters, nil)
 	rec := httptest.NewRecorder()
 
 	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet,
@@ -230,14 +230,51 @@ func TestMuxServesTheLineupText(t *testing.T) {
 	}
 }
 
-// The form only proposes a lineup; nothing on these routes writes one.
-func TestMuxRejectsAPostToTheLineupForm(t *testing.T) {
+// With no store there is nowhere to save, so the route is not registered.
+func TestMuxRejectsAPostToTheLineupFormWithNoSaver(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	testMux().ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/lineup", nil))
 
 	if rec.Code != http.StatusMethodNotAllowed {
 		t.Errorf("POST /lineup = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+	}
+}
+
+type fakeSaver struct{ saves int }
+
+func (s *fakeSaver) Save(int, int, string, lineup.Lineup) error {
+	s.saves++
+	return nil
+}
+
+const woodSave = "team=wood&season=2026&week=9&qb=101&rb=102&wr=105&te=107&flex=103&flex=104&k=108&d=109&d=110"
+
+func TestMuxRoutesAPostToTheLineupFormToTheSaver(t *testing.T) {
+	rosters := lineup.NewRosters(fstest.MapFS{"wood.csv": {Data: []byte(woodRoster)}})
+	saver := &fakeSaver{}
+	mux := newMux(stubStats{}, stubGames{}, midSeason, lineup.New(fstest.MapFS{}), rosters, saver)
+	req := httptest.NewRequest(http.MethodPost, "/lineup", strings.NewReader(woodSave))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+
+	mux.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusSeeOther || saver.saves != 1 {
+		t.Errorf("POST /lineup = %d with %d saves, want 303 with 1", rec.Code, saver.saves)
+	}
+}
+
+// Saving is POST /lineup's alone; the download stays GET only with a saver.
+func TestMuxRejectsAPostToTheLineupFileWithASaver(t *testing.T) {
+	rosters := lineup.NewRosters(fstest.MapFS{"wood.csv": {Data: []byte(woodRoster)}})
+	mux := newMux(stubStats{}, stubGames{}, midSeason, lineup.New(fstest.MapFS{}), rosters, &fakeSaver{})
+	rec := httptest.NewRecorder()
+
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/lineup.csv", strings.NewReader(woodSave)))
+
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("POST /lineup.csv = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
 	}
 }
 

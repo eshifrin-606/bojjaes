@@ -176,12 +176,15 @@
   </form></header>
   <form method="get" action="/lineup">
     <input type="hidden" name="team" value="{{.Team}}">
-    {{range $i, $s := .Slots}}<div class="row"><label for="slot{{$i}}">{{$s.Label}}</label>
+    {{if .CanSave}}<input type="hidden" name="season" value="{{.Season}}">
+    <input type="hidden" name="week" value="{{.Week}}">
+    {{end}}    {{range $i, $s := .Slots}}<div class="row"><label for="slot{{$i}}">{{$s.Label}}</label>
     <div class="pick"><span class="chosen" aria-hidden="true"><span class="name">{{$s.Card.Name}}</span><span class="meta">{{with $s.Card}}{{if .Name}}<span class="pos">{{.Position}}</span> · <span class="team">{{.Team}}</span>{{if .Game}} · <span class="game">{{.Game}}</span>{{end}}{{end}}{{end}}</span></span><select name="{{$s.Name}}" id="slot{{$i}}"><option value=""{{if $s.Empty}} selected{{end}}></option>{{range $s.Options}}<option value="{{.ID}}"{{if .Selected}} selected{{end}}>{{.Text}}</option>{{end}}</select></div></div>
     {{end}}
-    <div class="actions"><button>Copy</button>{{if .CSVLink}}<a href="{{.CSVLink}}">Download</a>{{else}}<a aria-disabled="true">Download</a>{{end}}</div>
+    <div class="actions"><button>Copy</button>{{if .CanSave}}<button formmethod="post" formaction="/lineup" name="save">Save</button>{{end}}{{if .CSVLink}}<a href="{{.CSVLink}}">Download</a>{{else}}<a aria-disabled="true">Download</a>{{end}}</div>
   </form>
 </section>
+<p class="status">{{if .Saved}}Saved for week {{.Week}}{{else}}Not saved for week {{.Week}}{{with .StartingWeek}} · starting from week {{.}}{{end}}{{end}}</p>
 {{with .Problems}}<ul class="problems">{{range .}}<li>{{.}}</li>{{end}}</ul>{{end}}
 {{if .StartingUnreadable}}<p class="note">The starting lineup could not be read, so every slot starts empty.</p>{{end}}
 <script>
@@ -231,6 +234,9 @@
     }
 
     form.addEventListener("submit", function (event) {
+      if (event.submitter && event.submitter.name === "save") {
+        return;
+      }
       event.preventDefault();
       var query = new URLSearchParams(new FormData(form)).toString();
       var text = fetch("/lineup.txt?" + query).then(function (response) {
