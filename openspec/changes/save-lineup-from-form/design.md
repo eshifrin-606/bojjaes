@@ -88,8 +88,8 @@ renders.
 
 `<button formmethod="post" formaction="/lineup" name="save">Save</button>` sits in the same slots
 form. The Copy script's submit listener checks `event.submitter`: for Save it returns without
-calling `preventDefault`, so the browser does a normal POST. The script's "an edit voids Copied and
-Download" behavior doesn't apply to Save.
+calling `preventDefault`, so the browser does a normal POST. An edit resets Copied to Copy, which
+doesn't apply to Save.
 
 ### 8. Saved-state line from `Tree.LatestLineup`
 
@@ -108,6 +108,29 @@ one-file week is a directory like any other.
 
 The error `ErrTooFewLineups` now applies only to an empty directory. It stays, since the four
 error values distinguish four mistakes.
+
+### 10. Form polish: Save first, Download checks like Copy
+
+The action row is a grid: `2fr 1fr 1fr` (Save, Copy, Download) with a saver, `3fr 1fr` (Copy,
+Download) without. Save gets a dark fill and white text; the others keep today's grey. Download is
+`<button formaction="/lineup.csv" aria-label="Download">` holding an inline SVG, so it is in the
+form like Copy. With Save first, the script finds Copy and Download by selector, not as the form's
+first button.
+
+Download is never disabled, so `CSVLink`/`csvLink` go. The submit listener branches on
+`event.submitter`. For Download it fetches `/lineup.csv?<query>`: on `ok` it does
+`location.assign` to the same URL, and the attachment downloads without leaving the page; otherwise
+it reloads at `/lineup?<query>`, as Copy does, so the problems are listed. The clipboard check moves
+inside Copy's branch, so Download needs no clipboard. The valid case fetches twice; that's cheap,
+and it keeps the server's file name. Rejected: a blob download, which needs its own file name.
+
+No-JS fallback: the button's plain GET to `/lineup.csv`. An invalid lineup answers today's 400,
+whose plain-text body already lists the problems. Rejected: redirecting an invalid `/lineup.csv` to
+the form. That would change the route's statuses, which `/lineup.txt` and `POST /lineup` are
+specified to share.
+
+The status line becomes `Unsaved changes` on the slots form's `change` event. It is client-side
+only, so a reload shows the server's line again.
 
 ## Risks / Trade-offs
 

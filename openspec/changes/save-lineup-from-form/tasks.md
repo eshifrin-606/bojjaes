@@ -136,3 +136,34 @@ Out of scope: passphrase, export, game-start lock, replacing or deleting an oppo
       4. Add or edit that week's CSV under `internal/data/lineups`, so it differs from the save,
          and restart. Git's copy is served, and the log names the overwritten file. Revert the
          edit afterwards.
+
+## 11. Form polish
+
+- [x] 11.1 RED (chrome): with a saved week, changing a slot select makes the status line read
+      `Unsaved changes`. It still reads `Saved for week 9`. GREEN: the slots form's `change`
+      listener sets the `.status` text.
+- [x] 11.2 RED: with a saver, the action row's buttons read `Save`, `Copy`, `Download` in that
+      order, and `Save` has the primary class. Copy comes first today. GREEN: reorder and style.
+      The script finds Copy by selector, not as the first button. Guard: 7.4 still passes.
+- [x] 11.3 RED: flip `TestAnIncompleteLineupGreysOutItsDownload` and
+      `TestAValidLineupLinksItsDownload`. For a duplicate, a starting lineup with holes, and a
+      valid proposal, Download is `<button formaction="/lineup.csv" aria-label="Download">` with an
+      inline `<svg` and no `aria-disabled`. GREEN: the button in the template. Drop
+      `CSVLink`/`csvLink` and the script's edit-voids-Download lines.
+- [x] 11.4 RED (chrome): `getBoundingClientRect` widths. With a saver, Save ≈ 2× Copy and Copy ≈
+      Download. Without one, Copy ≈ 3× Download. Today the columns are equal. GREEN: grid columns in
+      CSS.
+- [x] 11.5 RED (chrome, `pressInChrome` counting `GET /lineup.csv`): pressing Download on a valid
+      lineup requests `/lineup.csv` with the form's slots, with no clipboard write and one page load.
+      Copy's listener catches it today. GREEN: a Download branch that fetches, then
+      `location.assign` on `ok`.
+- [x] 11.6 RED (chrome): pressing Download on a duplicate reloads at `/lineup?<query>` and lists the
+      problem. GREEN: the failure path reloads, as Copy's does.
+- [x] 11.7 RED (chrome): with `navigator.clipboard` removed, Download on a duplicate still reloads
+      the form at `/lineup?<query>`, not the 400 text. GREEN: move the clipboard check into Copy's
+      branch.
+- [x] 11.8 Guard (chrome): after an edit, Download isn't disabled and a `Copied` button reads `Copy`.
+- [x] 11.9 Guard: `GET /lineup.csv` with a duplicate answers 400 and names it (the no-JS
+      fallback).
+- [ ] 11.10 Run `openspec validate save-lineup-from-form`, `go vet ./...`, and `go test -race ./...`.
+      On a phone, check the row and that Download downloads.

@@ -47,7 +47,6 @@ type lineupView struct {
 
 	StartingUnreadable bool
 	Problems           []string
-	CSVLink            string
 	CanSave            bool
 	Saved              bool
 	StartingWeek       int
@@ -199,17 +198,6 @@ func checkProposal(ids [lineup.StarterCount]string, pool []lineup.Player) (playe
 	return players, problems
 }
 
-// csvLink is the download's URL. Its query is built in slot order, not by
-// url.Values.Encode, which sorts keys, so it reads like the form's own URL.
-func csvLink(team string, l lineup.Lineup) string {
-	link := "/lineup.csv?team=" + url.QueryEscape(team)
-	slots := lineup.Slots()
-	for i, p := range l.Starters() {
-		link += "&" + strings.ToLower(string(slots[i])) + "=" + url.QueryEscape(p.ID)
-	}
-	return link
-}
-
 // lineupForm is what both lineup routes resolve from a request before they
 // part: the page renders it, the download writes its lineup.
 type lineupForm struct {
@@ -330,9 +318,6 @@ func renderLineupForm(w http.ResponseWriter, r *http.Request, form lineupForm, r
 			log.Printf("fetching games for %d week %d: %v", form.season, form.week, err)
 		}
 		view.Slots = slotSelects(form.pool, form.chosen, weekGames, gamesAvailable)
-	}
-	if form.complete {
-		view.CSVLink = csvLink(form.team, form.lineup)
 	}
 
 	var buf bytes.Buffer

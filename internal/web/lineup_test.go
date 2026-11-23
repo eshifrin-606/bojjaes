@@ -770,13 +770,52 @@ func TestWithASaverTheSlotsFormPostsSaveForItsWeek(t *testing.T) {
 	form := slotsForm(t, f.get("/lineup?team=wood").Body.String())
 
 	for _, want := range []string{
-		`<button formmethod="post" formaction="/lineup" name="save">Save</button>`,
+		`<button class="primary" formmethod="post" formaction="/lineup" name="save">Save</button>`,
 		`<input type="hidden" name="season" value="2026">`,
 		`<input type="hidden" name="week" value="9">`,
 	} {
 		if !strings.Contains(form, want) {
 			t.Errorf("the slots form lacks %s:\n%s", want, form)
 		}
+	}
+}
+
+var (
+	actionsPattern = regexp.MustCompile(`(?s)<div class="actions">(.*?)</div>`)
+	actionPattern  = regexp.MustCompile(`(?s)<(?:button|a)([^>]*)>(.*?)</(?:button|a)>`)
+	ariaLabel      = regexp.MustCompile(`aria-label="([^"]*)"`)
+)
+
+// actionNames is the action row's controls by accessible name, left to right,
+// each with its attributes.
+func actionNames(t *testing.T, body string) (names, attrs []string) {
+	t.Helper()
+	row := actionsPattern.FindStringSubmatch(body)
+	if row == nil {
+		t.Fatalf("no action row:\n%s", body)
+	}
+	for _, m := range actionPattern.FindAllStringSubmatch(row[1], -1) {
+		name := m[2]
+		if l := ariaLabel.FindStringSubmatch(m[1]); l != nil {
+			name = l[1]
+		}
+		names = append(names, name)
+		attrs = append(attrs, m[1])
+	}
+	return names, attrs
+}
+
+func TestSaveLeadsTheActionRowAsThePrimaryButton(t *testing.T) {
+	f := newLineupFixture()
+	f.saver = &fakeSaver{}
+
+	names, attrs := actionNames(t, f.get("/lineup?team=wood").Body.String())
+
+	if want := []string{"Save", "Copy", "Download"}; !slices.Equal(names, want) {
+		t.Fatalf("action row = %q, want %q", names, want)
+	}
+	if !strings.Contains(attrs[0], `class="primary"`) {
+		t.Errorf("Save's attributes %q lack class=\"primary\"", attrs[0])
 	}
 }
 
@@ -797,39 +836,30 @@ func TestAValidLineupIsNotRepeatedAsText(t *testing.T) {
 	}
 }
 
-// Greyed out rather than left out, so the actions row keeps its shape while
-// the slots are being fixed.
-func TestAnIncompleteLineupGreysOutItsDownload(t *testing.T) {
+var downloadButtonPattern = regexp.MustCompile(`(?s)<button formaction="/lineup\.csv" aria-label="Download">(.*?)</button>`)
+
+// Download is offered whatever the slots hold; pressing it is the check.
+func TestDownloadIsAnEnabledGlyphButtonForAnySlots(t *testing.T) {
 	tests := map[string]string{
 		"a duplicate proposal":         proposalURL("/lineup", woodWeek9With(4, "102")...),
 		"a starting lineup with holes": "/lineup?team=wood",
+		"a valid proposal":             proposalURL("/lineup", woodWeek9...),
 	}
 	for name, u := range tests {
 		t.Run(name, func(t *testing.T) {
-			body := newLineupFixture().get(u).Body.String()
+			form := slotsForm(t, newLineupFixture().get(u).Body.String())
 
-			if strings.Contains(body, "/lineup.csv") {
-				t.Errorf("a download is linked:\n%s", body)
+			m := downloadButtonPattern.FindStringSubmatch(form)
+			if m == nil {
+				t.Fatalf("the slots form has no Download button to /lineup.csv:\n%s", form)
 			}
-			if !strings.Contains(body, `<a aria-disabled="true">Download</a>`) {
-				t.Errorf("no disabled Download is shown:\n%s", body)
+			if !strings.HasPrefix(strings.TrimSpace(m[1]), "<svg") {
+				t.Errorf("Download holds %q, want an inline svg", m[1])
+			}
+			if strings.Contains(form, "aria-disabled") {
+				t.Errorf("Download is disabled:\n%s", form)
 			}
 		})
-	}
-}
-
-var csvLinkPattern = regexp.MustCompile(`href="(/lineup\.csv[^"]*)"`)
-
-func TestAValidLineupLinksItsDownload(t *testing.T) {
-	body := newLineupFixture().get(proposalURL("/lineup", woodWeek9...)).Body.String()
-
-	m := csvLinkPattern.FindStringSubmatch(body)
-	want := "/lineup.csv?team=wood&qb=101&rb=102&wr=105&te=107&flex=103&flex=104&k=108&d=109&d=110"
-	if m == nil || html.UnescapeString(m[1]) != want {
-		t.Errorf("download link = %v, want %q", m, want)
-	}
-	if !regexp.MustCompile(`href="/lineup\.csv[^"]*">Download</a>`).MatchString(body) {
-		t.Errorf("the download link does not read just Download:\n%s", body)
 	}
 }
 
@@ -910,6 +940,15 @@ func TestADownloadOrTextThatCannotBeALineupIsRefused(t *testing.T) {
 				t.Errorf("text status = %d, want %d", rec.Code, tt.want)
 			}
 		})
+	}
+}
+
+// Without script, Download's plain GET is the check, so the 400 must say why.
+func TestADuplicateDownloadIsRefusedNamingThePlayer(t *testing.T) {
+	rec := newLineupFixture().getCSV(proposalURL("/lineup.csv", woodWeek9With(4, "102")...))
+
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "Bijan Robinson is in two slots") {
+		t.Errorf("download = %d %q, want 400 naming Bijan Robinson in two slots", rec.Code, rec.Body.String())
 	}
 }
 

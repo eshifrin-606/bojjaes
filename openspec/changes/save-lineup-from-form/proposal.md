@@ -21,6 +21,10 @@ This change adds it, so a lineup set from a phone is the one the scoreboard show
   process, and create the week directory when it is new.
 - The form states whether the team's lineup for the week is saved, or which earlier week the slots
   start from.
+- Form polish: Save is the primary button, on the left at half the row; Copy and an icon-only
+  Download share the rest. Download is never greyed out: it checks the lineup as Copy does,
+  downloading when valid and reloading with the problems otherwise. An edit turns the saved-state
+  line into "Unsaved changes".
 - A week directory holding one lineup is now a matchup with one side to be decided. The matchup
   page shows the missing side — the Bojjaes or the opponent — as **TBD**. Two lineups without the
   Bojjaes, or three lineups, are still refused.
@@ -41,7 +45,8 @@ git.
 
 ### Modified Capabilities
 - `lineup-form`: "The form writes nothing" is replaced by a Save button when a store is
-  configured; the page states whether the week's lineup is saved.
+  configured; the page states whether the week's lineup is saved. Save leads the action row, and
+  Download checks the lineup instead of being greyed out.
 - `lineup-source`: a week directory holding one lineup resolves to a matchup with one side
   missing, instead of being refused.
 - `matchup-page`: a one-lineup week renders with the missing side as TBD instead of a 500.
