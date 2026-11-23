@@ -16,15 +16,19 @@ type weekStats interface {
 }
 
 // newMux builds the routing table as a value. On DefaultServeMux it would be
-// process-wide state that cannot be built twice.
-func newMux(stats weekStats, games web.GamesSource, current web.CurrentWeekSource, tree *lineup.Tree, rosters *lineup.Rosters) *http.ServeMux {
+// process-wide state that cannot be built twice. A nil saver leaves POST
+// /lineup unrouted, so it answers 405 and the form offers no Save.
+func newMux(stats weekStats, games web.GamesSource, current web.CurrentWeekSource, tree *lineup.Tree, rosters *lineup.Rosters, saver web.LineupSaver) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("GET /{season}/{week}", web.Handler(tree, stats, games))
 	mux.Handle("GET /{season}/{week}/version", web.VersionHandler(stats))
 	mux.Handle("GET /{season}/version", web.SeasonVersionHandler(tree, stats))
 	mux.Handle("GET /{season}", web.SeasonHandler(tree, stats, games))
-	mux.Handle("GET /lineup", web.LineupHandler(rosters, tree, current, games))
+	mux.Handle("GET /lineup", web.LineupHandler(rosters, tree, current, games, saver))
 	mux.Handle("GET /lineup.csv", web.LineupCSVHandler(rosters, tree, current))
 	mux.Handle("GET /lineup.txt", web.LineupTextHandler(rosters, tree, current))
+	if saver != nil {
+		mux.Handle("POST /lineup", web.LineupSaveHandler(rosters, tree, current, games, saver))
+	}
 	return mux
 }

@@ -392,15 +392,27 @@ func TestMatchupRefusesThreeLineups(t *testing.T) {
 	}
 }
 
-func TestMatchupRefusesLoneLineup(t *testing.T) {
+func TestMatchupLeavesALoneBojjaesOpponentEmpty(t *testing.T) {
 	tree := seedWeek(t, 2025, 14, "bojjaes.csv")
 
 	ours, theirs, err := tree.Matchup(2025, 14)
-	if err == nil {
-		t.Fatalf("Matchup() = %q, %q, err = nil, want an error", ours, theirs)
+	if err != nil {
+		t.Fatalf("Matchup: %v", err)
 	}
-	if !strings.Contains(err.Error(), tree.weekDir(2025, 14)) {
-		t.Errorf("error %q does not name the week directory", err)
+	if ours != "bojjaes" || theirs != "" {
+		t.Errorf("Matchup() = %q, %q, want %q, %q", ours, theirs, "bojjaes", "")
+	}
+}
+
+func TestMatchupLeavesALoneOpponentsBojjaesEmpty(t *testing.T) {
+	tree := seedWeek(t, 2025, 14, "wood.csv")
+
+	ours, theirs, err := tree.Matchup(2025, 14)
+	if err != nil {
+		t.Fatalf("Matchup: %v", err)
+	}
+	if ours != "" || theirs != "wood" {
+		t.Errorf("Matchup() = %q, %q, want %q, %q", ours, theirs, "", "wood")
 	}
 }
 
@@ -458,7 +470,7 @@ func TestMatchupRefusalsAreDistinguishable(t *testing.T) {
 		want  error
 	}{
 		{name: "too many", files: []string{"aroma.csv", "bojjaes.csv", "wood.csv"}, stage: true, want: ErrTooManyLineups},
-		{name: "too few", files: []string{"bojjaes.csv"}, stage: true, want: ErrTooFewLineups},
+		{name: "too few", stage: true, want: ErrTooFewLineups},
 		{name: "no bojjaes", files: []string{"aroma.csv", "fuego.csv"}, stage: true, want: ErrNotOurMatchup},
 		{name: "missing directory", want: ErrNoWeek},
 	}
@@ -520,6 +532,20 @@ func TestMatchupIgnoresDotfileCSVs(t *testing.T) {
 	}
 	if ours != "bojjaes" || theirs != "wood" {
 		t.Errorf("Matchup() = %q, %q, want %q, %q", ours, theirs, "bojjaes", "wood")
+	}
+}
+
+// A save writes its temporary file beside the lineup before renaming it, so
+// a week caught mid-save must still read as the one lineup it holds.
+func TestMatchupIgnoresASavesTemporaryFile(t *testing.T) {
+	tree := seedWeek(t, 2025, 14, ".wood.csv.tmp", "bojjaes.csv")
+
+	ours, theirs, err := tree.Matchup(2025, 14)
+	if err != nil {
+		t.Fatalf("Matchup: %v", err)
+	}
+	if ours != "bojjaes" || theirs != "" {
+		t.Errorf("Matchup() = %q, %q, want %q, %q", ours, theirs, "bojjaes", "")
 	}
 }
 

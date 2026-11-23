@@ -1,6 +1,6 @@
 # ADR: Writable Lineups on a Persistent Volume
 
-**Status:** Accepted 2026-09-27; amended 2026-11-01.
+**Status:** Accepted 2026-09-27; amended 2026-11-01, 2026-11-22.
 
 Enables the "lineup submission" extension that [ADR 0004](0004-web-frontend-stack.md) kept the
 door open for. It **reverses ADR 0004 decision #3** (the lineup tree is `//go:embed`'d, so "a
@@ -40,7 +40,7 @@ could pass `os.DirFS(...)` without touching the read code. `fs.FS` is read-only 
 ## Decision
 
 Store lineups as **CSV files on a persistent Fly volume** that is the **single store and sole read
-source**, read through `os.DirFS`. Git and a new passphrase-gated phone form in the same Go binary
+source**, read through `os.DirFS`. Git and a new phone form in the same Go binary
 are **two writers to that store**; the precedence between them lives in the writers, not in the
 read path. **Option C.**
 
@@ -67,17 +67,19 @@ read path. **Option C.**
 
 3. **Write: a new path outside `fs.FS`.** A lineup submission is `POST`ed from a phone form and
    written with `os.WriteFile`-style disk writes, since `fs.FS` cannot express a write. Writes
-   are **atomic**: write to a temp file in the same directory, then rename over the target, so a
-   reader never observes a half-written lineup and a crashed write leaves the previous lineup
-   intact. The write validates the ADR 0004 decision #9 invariants (header, closed sets,
-   Sleeper-ID lookup) *before* committing the file — an invalid submission is refused, not
-   half-saved.
+   are **atomic**: write to a dot-prefixed temp file in the same directory, then rename over the
+   target, so a reader never observes a half-written lineup and a crashed write leaves the
+   previous lineup intact (dotfiles are not lineups, so a leftover temp file is ignored). Writes
+   are serialized in process. The submission passes the same team, current-week, and proposal
+   checks as the form's Copy and Download *before* the file is committed — an invalid submission
+   is refused, not half-saved.
 
-   **Writable weeks are the store's latest week or the week after it.** The latest week covers
-   "the week is in git, but I need to change it and I'm away from a laptop" — a lineup change at
-   11:55 on Sunday; the next week covers setting a lineup ahead of git. Editing a week git
-   already has is allowed. At a season boundary the week after 2025/16 is 2026/1, chosen
-   explicitly and stored in the path (decision 1).
+   **The writable week is the form's current week** — Sleeper's current NFL week, ≤ 17 (the
+   league's last); the postseason and offseason have none. The form posts the season and week it
+   showed, and a save whose week no longer matches the current one is refused rather than filed
+   under the new week, so a tab left open across Sleeper's week flip cannot misfile a lineup.
+   Editing a week git already has is allowed — "the week is in git, but I need to change it and
+   I'm away from a laptop", a lineup change at 11:55 on Sunday.
 
    Any other week is refused. This is the product shape we want — set *this* week's lineup from
    wherever I am — and a guardrail: a settled past week cannot be silently rewritten from a
@@ -142,23 +144,30 @@ read path. **Option C.**
    requirement: it would buy a warm stats cache and no cold start on a phone edit, at the
    negligible cost of one always-on 256mb machine.
 
-7. **Writes are gated by a shared passphrase; reads stay public.** Per ADR 0004's rationale, the
-   write path does not require accounts — a single shared passphrase gates submission. Reads
-   remain public and unauthenticated as before.
+7. **A shared passphrase will gate writes; for now the write is open.** Per ADR 0004's rationale,
+   the write path does not require accounts — a single shared passphrase is the intended gate.
+   It is deferred: `POST /lineup` is unauthenticated for now, an accepted gap bounded by the
+   current week only (decision 3) and at most two files per week (decision 8), and undone by
+   re-saving or by git changing the week. Reads remain public and unauthenticated as before.
 
 8. **Handler ordering stays load-bearing.** ADR 0004 decision #7 made "validate path, resolve
    week, read lineups, *then* call the provider" a security property, not an efficiency detail.
-   The write handler inherits the same discipline: it authenticates, validates the submission and
-   its `(season, week, team)`, and enforces the **two-lineups-per-week-directory** invariant
-   (ADR 0004 consequence: a third file breaks that week's page) **before** touching disk, and it
-   never calls Sleeper on the write path except the decision-#9 label lookup, which runs only
-   after auth and validation. A write must not create a third file in a week directory or orphan
-   an opponent.
+   The write handler inherits the same discipline: it validates the team, the posted week
+   against the current week, and the submission **before** touching disk, and the only Sleeper
+   call on the write path is the hour-cached current week, which runs after the team check.
+
+   **A week holds at most two lineups: the Bojjaes and one opponent.** `bojjaes` saves to
+   `bojjaes.csv`; any other team saves as that week's opponent — created when the week has none,
+   overwritten when it is the same team, and **refused** when the week already holds a different
+   one, rather than replacing it. The rule is checked under the same lock as the write. A save
+   never deletes a file and never makes a third, so a wrong opponent is fixed through git.
+   **A week may hold one lineup**: the matchup page shows the missing side — the Bojjaes or the
+   opponent — as TBD. Two lineups without the Bojjaes, or three, are still refused.
 
 9. **Lineup-lock timing is deferred, unrestricted in the interim.** A write path invents a
    question that did not exist when data was build-time-frozen: may a lineup be changed after its
    games kick off? For now, **no server-enforced lock** — in practice a single co-manager edits,
-   the writable surface is already just the store's latest week or the next (decision 3), and ADR 0004's no-margin
+   the writable surface is already just the current week (decision 3), and ADR 0004's no-margin
    rule means the page never presents a week as settled. A time-based lock (reject writes to a
    week whose games have started) is a follow-up, called out here because it is a real integrity
    gap, not an oversight.
@@ -217,8 +226,13 @@ read path. **Option C.**
 - **The app is pinned to one machine** (decision 6). Scale-to-zero stays; `fly.toml` gains the
   volume mount, not a `min_machines_running` change. A cold start now also re-runs seeding.
 
-- **A new write auth surface exists** — a shared passphrase to keep out of logs, commits, and
-  screenshots. Small, but real, and it is the first secret the project carries.
+- **The write path is open until the passphrase lands** (decision 7). Anyone who finds
+  `POST /lineup` can overwrite the current week's lineups, within the two-file rule. The
+  passphrase, when it lands, is the first secret the project carries — to keep out of logs,
+  commits, and screenshots.
+
+- **A wrong opponent once saved is fixed only through git** (decision 8). The form never
+  replaces or deletes an opponent; git's seeding replaces the week whole.
 
 - **Lineup edits are unbounded in time until a lock lands** (decision 9). A lineup can be changed
   after kickoff, rewriting what a reader saw. Accepted for now on trust; flagged as the first
@@ -234,6 +248,7 @@ read path. **Option C.**
 
 ## Follow-ups
 
+- **Write passphrase.** Gate `POST /lineup` behind the shared passphrase (decision 7).
 - **Lineup-lock timing.** Decide and implement whether writes to a week whose games have started
   are refused. First integrity gap opened by this change.
 - **Write-back-to-git.** Optionally mirror each submission back to git as an audit trail /

@@ -291,13 +291,14 @@ than "we do not know".
 
 ### Requirement: A week that is not a matchup is refused, not guessed
 
-A week directory the lineup tree cannot resolve to exactly two rosters, one of them the Bojjaes',
-SHALL be refused with an error response naming the problem. The page SHALL NOT be rendered from one
-roster, from two of three rosters, or from a matchup the Bojjaes are not in.
+A week directory the lineup tree cannot resolve to a matchup — two rosters, one of them the
+Bojjaes', or one roster — SHALL be refused with an error response naming the problem. The page SHALL
+NOT be rendered from two of three rosters, or from two rosters the Bojjaes are not in. A week of one
+roster is rendered with the other side as TBD (see *A side not yet set is shown as TBD*).
 
 A week directory that does not exist SHALL be refused with `404 Not Found`. A week directory that
-exists but does not hold exactly one Bojjaes matchup SHALL be refused with `500 Internal Server
-Error`, because the request was well formed and the served lineup tree is wrong.
+exists but does not hold a matchup SHALL be refused with `500 Internal Server Error`, because the
+request was well formed and the served lineup tree is wrong.
 
 A roster file that cannot be parsed as a lineup card SHALL likewise be refused with `500 Internal
 Server Error` rather than rendered around.
@@ -319,7 +320,7 @@ Server Error` rather than rendered around.
 
 #### Scenario: An unparseable roster is a 500
 
-- **WHEN** one of the week's two roster files has a line with no id
+- **WHEN** one of the week's roster files has a line with no id
 - **THEN** the response is `500 Internal Server Error` and no page is rendered
 
 ### Requirement: The page implies no winner
@@ -1044,3 +1045,29 @@ The stats provider SHALL be asked for the latest week only.
 
 - **WHEN** the tree holds 2026 weeks 1 and 2, and `GET /2026` is requested
 - **THEN** the stats provider is asked for 2026 week 2 exactly once and for no other week
+
+### Requirement: A side not yet set is shown as TBD
+
+When `lineup-source` resolves a week to one lineup, the page SHALL be served with that side's column
+as usual and the other side's column showing the heading `TBD`, no total, and no starters. The TBD
+column SHALL hold the side it stands for: the left when the Bojjaes are missing, the right when the
+opponent is. The page SHALL still fetch the week's stats once and score the side it has, and SHALL
+imply no winner.
+
+#### Scenario: The opponent is to be decided
+
+- **WHEN** `2026/12/` holds only `bojjaes.csv` and `GET /2026/12` is requested
+- **THEN** the response is 200, the left column is the Bojjaes with their starters and total, and the
+  right column's heading reads `TBD` with no total and no starters
+
+#### Scenario: The Bojjaes are to be decided
+
+- **WHEN** `2026/12/` holds only `wood.csv` and `GET /2026/12` is requested
+- **THEN** the response is 200, the left column's heading reads `TBD`, and the right column is wood
+  with its starters and total
+
+#### Scenario: The season URL shows a one-lineup latest week
+
+- **WHEN** 2026 week 12 is the season's latest week and holds only `bojjaes.csv`, and `GET /2026` is
+  requested
+- **THEN** the response is 200 with week 12's page, the opponent shown as TBD

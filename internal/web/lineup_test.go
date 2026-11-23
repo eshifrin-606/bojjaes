@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"html"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -17,6 +20,7 @@ import (
 	"github.com/eshifrin/bojjaes/internal/games"
 	"github.com/eshifrin/bojjaes/internal/lineup"
 	"github.com/eshifrin/bojjaes/internal/nflweek"
+	"github.com/eshifrin/bojjaes/internal/volume"
 )
 
 // stubCurrent stands in for the current-week source, counting how often the
@@ -68,6 +72,7 @@ type lineupFixture struct {
 	tree    *lineup.Tree
 	current *stubCurrent
 	games   *fakeGames
+	saver   LineupSaver
 }
 
 func newLineupFixture() *lineupFixture {
@@ -81,7 +86,7 @@ func newLineupFixture() *lineupFixture {
 
 func (f *lineupFixture) get(url string) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
-	LineupHandler(f.rosters, f.tree, f.current, f.games).ServeHTTP(rec, httptest.NewRequest("GET", url, nil))
+	LineupHandler(f.rosters, f.tree, f.current, f.games, f.saver).ServeHTTP(rec, httptest.NewRequest("GET", url, nil))
 	return rec
 }
 
@@ -491,6 +496,36 @@ func TestTheSlotsStartOnTheLatestLineupNotAfterThisWeek(t *testing.T) {
 	}
 }
 
+func TestTheFormSaysThisWeeksLineupIsSaved(t *testing.T) {
+	f := newLineupFixture()
+	f.tree = lineup.New(weekFS(2026, 9, map[string]string{"wood": woodLine(woodWeek9...)}))
+
+	body := f.get("/lineup?team=wood").Body.String()
+
+	if !strings.Contains(body, "Saved for week 9") {
+		t.Errorf("body does not say Saved for week 9:\n%s", body)
+	}
+}
+
+func TestTheFormSaysThisWeekIsNotSavedAndWhichWeekTheSlotsStartFrom(t *testing.T) {
+	f := newLineupFixture()
+	f.tree = lineup.New(weekFS(2026, 7, map[string]string{"wood": woodLine(woodWeek7...)}))
+
+	body := f.get("/lineup?team=wood").Body.String()
+
+	if !strings.Contains(body, "Not saved for week 9 · starting from week 7") {
+		t.Errorf("body does not say Not saved for week 9 · starting from week 7:\n%s", body)
+	}
+}
+
+func TestWithNoLineupTheFormSaysOnlyNotSaved(t *testing.T) {
+	body := newLineupFixture().get("/lineup?team=wood").Body.String()
+
+	if !strings.Contains(body, "Not saved for week 9</p>") {
+		t.Errorf("body does not say just Not saved for week 9:\n%s", body)
+	}
+}
+
 var emptySlots = []string{"", "", "", "", "", "", "", "", ""}
 
 func TestWithNoLineupEverySlotStartsEmpty(t *testing.T) {
@@ -714,6 +749,99 @@ func TestTheSlotsAreAGETFormCarryingTheTeam(t *testing.T) {
 	}
 }
 
+// slotsForm is the inside of the form holding the slot selects.
+func slotsForm(t *testing.T, body string) string {
+	t.Helper()
+	for _, m := range slotsFormPattern.FindAllStringSubmatch(body, -1) {
+		if strings.Contains(m[1], `<select name="qb"`) {
+			return m[1]
+		}
+	}
+	t.Fatalf("no form holds the slots:\n%s", body)
+	return ""
+}
+
+var slotsFormPattern = regexp.MustCompile(`(?s)<form[^>]*>(.*?)</form>`)
+
+func TestWithASaverTheSlotsFormPostsSaveForItsWeek(t *testing.T) {
+	f := newLineupFixture()
+	f.saver = &fakeSaver{}
+
+	form := slotsForm(t, f.get("/lineup?team=wood").Body.String())
+
+	for _, want := range []string{
+		`<button class="primary" formmethod="post" formaction="/lineup" name="save">Save</button>`,
+		`<input type="hidden" name="season" value="2026">`,
+		`<input type="hidden" name="week" value="9">`,
+	} {
+		if !strings.Contains(form, want) {
+			t.Errorf("the slots form lacks %s:\n%s", want, form)
+		}
+	}
+}
+
+var (
+	actionsPattern = regexp.MustCompile(`(?s)<div class="actions">(.*?)</div>`)
+	actionPattern  = regexp.MustCompile(`(?s)<(?:button|a)([^>]*)>(.*?)</(?:button|a)>`)
+	ariaLabel      = regexp.MustCompile(`aria-label="([^"]*)"`)
+)
+
+// actionNames is the action row's controls by accessible name, left to right,
+// each with its attributes.
+func actionNames(t *testing.T, body string) (names, attrs []string) {
+	t.Helper()
+	row := actionsPattern.FindStringSubmatch(body)
+	if row == nil {
+		t.Fatalf("no action row:\n%s", body)
+	}
+	for _, m := range actionPattern.FindAllStringSubmatch(row[1], -1) {
+		name := m[2]
+		if l := ariaLabel.FindStringSubmatch(m[1]); l != nil {
+			name = l[1]
+		}
+		names = append(names, name)
+		attrs = append(attrs, m[1])
+	}
+	return names, attrs
+}
+
+func TestSaveLeadsTheActionRowAsThePrimaryButton(t *testing.T) {
+	f := newLineupFixture()
+	f.saver = &fakeSaver{}
+
+	names, attrs := actionNames(t, f.get("/lineup?team=wood").Body.String())
+
+	if want := []string{"Save", "Copy", "Download"}; !slices.Equal(names, want) {
+		t.Fatalf("action row = %q, want %q", names, want)
+	}
+	if !strings.Contains(attrs[0], `class="primary"`) {
+		t.Errorf("Save's attributes %q lack class=\"primary\"", attrs[0])
+	}
+}
+
+func TestASavedWeeksSaveIsPlain(t *testing.T) {
+	f := newLineupFixture()
+	f.saver = &fakeSaver{}
+	f.tree = lineup.New(weekFS(2026, 9, map[string]string{"wood": woodLine(woodWeek9...)}))
+
+	names, attrs := actionNames(t, f.get("/lineup?team=wood").Body.String())
+
+	if len(names) == 0 || names[0] != "Save" {
+		t.Fatalf("action row = %q, want Save first", names)
+	}
+	if strings.Contains(attrs[0], `class="primary"`) {
+		t.Errorf("a saved week's Save is highlighted: %q", attrs[0])
+	}
+}
+
+func TestWithNoSaverThereIsNoSave(t *testing.T) {
+	body := newLineupFixture().get("/lineup?team=wood").Body.String()
+
+	if strings.Contains(body, ">Save</button>") {
+		t.Errorf("the page offers Save with no saver:\n%s", body)
+	}
+}
+
 // The form itself shows the lineup, so no separate summary repeats it.
 func TestAValidLineupIsNotRepeatedAsText(t *testing.T) {
 	body := newLineupFixture().get(proposalURL("/lineup", woodWeek9...)).Body.String()
@@ -723,39 +851,30 @@ func TestAValidLineupIsNotRepeatedAsText(t *testing.T) {
 	}
 }
 
-// Greyed out rather than left out, so the actions row keeps its shape while
-// the slots are being fixed.
-func TestAnIncompleteLineupGreysOutItsDownload(t *testing.T) {
+var downloadButtonPattern = regexp.MustCompile(`(?s)<button formaction="/lineup\.csv" aria-label="Download">(.*?)</button>`)
+
+// Download is offered whatever the slots hold; pressing it is the check.
+func TestDownloadIsAnEnabledGlyphButtonForAnySlots(t *testing.T) {
 	tests := map[string]string{
 		"a duplicate proposal":         proposalURL("/lineup", woodWeek9With(4, "102")...),
 		"a starting lineup with holes": "/lineup?team=wood",
+		"a valid proposal":             proposalURL("/lineup", woodWeek9...),
 	}
 	for name, u := range tests {
 		t.Run(name, func(t *testing.T) {
-			body := newLineupFixture().get(u).Body.String()
+			form := slotsForm(t, newLineupFixture().get(u).Body.String())
 
-			if strings.Contains(body, "/lineup.csv") {
-				t.Errorf("a download is linked:\n%s", body)
+			m := downloadButtonPattern.FindStringSubmatch(form)
+			if m == nil {
+				t.Fatalf("the slots form has no Download button to /lineup.csv:\n%s", form)
 			}
-			if !strings.Contains(body, `<a aria-disabled="true">Download</a>`) {
-				t.Errorf("no disabled Download is shown:\n%s", body)
+			if !strings.HasPrefix(strings.TrimSpace(m[1]), "<svg") {
+				t.Errorf("Download holds %q, want an inline svg", m[1])
+			}
+			if strings.Contains(form, "aria-disabled") {
+				t.Errorf("Download is disabled:\n%s", form)
 			}
 		})
-	}
-}
-
-var csvLinkPattern = regexp.MustCompile(`href="(/lineup\.csv[^"]*)"`)
-
-func TestAValidLineupLinksItsDownload(t *testing.T) {
-	body := newLineupFixture().get(proposalURL("/lineup", woodWeek9...)).Body.String()
-
-	m := csvLinkPattern.FindStringSubmatch(body)
-	want := "/lineup.csv?team=wood&qb=101&rb=102&wr=105&te=107&flex=103&flex=104&k=108&d=109&d=110"
-	if m == nil || html.UnescapeString(m[1]) != want {
-		t.Errorf("download link = %v, want %q", m, want)
-	}
-	if !regexp.MustCompile(`href="/lineup\.csv[^"]*">Download</a>`).MatchString(body) {
-		t.Errorf("the download link does not read just Download:\n%s", body)
 	}
 }
 
@@ -839,6 +958,15 @@ func TestADownloadOrTextThatCannotBeALineupIsRefused(t *testing.T) {
 	}
 }
 
+// Without script, Download's plain GET is the check, so the 400 must say why.
+func TestADuplicateDownloadIsRefusedNamingThePlayer(t *testing.T) {
+	rec := newLineupFixture().getCSV(proposalURL("/lineup.csv", woodWeek9With(4, "102")...))
+
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "Bijan Robinson is in two slots") {
+		t.Errorf("download = %d %q, want 400 naming Bijan Robinson in two slots", rec.Code, rec.Body.String())
+	}
+}
+
 func (f *lineupFixture) getText(url string) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
 	LineupTextHandler(f.rosters, f.tree, f.current).ServeHTTP(rec, httptest.NewRequest("GET", url, nil))
@@ -876,5 +1004,188 @@ func TestARosterNameWithMarkupIsEscaped(t *testing.T) {
 	}
 	if got := strings.Count(body, "&lt;b&gt;X&lt;/b&gt;"); got != 2 {
 		t.Errorf("escaped name appears %d times, want 2 (the QB option and card):\n%s", got, body)
+	}
+}
+
+type savedLineup struct {
+	season, week int
+	team         string
+	lineup       lineup.Lineup
+}
+
+// fakeSaver records each save and answers err.
+type fakeSaver struct {
+	saves []savedLineup
+	err   error
+}
+
+func (s *fakeSaver) Save(season, week int, team string, l lineup.Lineup) error {
+	s.saves = append(s.saves, savedLineup{season, week, team, l})
+	return s.err
+}
+
+// postSave posts the form's fields for team in the given week, proposing the
+// IDs in slot order.
+func (f *lineupFixture) postSave(saver LineupSaver, team string, season, week int, ids ...string) *httptest.ResponseRecorder {
+	form := url.Values{"team": {team}, "season": {strconv.Itoa(season)}, "week": {strconv.Itoa(week)}}
+	for i, slot := range lineup.Slots() {
+		if i < len(ids) && ids[i] != "" {
+			form.Add(strings.ToLower(string(slot)), ids[i])
+		}
+	}
+	req := httptest.NewRequest("POST", "/lineup", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	LineupSaveHandler(f.rosters, f.tree, f.current, f.games, saver).ServeHTTP(rec, req)
+	return rec
+}
+
+// newBojjaesSaveFixture gives the Bojjaes wood's roster, so they have a full
+// lineup to save.
+func newBojjaesSaveFixture() *lineupFixture {
+	f := newLineupFixture()
+	f.rosters = lineup.NewRosters(fstest.MapFS{
+		"bojjaes.csv": {Data: []byte(woodRoster)},
+		"wood.csv":    {Data: []byte(woodRoster)},
+	})
+	return f
+}
+
+func TestAValidLineupIsSavedAndRedirectsToTheForm(t *testing.T) {
+	saver := &fakeSaver{}
+
+	rec := newBojjaesSaveFixture().postSave(saver, "bojjaes", 2026, 9, woodWeek9...)
+
+	if rec.Code != http.StatusSeeOther {
+		t.Errorf("status = %d, want 303", rec.Code)
+	}
+	if got, want := rec.Header().Get("Location"), "/lineup?team=bojjaes"; got != want {
+		t.Errorf("Location = %q, want %q", got, want)
+	}
+	if len(saver.saves) != 1 {
+		t.Fatalf("saves = %d, want 1", len(saver.saves))
+	}
+	got := saver.saves[0]
+	if got.season != 2026 || got.week != 9 || got.team != "bojjaes" {
+		t.Errorf("saved %s for %d week %d, want bojjaes for 2026 week 9", got.team, got.season, got.week)
+	}
+	if want := woodLineup(t, woodWeek9).Starters(); !slices.Equal(got.lineup.Starters(), want) {
+		t.Errorf("saved starters = %v, want %v", got.lineup.Starters(), want)
+	}
+}
+
+func TestAnInvalidLineupIsNotSavedAndTheFormKeepsItsPicks(t *testing.T) {
+	saver := &fakeSaver{}
+	ids := woodWeek9With(4, "102")
+
+	rec := newBojjaesSaveFixture().postSave(saver, "bojjaes", 2026, 9, ids...)
+
+	body := rec.Body.String()
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", rec.Code)
+	}
+	if got, want := problems(body), []string{"Bijan Robinson is in two slots"}; !slices.Equal(got, want) {
+		t.Errorf("problems = %q, want %q", got, want)
+	}
+	if got := selectedSlots(body); !slices.Equal(got, ids) {
+		t.Errorf("selected = %q, want %q", got, ids)
+	}
+	if len(saver.saves) != 0 {
+		t.Errorf("saves = %d, want 0", len(saver.saves))
+	}
+}
+
+func TestAnUnknownTeamIsRefusedBeforeTheCurrentWeekIsRead(t *testing.T) {
+	f := newBojjaesSaveFixture()
+	saver := &fakeSaver{}
+
+	rec := f.postSave(saver, "../wood", 2026, 9, woodWeek9...)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", rec.Code)
+	}
+	if f.current.calls != 0 {
+		t.Errorf("current week read %d times, want 0", f.current.calls)
+	}
+	if len(saver.saves) != 0 {
+		t.Errorf("saves = %d, want 0", len(saver.saves))
+	}
+}
+
+func TestALineupPostedForAnEarlierWeekIsRefused(t *testing.T) {
+	f := newBojjaesSaveFixture()
+	f.current.current = nflweek.New(2026, 13, nflweek.Regular)
+	saver := &fakeSaver{}
+
+	rec := f.postSave(saver, "bojjaes", 2026, 12, woodWeek9...)
+
+	if rec.Code != http.StatusConflict {
+		t.Errorf("status = %d, want 409", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "week changed") {
+		t.Errorf("body does not say the week changed:\n%s", rec.Body.String())
+	}
+	if len(saver.saves) != 0 {
+		t.Errorf("saves = %d, want 0", len(saver.saves))
+	}
+}
+
+func TestASaveWithNoWeekToSetOrNoCurrentWeekIsRefused(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(*lineupFixture)
+		want  int
+	}{
+		{name: "NFL week 18", setup: func(f *lineupFixture) {
+			f.current.current = nflweek.New(2026, 18, nflweek.Regular)
+		}, want: http.StatusNotFound},
+		{name: "a failed current-week read", setup: func(f *lineupFixture) {
+			f.current.err = errors.New("sleeper is down")
+		}, want: http.StatusBadGateway},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := newBojjaesSaveFixture()
+			tt.setup(f)
+			saver := &fakeSaver{}
+
+			rec := f.postSave(saver, "bojjaes", 2026, 18, woodWeek9...)
+
+			if rec.Code != tt.want {
+				t.Errorf("status = %d, want %d", rec.Code, tt.want)
+			}
+			if len(saver.saves) != 0 {
+				t.Errorf("saves = %d, want 0", len(saver.saves))
+			}
+		})
+	}
+}
+
+func TestASaveRefusedForAnotherOpponentIsAConflict(t *testing.T) {
+	saver := &fakeSaver{err: &volume.OpponentSetError{Existing: "wood"}}
+
+	rec := newBojjaesSaveFixture().postSave(saver, "bojjaes", 2026, 9, woodWeek9...)
+
+	if rec.Code != http.StatusConflict {
+		t.Errorf("status = %d, want 409", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "bojjaes&#39; opponent is already wood") {
+		t.Errorf("body does not name the opponent:\n%s", rec.Body.String())
+	}
+}
+
+func TestAFailedSaveIsAServerErrorAndLogged(t *testing.T) {
+	var logged strings.Builder
+	log.SetOutput(&logged)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+	saver := &fakeSaver{err: errors.New("disk full")}
+
+	rec := newBojjaesSaveFixture().postSave(saver, "bojjaes", 2026, 9, woodWeek9...)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500", rec.Code)
+	}
+	if !strings.Contains(logged.String(), "disk full") {
+		t.Errorf("log = %q, want it to mention disk full", logged.String())
 	}
 }

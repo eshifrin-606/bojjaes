@@ -97,7 +97,9 @@ func kickoffText(kickoff time.Time) string {
 }
 
 type column struct {
-	Team     string
+	Team string
+	// TBD marks a side whose lineup is not yet in the week.
+	TBD      bool
 	Starters []starter
 	Total    string
 }
@@ -198,6 +200,9 @@ func renderWeek(w http.ResponseWriter, r *http.Request, tree *lineup.Tree, sourc
 	teams := [2]string{ours, theirs}
 	var lineups [2]lineup.Lineup
 	for i, team := range teams {
+		if team == "" {
+			continue
+		}
 		l, err := tree.Read(season, week, team)
 		if err != nil {
 			log.Printf("reading %s lineup for %d week %d: %v", team, season, week, err)
@@ -264,6 +269,10 @@ func renderWeek(w http.ResponseWriter, r *http.Request, tree *lineup.Tree, sourc
 		NextCheckSeconds: checkDelaySeconds,
 	}
 	for i, team := range teams {
+		if team == "" {
+			view.Columns[i] = column{TBD: true}
+			continue
+		}
 		view.Columns[i] = scoreColumn(team, lineups[i], weekStats, weekGames, gamesAvailable)
 	}
 

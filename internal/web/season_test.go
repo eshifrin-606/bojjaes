@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"slices"
+	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -115,6 +116,23 @@ func TestSeasonRefusesALatestWeekThatIsNotAMatchup(t *testing.T) {
 
 	if rec.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusInternalServerError)
+	}
+}
+
+func TestSeasonShowsALatestWeekWithItsOpponentTBD(t *testing.T) {
+	tree := lineup.New(treeFS(matchupWeek(2026, 11), weekFS(2026, 12, map[string]string{"bojjaes": lineupCSV(ourLine)})))
+
+	rec := serveSeason(SeasonHandler(tree, &fakeSource{weekStats: fixtureStats()}, noGames{}), Handler(tree, unusedSource{t}, noGames{}), http.MethodGet, "/2026")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rec.Code, rec.Body)
+	}
+
+	body := rec.Body.String()
+	if !strings.Contains(body, "Week 12") {
+		t.Errorf("page is not week 12:\n%s", body)
+	}
+	if !strings.Contains(renderedColumns(t, body)[1], "<h2>TBD</h2>") {
+		t.Errorf("opponent column is not TBD:\n%s", body)
 	}
 }
 
