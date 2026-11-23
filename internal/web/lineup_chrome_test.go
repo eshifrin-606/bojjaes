@@ -213,18 +213,28 @@ func TestAnEditMarksASavedWeekUnsaved(t *testing.T) {
 	}
 }
 
-const actionWidthsScript = `<pre id="widths"></pre>
-<script>
-  document.getElementById("widths").textContent = JSON.stringify(Array.prototype.map.call(
-    document.querySelectorAll(".actions button"),
-    function (b) { return b.getBoundingClientRect().width; }));
-</script>`
+func TestAnEditHighlightsASavedWeeksSave(t *testing.T) {
+	f := newLineupFixture()
+	f.saver = &fakeSaver{}
+	f.tree = lineup.New(weekFS(2026, 9, map[string]string{"wood": woodLine(woodWeek9...)}))
 
-var actionWidthsPattern = regexp.MustCompile(`<pre id="widths">(.*?)</pre>`)
+	dom := pickInChrome(t, f, "/lineup?team=wood", 1, "103")
 
-// actionWidthsInChrome lays the lineup page out in Chrome, script stripped,
-// and returns the action row's button widths, left to right.
-func actionWidthsInChrome(t *testing.T, f *lineupFixture, path string) []float64 {
+	names, attrs := actionNames(t, dom)
+	if len(names) == 0 || names[0] != "Save" {
+		t.Fatalf("action row after an edit = %q, want Save first", names)
+	}
+	if !strings.Contains(attrs[0], `class="primary"`) {
+		t.Errorf("Save after an edit = %q, want class=\"primary\"", attrs[0])
+	}
+}
+
+var actionsMeasuredPattern = regexp.MustCompile(`<pre id="measured">(.*?)</pre>`)
+
+// measureActionsInChrome lays the lineup page out in Chrome, script stripped,
+// and decodes into out the result of the JS function measure applied to each
+// action row button, left to right.
+func measureActionsInChrome(t *testing.T, f *lineupFixture, path, measure string, out any) {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("measuring the action row needs Chrome; skipped under -short")
@@ -234,25 +244,35 @@ func actionWidthsInChrome(t *testing.T, f *lineupFixture, path string) []float64
 		t.Skip("no Chrome: set BOJJAES_CHROME or install Google Chrome")
 	}
 
-	page := scriptPattern.ReplaceAllString(f.get(path).Body.String(), "") + actionWidthsScript
+	script := `<pre id="measured"></pre>
+<script>
+  document.getElementById("measured").textContent = JSON.stringify(Array.prototype.map.call(
+    document.querySelectorAll(".actions button"), ` + measure + `));
+</script>`
+	page := scriptPattern.ReplaceAllString(f.get(path).Body.String(), "") + script
 	file := filepath.Join(t.TempDir(), "page.html")
 	if err := os.WriteFile(file, []byte(page), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	out, err := exec.CommandContext(ctx, chrome, "--headless", "--disable-gpu", "--dump-dom", "file://"+file).Output()
+	dom, err := exec.CommandContext(ctx, chrome, "--headless", "--disable-gpu", "--dump-dom", "file://"+file).Output()
 	if err != nil {
 		t.Fatalf("running Chrome: %v", err)
 	}
-	m := actionWidthsPattern.FindSubmatch(out)
+	m := actionsMeasuredPattern.FindSubmatch(dom)
 	if m == nil {
-		t.Fatalf("Chrome output has no widths element:\n%s", out)
+		t.Fatalf("Chrome output has no measured element:\n%s", dom)
 	}
+	if err := json.Unmarshal(m[1], out); err != nil {
+		t.Fatalf("decoding %q: %v", m[1], err)
+	}
+}
+
+func actionWidthsInChrome(t *testing.T, f *lineupFixture, path string) []float64 {
+	t.Helper()
 	var widths []float64
-	if err := json.Unmarshal(m[1], &widths); err != nil {
-		t.Fatalf("decoding widths %q: %v", m[1], err)
-	}
+	measureActionsInChrome(t, f, path, `function (b) { return b.getBoundingClientRect().width; }`, &widths)
 	return widths
 }
 
@@ -262,6 +282,17 @@ func TestTheActionRowSplitsItsWidth(t *testing.T) {
 	t.Run("with a saver", func(t *testing.T) {
 		f := newLineupFixture()
 		f.saver = &fakeSaver{}
+
+		w := actionWidthsInChrome(t, f, "/lineup?team=wood")
+
+		if len(w) != 3 || !near(w[0], 2*w[1]) || !near(w[1], w[2]) {
+			t.Errorf("Save, Copy, Download widths = %v, want Save ≈ 2×Copy and Copy ≈ Download", w)
+		}
+	})
+	t.Run("with this week saved", func(t *testing.T) {
+		f := newLineupFixture()
+		f.saver = &fakeSaver{}
+		f.tree = lineup.New(weekFS(2026, 9, map[string]string{"wood": woodLine(woodWeek9...)}))
 
 		w := actionWidthsInChrome(t, f, "/lineup?team=wood")
 
@@ -350,5 +381,18 @@ func TestAnEditResetsCopiedAndLeavesDownloadEnabled(t *testing.T) {
 	}
 	if len(attrs) == 3 && strings.Contains(attrs[2], "disabled") {
 		t.Errorf("Download is disabled after an edit: %q", attrs[2])
+	}
+}
+
+func TestAnUnsavedWeeksSaveIsMutedGreen(t *testing.T) {
+	f := newLineupFixture()
+	f.saver = &fakeSaver{}
+
+	var colors [][2]string
+	measureActionsInChrome(t, f, "/lineup?team=wood",
+		`function (b) { var s = getComputedStyle(b); return [s.backgroundColor, s.color]; }`, &colors)
+
+	if want := [2]string{"rgb(79, 138, 91)", "rgb(255, 255, 255)"}; len(colors) == 0 || colors[0] != want {
+		t.Errorf("action row colours = %v, want Save %v", colors, want)
 	}
 }

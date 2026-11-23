@@ -819,6 +819,21 @@ func TestSaveLeadsTheActionRowAsThePrimaryButton(t *testing.T) {
 	}
 }
 
+func TestASavedWeeksSaveIsPlain(t *testing.T) {
+	f := newLineupFixture()
+	f.saver = &fakeSaver{}
+	f.tree = lineup.New(weekFS(2026, 9, map[string]string{"wood": woodLine(woodWeek9...)}))
+
+	names, attrs := actionNames(t, f.get("/lineup?team=wood").Body.String())
+
+	if len(names) == 0 || names[0] != "Save" {
+		t.Fatalf("action row = %q, want Save first", names)
+	}
+	if strings.Contains(attrs[0], `class="primary"`) {
+		t.Errorf("a saved week's Save is highlighted: %q", attrs[0])
+	}
+}
+
 func TestWithNoSaverThereIsNoSave(t *testing.T) {
 	body := newLineupFixture().get("/lineup?team=wood").Body.String()
 

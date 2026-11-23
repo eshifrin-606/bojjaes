@@ -128,7 +128,7 @@ Out of scope: passphrase, export, game-start lock, replacing or deleting an oppo
       `LINEUP_VOLUME=.volume`, that boot seeds `.volume/lineups` from git, that saves land
       there, and that `rm -rf .volume` resets the store. Also show the one-off form without
       direnv: `LINEUP_VOLUME=.volume go run ./cmd/server`.
-- [ ] 10.3 Manual check before archiving, with `go run ./cmd/server` and the local volume:
+- [x] 10.3 Manual check before archiving, with `go run ./cmd/server` and the local volume:
       1. Save bojjaes on `/lineup`. `cat .volume/lineups/2026/<week>/bojjaes.csv` shows that
          lineup, and `/2026` shows it with the opponent as TBD.
       2. Restart the server. The save is still served.
@@ -167,3 +167,12 @@ Out of scope: passphrase, export, game-start lock, replacing or deleting an oppo
       fallback).
 - [ ] 11.10 Run `openspec validate save-lineup-from-form`, `go vet ./...`, and `go test -race ./...`.
       On a phone, check the row and that Download downloads.
+- [x] 11.11 RED (chrome, computed style): on an unsaved week, Save's background is
+      `rgb(79, 138, 91)` and its text white. It is #666 today. GREEN: `.actions .primary` colours.
+- [x] 11.12 RED: with a saver and this week saved, Save lacks `class="primary"`. It always has it
+      today. GREEN: `{{if not .Saved}}` around the class. Guard: drop the class outright and watch
+      `TestSaveLeadsTheActionRowAsThePrimaryButton` (unsaved week) fail.
+- [x] 11.13 RED (chrome): with this week saved, Save ≈ 2× Copy and Copy ≈ Download. The plain Save
+      falls back to `3fr 1fr` today. GREEN: key the grid on `:has([name=save])`.
+- [x] 11.14 RED (chrome): with this week saved, changing a slot select gives Save
+      `class="primary"`. GREEN: the `change` listener adds the class.

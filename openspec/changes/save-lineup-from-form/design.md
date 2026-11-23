@@ -112,7 +112,10 @@ error values distinguish four mistakes.
 ### 10. Form polish: Save first, Download checks like Copy
 
 The action row is a grid: `2fr 1fr 1fr` (Save, Copy, Download) with a saver, `3fr 1fr` (Copy,
-Download) without. Save gets a dark fill and white text; the others keep today's grey. Download is
+Download) without, keyed on `[name=save]` so the highlight never moves the columns. Save gets a
+muted green (#4f8a5b) fill and white text only while there's something to save: the server adds
+`class="primary"` when the week isn't saved, and the `change` listener adds it as the status line
+turns `Unsaved changes`. A saved, unedited Save keeps the others' grey. Download is
 `<button formaction="/lineup.csv" aria-label="Download">` holding an inline SVG, so it is in the
 form like Copy. With Save first, the script finds Copy and Download by selector, not as the form's
 first button.

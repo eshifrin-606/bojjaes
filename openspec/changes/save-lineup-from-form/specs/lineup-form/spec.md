@@ -53,8 +53,10 @@ changed, the line SHALL read `Unsaved changes` instead, until the page is next l
 ### Requirement: Save leads the action row
 
 With a `Save` button, the action row SHALL hold, left to right, `Save` at half the row's width,
-then `Copy` and `Download` at a quarter each. `Save` SHALL be the primary button, filled dark with
-white text; `Copy` and `Download` SHALL be secondary. Without `Save`, `Copy` SHALL take three
+then `Copy` and `Download` at a quarter each. `Save` SHALL be highlighted, filled muted green
+(#4f8a5b) with white text, only while there is something to save: when this week's lineup is not
+saved, or once a slot has changed. Otherwise it SHALL look like `Copy` and `Download`, and its
+width SHALL not change either way. Without `Save`, `Copy` SHALL take three
 quarters of the row and `Download` one quarter. `Download` SHALL show only a download glyph (a
 down arrow over a line) and SHALL have the accessible name `Download`.
 
@@ -63,6 +65,21 @@ down arrow over a line) and SHALL have the accessible name `Download`.
 - **WHEN** a store is configured and `GET /lineup` is requested
 - **THEN** the action row reads `Save`, `Copy`, then the `Download` glyph, and `Save` is twice as
   wide as `Copy`, which is as wide as `Download`
+
+#### Scenario: Save is highlighted for an unsaved week
+
+- **WHEN** a store is configured and this week's lineup is not saved
+- **THEN** `Save` is filled muted green with white text
+
+#### Scenario: Save is plain for a saved week
+
+- **WHEN** a store is configured and this week's lineup is saved
+- **THEN** `Save` looks like `Copy` and `Download` and is still twice as wide as `Copy`
+
+#### Scenario: An edit highlights Save
+
+- **WHEN** this week's lineup is saved and a slot select is changed
+- **THEN** `Save` is highlighted as the status line reads `Unsaved changes`
 
 #### Scenario: With no store
 
